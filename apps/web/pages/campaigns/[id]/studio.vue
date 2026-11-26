@@ -21,6 +21,7 @@ import {
   Image as ImageIcon
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
+import TargetGeneratorPanel from '~/components/studio/TargetGeneratorPanel.vue';
 import { apiRequest } from '~/composables/useApi';
 import { useChunkedUploader } from '~/composables/useChunkedUploader';
 import { useThemeStore } from '~/stores/theme';
@@ -59,6 +60,13 @@ interface CampaignDetail {
     confirmedByUser: boolean;
   } | null;
   mediaAssets: MediaAssetItem[];
+  batches: Array<{
+    id: string;
+    status: string;
+    requestedCount: number;
+    batchDiversityMode: string;
+    createdAt: string;
+  }>;
 }
 
 const route = useRoute();
@@ -91,6 +99,7 @@ const transcribingId = ref<string | null>(null);
 
 const rawVideos = computed(() => (detail.value?.mediaAssets ?? []).filter((m) => m.assetType === 'raw_video'));
 const supportingAssets = computed(() => (detail.value?.mediaAssets ?? []).filter((m) => m.assetType !== 'raw_video'));
+const watermarkAssets = computed(() => (detail.value?.mediaAssets ?? []).filter((m) => m.assetType === 'watermark'));
 const isReadyForM6 = computed(() => Boolean(detail.value?.brief?.confirmedByUser && rawVideos.value.length > 0));
 
 function syncEditableRulebook(rulebook: BriefRulebook | null) {
@@ -574,6 +583,39 @@ onMounted(fetchDetail);
           </div>
         </section>
       </div>
+
+      <!-- TAHAP 3: TARGET AUDIENCE MATRIX & MULTI-VARIANT GENERATOR -->
+      <TargetGeneratorPanel
+        v-if="detail"
+        :campaign-id="detail.id"
+        :has-raw-video="rawVideos.length > 0"
+        :watermarks="watermarkAssets"
+      />
+
+      <!-- RIWAYAT BATCH GENERATE -->
+      <section v-if="detail && detail.batches.length > 0" class="studio-card p-5 space-y-3">
+        <h2 class="studio-heading text-base font-bold">Riwayat Batch Generate ({{ detail.batches.length }})</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <NuxtLink
+            v-for="b in detail.batches"
+            :key="b.id"
+            :to="`/campaigns/${detail.id}/batches/${b.id}`"
+            class="p-3.5 rounded flex items-center justify-between gap-2 transition-colors"
+            style="background: var(--bg-elevated); border: var(--border-width) solid var(--border-color);"
+          >
+            <div class="text-xs space-y-0.5">
+              <p class="font-bold">{{ b.requestedCount }} Variasi ({{ b.batchDiversityMode }})</p>
+              <p class="font-mono text-[11px] studio-muted">{{ new Date(b.createdAt).toLocaleString('id-ID') }}</p>
+            </div>
+            <span
+              class="px-2 py-0.5 rounded text-[11px] font-semibold uppercase"
+              :class="b.status === 'completed' ? 'studio-badge-ok' : b.status === 'failed' ? 'studio-badge-err' : 'studio-badge-warn'"
+            >
+              {{ b.status }}
+            </span>
+          </NuxtLink>
+        </div>
+      </section>
     </div>
   </StudioShell>
 </template>

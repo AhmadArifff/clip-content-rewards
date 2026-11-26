@@ -4,7 +4,7 @@
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
   "status": "IN_PROGRESS",
-  "current_sprint": "M5 Completed -> Ready for M6 (Target Audience Matrix & Multi-Variant AI Auto-Editor Engine)",
+  "current_sprint": "M6 Completed -> Ready for M7 (Viral Score Engine 6 Dimensi, Projected Impact, Actionable Critique, Upload Playbook & Safe-Zone Player)",
   "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) dalam arsitektur Monorepo dengan 3 tema switchable untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
   "last_updated": "2026-11-26",
   "completed_milestones": [
@@ -41,29 +41,36 @@
       "title": "Monorepo (apps/web + apps/api + packages/shared), DESIGN.md 3 Tema Switchable, SQLite WAL + 37 Master Presets, Auth, System Doctor & BYOK AES-256-GCM Manager",
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
-      "details": "Membangun monorepo npm Workspaces penuh dengan 3 tema switchable berbeda slicing/warna/tipografi/interaksi/copywriting, Auth HttpOnly JWT, AES-256-GCM BYOK Vault + Test Connection 6 provider, System Doctor FFmpeg 8.1.2, 37 seeded presets, 6/6 Playwright E2E hemat token, dan push commit 59d5d90 + b1c87b2 ke GitHub."
+      "details": "Membangun monorepo npm Workspaces penuh dengan 3 tema switchable, Auth HttpOnly JWT, AES-256-GCM BYOK Vault, System Doctor FFmpeg 8.1.2, 37 seeded presets, 6/6 Playwright E2E, dan push commit 59d5d90 + b1c87b2 ke GitHub."
     },
     {
       "id": "M5_CAMPAIGN_BRIEF_PARSER_AND_RAW_MEDIA",
       "title": "Campaign Manager, Brief Parser (.pdf/.docx/.doc/teks) + Editable Rulebook, Chunked Upload 4MB/part, Supporting Assets, FFprobe Audio Diagnostic, Silence Map & Auto-Chunked Whisper STT",
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
-      "details": "Membangun CRUD Campaign, parser brief unpdf/mammoth/doc + BYOK LLM JSON adapter + fallback heuristik lokal + Editable Brief Rulebook, chunked media upload 4MB/part + supporting assets (watermark/outro/broll), FFprobe + 1-pass volumedetect/silencedetect Audio Diagnostic, serta auto-chunked Whisper/Deepgram STT 10 menit overlap 2s. Diverifikasi 6/6 Vitest PASS, 5/5 Playwright E2E M5 PASS (3 tema + mobile 390px), 2 dokumen menu V2 ditulis, dan Kasus #02-#03 dicatat di bug-cases.md."
+      "details": "Membangun CRUD Campaign, parser brief unpdf/mammoth/doc + BYOK LLM JSON adapter + fallback heuristik lokal + Editable Brief Rulebook, chunked media upload 4MB/part + supporting assets, FFprobe Audio Diagnostic, auto-chunked Whisper/Deepgram STT, 6/6 Vitest + 5/5 Playwright E2E M5, dan push commit c6ca4ec ke GitHub."
+    },
+    {
+      "id": "M6_TARGET_MATRIX_AND_MULTI_VARIANT_AUTO_EDITOR",
+      "title": "Target Audience Matrix, Reusable Target Profiles, AI Director Multi-Variant EDL Planner, Local Persistent Queue + SSE Progress & FFmpeg 1080x1920 Safe-Zone Video Renderer",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-26",
+      "details": "Membangun TargetGeneratorPanel (dinamis dari master_presets + TargetProfile CRUD + Token/Render Estimator), AI Director EDL Planner (BYOK + heuristic fallback), Local Persistent SQLite Queue (concurrency 1) + Live SSE stream, FFmpeg 8.1.2 EDL Renderer (3 framing modes center_crop/fit_blur_bg/split_screen, watermark safe-zone, anullsrc mute 0% / ducking 20% / loudnorm -14 LUFS, ASS Safe-Zone captions + Hook Banner + CTA, cover.jpg), dan HTTP 206 Range Streaming. Diverifikasi 7/7 Vitest PASS (real FFprobe 1080x1920 & audio check), 5/5 Playwright E2E M6 PASS (3 tema + mobile 390px), serta menu-docs V2 ai-video-generator.md."
     }
   ],
   "in_progress_milestones": [
     {
-      "id": "M6_TARGET_MATRIX_AND_MULTI_VARIANT_AUTO_EDITOR",
-      "title": "Target Audience Matrix, Reusable Target Profiles, AI Director Multi-Variant EDL Planner, Local Persistent Queue + SSE Progress & FFmpeg Safe-Zone Video Renderer",
+      "id": "M7_VIRAL_SCORE_IMPACT_CRITIQUE_AND_UPLOAD_PLAYBOOK",
+      "title": "Viral Score Engine 6 Dimensi + Brief Compliance Checklist, Projected Upload Impact, Actionable Critique per Timestamp, Upload Playbook & Safe-Zone Overlay Video Player",
       "status": "NEXT"
     }
   ],
   "recent_changes_summary": [
-    "Menambahkan Zod schemas M5 di @clip/shared (Campaign, BriefRulebook update, MediaAsset, AudioDiagnostic, TranscriptPayload)",
-    "Membangun BYOK LLM JSON Adapter (Gemini/OpenAI/Anthropic/OpenRouter) dan Auto-Chunked STT Adapter (Groq/OpenAI Whisper/Deepgram)",
-    "Membangun Brief Parser (.pdf unpdf, .docx mammoth, .doc fallback, teks) dengan deteksi PDF scan kosong & Editable Rulebook UI",
-    "Membangun Chunked Uploader 4MB/part + FFprobe + Audio Diagnostic + Silence Map + Supporting Assets (watermark/outro/broll)",
-    "Menambahkan 2 dokumen Standar V2 di .agents/menu-docs/02-campaign/ dan 5-flow Playwright E2E M5 (tests/e2e/m5-campaign.e2e.mjs)"
+    "Membangun ASS Safe-Zone Subtitle + Hook Banner + CTA Builder (ass-subtitle.builder.ts) dengan re-timing per segmen dan support overrides M8",
+    "Membangun FFmpeg 8.1.2 EDL Renderer deterministik (3 mode framing 9:16, watermark safe-zone, anullsrc mute AAC stereo, ducking, loudnorm, Windows relative cwd)",
+    "Membangun AI Director Multi-Variant Planner + Local Persistent Render Queue Worker + Live SSE Progress + HTTP 206 Range Video Streaming",
+    "Membangun TargetGeneratorPanel.vue dan halaman Live Multi-Variant Results (/campaigns/:id/batches/:batchId) pada 3 tema switchable",
+    "Memverifikasi 7/7 Vitest PASS, 5/5 Playwright E2E M6 PASS, dan menambahkan .agents/menu-docs/03-studio/ai-video-generator.md"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -71,15 +78,15 @@
     "Frontend: Nuxt 3 / Vue 3 (TypeScript, SPA Studio Mode, Pinia, TanStack Vue Query, Tailwind CSS, typed H3 relative /api proxy)",
     "Backend: Express.js (Node.js v24.18.0, TypeScript) dengan pola Route -> Controller -> Zod -> Service (ServiceResult) -> Repository/Adapter",
     "Database & Queue: SQLite (WAL mode via $queryRawUnsafe PRAGMA) + Prisma ORM (11 model, siap migrasi PostgreSQL) + Persistent Local Job Queue dengan startup zombie-job recovery",
-    "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { cwd, shell: false }) + bundled/system fonts + HTTP 206 Range video streaming",
+    "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { cwd, shell: false }) + ASS Safe-Zone + HTTP 206 Range video streaming",
     "AI Integration: BYOK Multi-Provider terenkripsi AES-256-GCM (zero plaintext leak di UI/API/log) + auto-chunking audio <=10 menit (~4.8MB) untuk Whisper API",
     "Zero Hardcoded Master Data: 37+ presets dikelola dinamis di tabel master_presets",
     "Testing: Vitest sequential integration (fileParallelism: false) + 1-shot Playwright-core E2E hemat token via Chrome lokal",
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M5 ke GitHub (main & dev)",
-    "Sajikan Review Task 8 Pilar untuk Milestone 6 (M6): Target Audience & Viral Matrix, Reusable Target Profiles, AI Director Multi-Variant EDL Planner, Persistent Local Job Queue + SSE Progress & FFmpeg Safe-Zone Renderer",
-    "Eksekusi M6 setelah mendapat persetujuan pengguna"
+    "Minta izin user untuk commit & push checkpoint M6 ke GitHub (main & dev)",
+    "Sajikan Review Task 8 Pilar untuk Milestone 7 (M7) & Milestone 8 (M8) agar Viral Score + Upload Playbook + Safe-Zone Player + Prompt Re-Editor terhubung mulus",
+    "Eksekusi setelah mendapat persetujuan pengguna"
   ]
 }

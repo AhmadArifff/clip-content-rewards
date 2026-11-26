@@ -2,9 +2,16 @@
 
 Log historis kendala teknis, akar masalah, dan solusi terverifikasi untuk `clip-content-rewards`.
 
-> **Status Saat Ini:** 3 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M5`.
+> **Status Saat Ini:** 4 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M6`.
 
 ---
+
+### Kasus #04: Teks Hook Banner 9:16 Terpotong Kiri-Kanan Akibat ASS `WrapStyle: 2`
+- **Tanggal & Milestone:** `2026-11-26` (`M6`)
+- **Konteks & Gejala (Symptom):** Pada inspeksi visual screenshot video `1080x1920` hasil render M6, teks Hook Banner sepanjang >35 karakter terpotong di tepi kiri dan kanan frame.
+- **Akar Masalah (Root Cause):** Header file `subtitles.ass` memakai `WrapStyle: 2` (menonaktifkan auto-wrap) dengan `Fontsize: 58` pada teks satu baris panjang.
+- **Solusi yang Diterapkan (Fix Applied):** Mengubah `WrapStyle: 0`, menurunkan font `HookBanner` ke `44px`, dan menambahkan helper `wrapAssLines()` (`22` karakter/baris untuk 9:16) di `apps/api/src/services/media/ass-subtitle.builder.ts`.
+- **Pelajaran Pencegahan (Key Takeaway):** Selalu lakukan inspeksi visual frame hasil render FFmpeg dan paksa explicit line wrapping untuk overlay teks vertikal 9:16.
 
 ### Kasus #03: Race Condition Test Paralel Vitest pada 1 File SQLite Lokal (`409 SETUP_ALREADY_COMPLETED`)
 - **Tanggal & Milestone:** `2026-11-26` (`M5`)

@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M5 Selesai (Campaign Manager, Brief Parser .doc/.docx/.pdf & Chunked Raw Media + Audio Diagnostic) -> Siap Masuk ke M6 (Target Audience Matrix & Multi-Variant Auto-Editor Engine)**
+> Status Saat Ini: **M6 Selesai (Target Audience Matrix, AI Director, Local Queue + SSE & FFmpeg 1080x1920 Safe-Zone Auto-Editor) -> Siap Masuk ke M7 (Viral Score 6 Dimensi, Upload Impact/Critique, Upload Playbook & Safe-Zone Player)**
 > Terakhir Diperbarui: **2026-11-26**
 
 ---
@@ -106,8 +106,8 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan 7 fitur lapangan (`PRD.md` v1.1), Prisma Schema 11 model, Kontrak EDL v1.1 & Zod Schemas, API/SSE Map, ASCII Wireframe & Tech Critic Pre-Mortem | `DONE` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
 | **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Monorepo (`apps/web`, `apps/api`, `packages/shared`), `DESIGN.md` 3 tema switchable, SQLite WAL + 37 presets, Auth, System Doctor & BYOK AES-256-GCM + Test Connection | `DONE` | 5/5 Vitest PASS + Nuxt 3 & Express build PASS |
 | **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.pdf/.docx/.doc`/teks + Editable Rulebook, Chunked Upload 4MB/part + Supporting Assets, FFprobe, Audio Diagnostic, Silence Map & Auto-Chunked Whisper STT | `DONE` | 6/6 Vitest PASS + 5/5 Playwright E2E M5 PASS |
-| **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form parameter viral lengkap, AI Director EDL Generator (multi-angle), Async Queue Worker + SSE Progress, FFmpeg + HyperFrames Caption/Hook Renderer | `NEXT` | Batch 3-5 variasi video ter-render mulus 1080x1920 |
-| **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `PENDING` | Playbook & kritik akurat sesuai country/usia/platform |
+| **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form Target Matrix dinamis + Target Profiles, AI Director EDL Planner, Local Queue + SSE, FFmpeg 1080x1920 3 Framing + Mute/Duck Audio + ASS Safe-Zone + HTTP 206 Streaming | `DONE` | 7/7 Vitest PASS + 5/5 Playwright E2E M6 PASS |
+| **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `NEXT` | Playbook & kritik akurat sesuai country/usia/platform |
 | **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `PENDING` | Regenerate mute/duck audio & compare v1 vs v2 lulus |
 | **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `PENDING` | Unduh satuan & ZIP multi-clip bebas korupsi/OOM |
 | **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `PENDING` | Semua test hijau + Delivery Gate PASS + Docs tersinkron |
@@ -228,28 +228,15 @@ Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci selu
 ### Milestone 6 (`M6`): Target Audience Matrix & Multi-Variant AI Video Auto-Editor Engine
 **Skill Aktif**: `herk-edit-kit`, `hyperframes`, `motionmaxxing`, `hypit`, `backend`, `frontend`, `qa`
 
-- [ ] **6.1 UI Target Audience & Viral Strategy Configurator**:
-  - Panel konfigurasi lengkap sebelum generate:
-    - **Platform Target**: TikTok (9:16), YouTube Shorts (9:16), YouTube Long (16:9).
-    - **Target Audiens**: Country/Region, Bahasa & Gaya Bahasa, Rentang Usia, Gender Focus, Persona/Niche spesifik.
-    - **Strategi Viral & Angle**: Tingkat Kontroversi (*Safe Edu -> Bold Opinion -> Hot Take -> Debate-Starter* dengan guard anti-pelanggaran platform), Tipe Hook 3 Detik Pertama, Pemicu Emosi, Primary KPI Goal.
-    - **Produksi & Audio Awal**: Gaya Editing/Pacing, Gaya Caption/Subtitle (Hormozi Bold / Clean / Bilingual / Off), Mode Audio Awal (*Original 100% / Original Ducking 20% / Mute Total untuk Trending Sound*), serta **Jumlah Variasi Generate** (misal 1-10 clip).
-  - Preview **Estimasi Token & Waktu Render** sebelum eksekusi.
-- [ ] **6.2 AI Director -> Multi-Variant EDL Planner**:
-  - AI membaca **Brief Rulebook + Transkrip Word-Level + Parameter Targeting**, lalu merancang *N* variasi **EDL JSON** yang saling berbeda secara strategis (bukan sekadar potong acak, melainkan variasi hook, sudut pandang, ritme cut, dan CTA).
-  - Validator Zod memastikan setiap timestamp valid dalam durasi raw video dan patuh terhadap durasi wajib brief.
-- [ ] **6.3 Async Video Render Engine (FFmpeg + HyperFrames/ASS Caption)**:
-  - Job queue per clip (berjalan paralel terbatas agar CPU/RAM stabil) dengan **live progress streaming (SSE/WebSocket)** per tahap: *Analyzing Brief -> Planning EDL -> Cutting & Cropping -> Mixing Audio -> Rendering Captions -> Scoring -> Done*.
-  - Pipeline rendering deterministik:
-    - Pemotongan multi-segmen (*trim & concat*) bebas glitch audio/video,
-    - Pembuangan dead-air/silence otomatis,
-    - Smart Framing 9:16 (center crop / blurred background / split-screen),
-    - Audio pipeline fleksibel (loudness normalize, volume gain 0%-100%, mute penuh, atau ducking),
-    - Animated word-by-word captions dalam **Safe-Zone** + 3-second Hook Banner overlay,
-    - Ekstraksi frame cover terbaik (`cover.jpg`) & file subtitle (`subtitles.srt`).
-  - Retry parsial per clip yang gagal tanpa mengulang clip yang sudah sukses.
-- [ ] **6.4 Dokumentasi & Verifikasi M6**:
-  - Buat `.agents/menu-docs/03-studio/ai-video-generator.md` + uji render batch nyata + update `active-session.json`.
+- [x] **6.1 UI Target Audience & Viral Strategy Configurator (`TargetGeneratorPanel.vue`)**:
+  - Seluruh parameter targeting dinamis dari `master_presets` (Platform, Country, Bahasa, Usia, Persona/Niche, Kontroversi, Hook 3 Detik, Pemicu Emosi, Primary KPI, Gaya Editing, 3 Mode Framing 16:9->9:16, Gaya Caption, Mode Audio Awal, Diversifikasi Batch, Watermark, Jumlah Variasi 1-10) + Simpan/Muat `TargetProfile` + Cek Estimasi Token & Waktu Render.
+- [x] **6.2 AI Director -> Multi-Variant EDL Planner (`edl-director.service.ts`)**:
+  - Merancang `N` variasi `EDL JSON v1.1` tervalidasi Zod via BYOK LLM (dengan fallback perencana heuristik lokal) + clamp durasi aktual FFprobe.
+- [x] **6.3 Async Local Render Worker, SSE & FFmpeg Safe-Zone Engine**:
+  - Persistent SQLite Job Queue (`MAX_RENDER_CONCURRENCY=1`) + Live SSE `/api/batches/:batchId/stream` + Cancel Batch + Partial Retry per klip + HTTP `206 Partial Content` Range Video Streaming.
+  - FFmpeg 8.1.2 via `spawn(..., { cwd, shell: false })`: 3 mode framing (`center_crop`, `fit_blur_bg`, `split_screen`), Watermark Safe-Zone, Audio Pipeline (`anullsrc` AAC stereo valid untuk Mute `0%`, `loudnorm` + `volume` untuk Ducking `20%`, atau Normalized `-14 LUFS`), ASS Safe-Zone Captions/Hook Banner/CTA, `subtitles.srt`, dan `cover.jpg`.
+- [x] **6.4 Dokumentasi V2 & Verifikasi M6**:
+  - Dibuat `.agents/menu-docs/03-studio/ai-video-generator.md` (Standar V2), 7/7 Vitest lulus (verifikasi FFprobe `1080x1920`, `meanVolumeDb < -60 dB`, HTTP 206), dan 5/5 Playwright E2E M6 lulus (3 tema + mobile 390px).
 
 ---
 
