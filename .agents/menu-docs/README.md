@@ -10,8 +10,8 @@
 | :-: | :--- | :--- | :--- | :---: | :---: | :--- |
 | **01** | **01-pengaturan** | Autentikasi Lokal & Brankas BYOK API Keys | `/settings/api-keys` | `M4` | `Done` | [`01-pengaturan/byok-api-keys.md`](./01-pengaturan/byok-api-keys.md) |
 | **02** | **01-pengaturan** | Master Presets Dinamis & System Doctor | `/settings/presets` | `M4` | `Done` | [`01-pengaturan/master-presets-doctor.md`](./01-pengaturan/master-presets-doctor.md) |
-| **03** | **02-campaign** | Manajemen Campaign & Parser Brief (`.doc/.docx/.pdf`) | `/campaigns` | `M5` | `Planned` | `02-campaign/campaign-dan-brief.md` |
-| **04** | **02-campaign** | Raw Video Ingestion, Transkrip & Silence Map | `/campaigns/:id/media` | `M5` | `Planned` | `02-campaign/raw-media-ingestion.md` |
+| **03** | **02-campaign** | Manajemen Campaign & Parser Brief (`.doc/.docx/.pdf`) | `/campaigns` | `M5` | `Done` | [`02-campaign/campaign-dan-brief.md`](./02-campaign/campaign-dan-brief.md) |
+| **04** | **02-campaign** | Raw Video Ingestion, Transkrip & Silence Map | `/campaigns/:id/studio` | `M5` | `Done` | [`02-campaign/raw-media-ingestion.md`](./02-campaign/raw-media-ingestion.md) |
 | **05** | **03-studio** | Target Audience Matrix & Multi-Variant Auto-Editor | `/campaigns/:id/studio` | `M6` | `Planned` | `03-studio/ai-video-generator.md` |
 | **06** | **03-studio** | Viral Score, Projected Impact, Critique & Upload Playbook | `/campaigns/:id/batches/:batchId` | `M7` | `Planned` | `03-studio/viral-score-dan-playbook.md` |
 | **07** | **03-studio** | Iterative Prompt Re-Editor, Inline Subtitle & Versioning | `/clips/:clipId` | `M8` | `Planned` | `03-studio/prompt-reeditor-versioning.md` |

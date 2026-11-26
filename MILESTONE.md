@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M4 Selesai (Monorepo, 3 Tema Switchable, Auth, System Doctor, BYOK Vault & 37 Master Presets) -> Siap Masuk ke M5 (Campaign, Brief Parser & Raw Media Ingestion)**
+> Status Saat Ini: **M5 Selesai (Campaign Manager, Brief Parser .doc/.docx/.pdf & Chunked Raw Media + Audio Diagnostic) -> Siap Masuk ke M6 (Target Audience Matrix & Multi-Variant Auto-Editor Engine)**
 > Terakhir Diperbarui: **2026-11-26**
 
 ---
@@ -105,8 +105,8 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M2** | **Setup `.agents/` & Sistem Dokumentasi ala `adminShuttleV3`** | `AGENTS.md`, modular `rules/`, `workflows/`, `menu-docs/` V2, `knowledge/`, `02-session-state/`, `04-case-bank/`, `skills/`, & `sync-docs.js` | `DONE` | `session-manager.js` & `sync-docs.js` berjalan bersih |
 | **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan 7 fitur lapangan (`PRD.md` v1.1), Prisma Schema 11 model, Kontrak EDL v1.1 & Zod Schemas, API/SSE Map, ASCII Wireframe & Tech Critic Pre-Mortem | `DONE` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
 | **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Monorepo (`apps/web`, `apps/api`, `packages/shared`), `DESIGN.md` 3 tema switchable, SQLite WAL + 37 presets, Auth, System Doctor & BYOK AES-256-GCM + Test Connection | `DONE` | 5/5 Vitest PASS + Nuxt 3 & Express build PASS |
-| **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.doc/.docx/.pdf` ke aturan terstruktur, Chunked Video Upload, FFprobe metadata, Word-level Transcription & Silence Detection | `NEXT` | Brief PDF/DOCX terekstrak akurat + transkrip ber-timestamp |
-| **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form parameter viral lengkap, AI Director EDL Generator (multi-angle), Async Queue Worker + SSE Progress, FFmpeg + HyperFrames Caption/Hook Renderer | `PENDING` | Batch 3-5 variasi video ter-render mulus 1080x1920 |
+| **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.pdf/.docx/.doc`/teks + Editable Rulebook, Chunked Upload 4MB/part + Supporting Assets, FFprobe, Audio Diagnostic, Silence Map & Auto-Chunked Whisper STT | `DONE` | 6/6 Vitest PASS + 5/5 Playwright E2E M5 PASS |
+| **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form parameter viral lengkap, AI Director EDL Generator (multi-angle), Async Queue Worker + SSE Progress, FFmpeg + HyperFrames Caption/Hook Renderer | `NEXT` | Batch 3-5 variasi video ter-render mulus 1080x1920 |
 | **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `PENDING` | Playbook & kritik akurat sesuai country/usia/platform |
 | **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `PENDING` | Regenerate mute/duck audio & compare v1 vs v2 lulus |
 | **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `PENDING` | Unduh satuan & ZIP multi-clip bebas korupsi/OOM |
@@ -211,22 +211,17 @@ Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci selu
 ### Milestone 5 (`M5`): Modul Campaign, Brief Parser (`.doc/.docx/.pdf`) & Raw Media Ingestion
 **Skill Aktif**: `backend`, `frontend`, `herk-edit-kit`, `shadcn-ui`, `qa`
 
-- [ ] **5.1 Manajemen Campaign Content Rewards (`/campaigns`)**:
-  - Create/Read/Update/Delete campaign (judul, brand owner, platform target, CPM/reward notes, deadline, status).
-- [ ] **5.2 Brief Uploader & AI Structured Parser**:
-  - Upload file `.pdf` (`pdf-parse`), `.docx` (`mammoth`), `.doc` (fallback converter/extractor), atau input teks manual.
-  - AI mengekstrak **Brief Rulebook Terstruktur**:
-    - Ringkasan objektif campaign,
-    - Syarat wajib (*Mandatory Do's*: kata kunci, CTA, hashtag wajib, mention akun, durasi min-max, rasio aspek),
-    - Larangan keras (*Don'ts*: klaim terlarang, topik sensitif, watermark terlarang),
-    - Tone & target audiens dari owner.
-  - UI **Editable Brief Summary**: user bisa merevisi hasil ekstraksi AI sebelum lanjut generate (mencegah salah tafsir brief).
-- [ ] **5.3 Raw Video Ingestion & Media Intelligence**:
-  - Chunked upload video mentah (`.mp4`, `.mov`, `.mkv`, `.webm`) dengan progress bar dan validasi MIME/ukuran.
-  - Ekstraksi metadata otomatis via FFprobe (durasi, resolusi, FPS, codec audio, loudness LUFS, thumbnail timeline).
-  - Auto-transkripsi *word-level timestamps* + deteksi segmen hening (*silence intervals*) & *audio energy peaks* untuk memudahkan AI memotong tepat di batas kata tanpa terpotong canggung.
-- [ ] **5.4 Dokumentasi & Verifikasi M5**:
-  - Buat `.agents/menu-docs/02-campaign/campaign-dan-brief.md` + uji parsing PDF/DOCX nyata + update `active-session.json`.
+- [x] **5.1 Manajemen Campaign Content Rewards (`/campaigns`)**:
+  - CRUD Campaign lengkap (`campaigns` + cascade file cleanup) dengan tampilan 3 Tema Switchable dan form pembuatan campaign multi-platform.
+- [x] **5.2 Brief Uploader & AI Structured Parser**:
+  - Upload `.pdf` (`unpdf`), `.docx` (`mammoth`), `.doc` (fallback extractor), `.txt`, atau paste teks manual + deteksi PDF scan kosong (`< 30` karakter).
+  - Ekstraksi `BriefRulebookSchema` via BYOK LLM (`llm-json.adapter.ts`) dengan fallback heuristik lokal + UI **Editable Brief Rulebook** & konfirmasi status `ready`.
+- [x] **5.3 Raw Video Ingestion, Supporting Assets & Media Intelligence**:
+  - Chunked upload per `4 MB` (`useChunkedUploader` + `/media/chunk` + `/media/complete`) mendukung video mentah & supporting assets (`watermark`, `outro`, `broll`).
+  - FFprobe metadata + 1-pass `volumedetect` & `silencedetect` menghasilkan **Audio Diagnostic Card** (saran mode audio *Original* / *Ducking 20%* / *Mute 0%*) + peta jeda hening.
+  - Adapter **Auto-Chunked Whisper/Deepgram STT** (`stt.adapter.ts`) memecah audio per 10 menit (overlap 2s, ~4.8 MB/chunk) agar kebal batas 25 MB Whisper API.
+- [x] **5.4 Dokumentasi V2 & Verifikasi M5**:
+  - Dibuat `.agents/menu-docs/02-campaign/campaign-dan-brief.md` & `raw-media-ingestion.md` (Standar V2), 6/6 Vitest lulus, 5/5 Playwright E2E M5 lulus (3 tema + mobile 390px), dan 2 kasus teknis dicatat di `bug-cases.md`.
 
 ---
 

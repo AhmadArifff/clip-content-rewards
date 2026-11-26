@@ -267,6 +267,88 @@ export const AuthLoginInputSchema = z.object({
   password: z.string().min(1).max(100)
 });
 
+export const CampaignStatusSchema = z.enum([
+  'draft',
+  'ready',
+  'processing',
+  'completed',
+  'archived'
+]);
+export type CampaignStatus = z.infer<typeof CampaignStatusSchema>;
+
+export const CreateCampaignInputSchema = z.object({
+  title: z.string().trim().min(2).max(140),
+  brandOwner: z.string().trim().max(100).optional().default(''),
+  platformTargets: z.array(PlatformTargetSchema).min(1).default(['tiktok', 'youtube_shorts']),
+  rewardNotes: z.string().trim().max(500).optional().default(''),
+  deadlineAt: z.string().datetime().nullable().optional()
+});
+export type CreateCampaignInput = z.infer<typeof CreateCampaignInputSchema>;
+
+export const UpdateCampaignInputSchema = z.object({
+  title: z.string().trim().min(2).max(140).optional(),
+  brandOwner: z.string().trim().max(100).optional(),
+  platformTargets: z.array(PlatformTargetSchema).min(1).optional(),
+  rewardNotes: z.string().trim().max(500).optional(),
+  deadlineAt: z.string().datetime().nullable().optional(),
+  status: CampaignStatusSchema.optional()
+});
+
+export const UpdateBriefRulebookInputSchema = z.object({
+  rawText: z.string().min(1).optional(),
+  rulebook: BriefRulebookSchema,
+  confirmedByUser: z.boolean().default(true)
+});
+
+export const MediaAssetTypeSchema = z.enum(['raw_video', 'watermark', 'outro', 'broll']);
+export type MediaAssetType = z.infer<typeof MediaAssetTypeSchema>;
+
+export const AudioDiagnosticSchema = z.object({
+  hasAudio: z.boolean(),
+  meanVolumeDb: z.number().nullable(),
+  maxVolumeDb: z.number().nullable(),
+  loudnessLufs: z.number().nullable(),
+  recommendedAudioMode: z.enum([
+    'original_normalized',
+    'ducking_20',
+    'mute_for_platform_sound'
+  ]),
+  reason: z.string()
+});
+export type AudioDiagnostic = z.infer<typeof AudioDiagnosticSchema>;
+
+export const WordTimestampSchema = z.object({
+  word: z.string(),
+  startSec: z.number().min(0),
+  endSec: z.number().min(0)
+});
+export type WordTimestamp = z.infer<typeof WordTimestampSchema>;
+
+export const SilenceIntervalSchema = z.object({
+  startSec: z.number().min(0),
+  endSec: z.number().min(0),
+  durationSec: z.number().min(0)
+});
+export type SilenceInterval = z.infer<typeof SilenceIntervalSchema>;
+
+export const TranscriptPayloadSchema = z.object({
+  mode: z.enum(['stt_word_level', 'visual_only', 'not_transcribed']),
+  provider: z.string().optional(),
+  language: z.string().optional(),
+  fullText: z.string(),
+  chunksProcessed: z.number().int().min(0).default(0),
+  words: z.array(WordTimestampSchema).default([])
+});
+export type TranscriptPayload = z.infer<typeof TranscriptPayloadSchema>;
+
+export const CompleteChunkUploadInputSchema = z.object({
+  uploadId: z.string().trim().min(6).max(80).regex(/^[a-zA-Z0-9_-]+$/),
+  originalFilename: z.string().trim().min(1).max(240),
+  mimeType: z.string().trim().min(1).max(120),
+  totalChunks: z.number().int().min(1).max(1000),
+  assetType: MediaAssetTypeSchema.default('raw_video')
+});
+
 export type ServiceResult<T> =
   | { ok: true; data: T; meta?: Record<string, unknown> }
   | { ok: false; code: string; message: string; statusCode: number; details?: unknown };

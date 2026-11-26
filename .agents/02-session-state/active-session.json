@@ -4,7 +4,7 @@
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
   "status": "IN_PROGRESS",
-  "current_sprint": "M4 Completed -> Ready for M5 (Campaign Manager, Brief Parser .doc/.docx/.pdf & Raw Media Ingestion)",
+  "current_sprint": "M5 Completed -> Ready for M6 (Target Audience Matrix & Multi-Variant AI Auto-Editor Engine)",
   "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) dalam arsitektur Monorepo dengan 3 tema switchable untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
   "last_updated": "2026-11-26",
   "completed_milestones": [
@@ -41,38 +41,45 @@
       "title": "Monorepo (apps/web + apps/api + packages/shared), DESIGN.md 3 Tema Switchable, SQLite WAL + 37 Master Presets, Auth, System Doctor & BYOK AES-256-GCM Manager",
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
-      "details": "Membangun monorepo npm Workspaces penuh (@clip/shared 6 Zod contracts, @clip/api Express TS + Prisma 11 model SQLite WAL + 37 seeded presets + Auth HttpOnly JWT + AES-256-GCM BYOK Vault + Test Connection 6 provider + System Doctor FFmpeg 8.1.2, dan @clip/web Nuxt 3 SPA dengan 3 tema berbeda slicing/warna/tipografi/interaksi/copywriting: editing-room, daylight-editorial, creator-tactile). Diverifikasi 5/5 Vitest PASS, build shared/api/web PASS, Kasus #01 dicatat ke bug-cases.md, dan 2 menu-docs Standar V2 ditulis."
+      "details": "Membangun monorepo npm Workspaces penuh dengan 3 tema switchable berbeda slicing/warna/tipografi/interaksi/copywriting, Auth HttpOnly JWT, AES-256-GCM BYOK Vault + Test Connection 6 provider, System Doctor FFmpeg 8.1.2, 37 seeded presets, 6/6 Playwright E2E hemat token, dan push commit 59d5d90 + b1c87b2 ke GitHub."
+    },
+    {
+      "id": "M5_CAMPAIGN_BRIEF_PARSER_AND_RAW_MEDIA",
+      "title": "Campaign Manager, Brief Parser (.pdf/.docx/.doc/teks) + Editable Rulebook, Chunked Upload 4MB/part, Supporting Assets, FFprobe Audio Diagnostic, Silence Map & Auto-Chunked Whisper STT",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-26",
+      "details": "Membangun CRUD Campaign, parser brief unpdf/mammoth/doc + BYOK LLM JSON adapter + fallback heuristik lokal + Editable Brief Rulebook, chunked media upload 4MB/part + supporting assets (watermark/outro/broll), FFprobe + 1-pass volumedetect/silencedetect Audio Diagnostic, serta auto-chunked Whisper/Deepgram STT 10 menit overlap 2s. Diverifikasi 6/6 Vitest PASS, 5/5 Playwright E2E M5 PASS (3 tema + mobile 390px), 2 dokumen menu V2 ditulis, dan Kasus #02-#03 dicatat di bug-cases.md."
     }
   ],
   "in_progress_milestones": [
     {
-      "id": "M5_CAMPAIGN_BRIEF_PARSER_AND_RAW_MEDIA",
-      "title": "Modul Campaign Manager, Brief Parser (.doc/.docx/.pdf) & Raw Media Ingestion (Chunked Upload, FFprobe, Audio Diagnostic, Auto-Chunked Whisper Transcript)",
+      "id": "M6_TARGET_MATRIX_AND_MULTI_VARIANT_AUTO_EDITOR",
+      "title": "Target Audience Matrix, Reusable Target Profiles, AI Director Multi-Variant EDL Planner, Local Persistent Queue + SSE Progress & FFmpeg Safe-Zone Video Renderer",
       "status": "NEXT"
     }
   ],
   "recent_changes_summary": [
-    "Menulis DESIGN.md dengan 3 tema studio switchable yang berbeda layout slicing, palet WCAG AA, tipografi, interaksi, dan copywriting",
-    "Membentuk monorepo npm Workspaces: packages/shared, apps/api, dan apps/web",
-    "Menginisialisasi SQLite WAL lokal (storage/clip_content_rewards.db) dengan 11 tabel Prisma dan 37 master presets dinamis",
-    "Membangun Auth lokal, System Doctor FFmpeg/FFprobe, Brankas BYOK AES-256-GCM + Test Connection, dan CRUD Master Presets",
-    "Menyelesaikan Kasus #01 SQLite PRAGMA ($queryRawUnsafe) dan memverifikasi 5/5 Vitest + build penuh Nuxt 3 & Express",
-    "Menambahkan 2 dokumen Standar V2 di .agents/menu-docs/01-pengaturan/ (byok-api-keys.md & master-presets-doctor.md)"
+    "Menambahkan Zod schemas M5 di @clip/shared (Campaign, BriefRulebook update, MediaAsset, AudioDiagnostic, TranscriptPayload)",
+    "Membangun BYOK LLM JSON Adapter (Gemini/OpenAI/Anthropic/OpenRouter) dan Auto-Chunked STT Adapter (Groq/OpenAI Whisper/Deepgram)",
+    "Membangun Brief Parser (.pdf unpdf, .docx mammoth, .doc fallback, teks) dengan deteksi PDF scan kosong & Editable Rulebook UI",
+    "Membangun Chunked Uploader 4MB/part + FFprobe + Audio Diagnostic + Silence Map + Supporting Assets (watermark/outro/broll)",
+    "Menambahkan 2 dokumen Standar V2 di .agents/menu-docs/02-campaign/ dan 5-flow Playwright E2E M5 (tests/e2e/m5-campaign.e2e.mjs)"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
     "Design Direction (DESIGN.md): 3 Tema Switchable (editing-room, daylight-editorial, creator-tactile) berbeda slicing UI, warna WCAG AA, tipografi, interaksi, dan microcopy; Mode antislop = 1 (DURING)",
-    "Frontend: Nuxt 3 / Vue 3 (TypeScript, SPA Studio Mode, Pinia, TanStack Vue Query, Tailwind CSS, relative /api proxy)",
+    "Frontend: Nuxt 3 / Vue 3 (TypeScript, SPA Studio Mode, Pinia, TanStack Vue Query, Tailwind CSS, typed H3 relative /api proxy)",
     "Backend: Express.js (Node.js v24.18.0, TypeScript) dengan pola Route -> Controller -> Zod -> Service (ServiceResult) -> Repository/Adapter",
     "Database & Queue: SQLite (WAL mode via $queryRawUnsafe PRAGMA) + Prisma ORM (11 model, siap migrasi PostgreSQL) + Persistent Local Job Queue dengan startup zombie-job recovery",
     "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { cwd, shell: false }) + bundled/system fonts + HTTP 206 Range video streaming",
-    "AI Integration: BYOK Multi-Provider terenkripsi AES-256-GCM (zero plaintext leak di UI/API/log) + auto-chunking audio <=20MB untuk Whisper API",
+    "AI Integration: BYOK Multi-Provider terenkripsi AES-256-GCM (zero plaintext leak di UI/API/log) + auto-chunking audio <=10 menit (~4.8MB) untuk Whisper API",
     "Zero Hardcoded Master Data: 37+ presets dikelola dinamis di tabel master_presets",
+    "Testing: Vitest sequential integration (fileParallelism: false) + 1-shot Playwright-core E2E hemat token via Chrome lokal",
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M4 ke GitHub (main & dev)",
-    "Sajikan Review Task 8 Pilar untuk Milestone 5 (M5): Campaign CRUD, Brief Parser (.doc/.docx/.pdf), Supporting Assets, Chunked Raw Video Upload, Audio Diagnostic & Auto-Chunked Whisper Transcript",
-    "Eksekusi M5 setelah mendapat persetujuan pengguna"
+    "Minta izin user untuk commit & push checkpoint M5 ke GitHub (main & dev)",
+    "Sajikan Review Task 8 Pilar untuk Milestone 6 (M6): Target Audience & Viral Matrix, Reusable Target Profiles, AI Director Multi-Variant EDL Planner, Persistent Local Job Queue + SSE Progress & FFmpeg Safe-Zone Renderer",
+    "Eksekusi M6 setelah mendapat persetujuan pengguna"
   ]
 }
