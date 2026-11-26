@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M1 Selesai (`PRD.md` v1.0 & GitHub Backup) -> Siap Masuk ke M2 (Setup `.agents/` & Sistem Dokumentasi ala `adminShuttleV3`)**
+> Status Saat Ini: **M2 Selesai (`.agents/` Governance & Docs V2) -> Siap Masuk ke M3 (Deep Planning, Gap Audit `PRD.md` & Visual-First Gate)**
 > Terakhir Diperbarui: **2026-11-26**
 
 ---
@@ -102,8 +102,8 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | :---: | :--- | :--- | :---: | :--- |
 | **M0** | **Kickoff & Roadmap Induk** | Pemetaan flow produk, audit 62 skill global, pembuatan `MILESTONE.md` | `DONE` | Review & persetujuan user atas urutan milestone |
 | **M1** | **PRD Lengkap & GitHub Backup** | Penyusunan `PRD.md` komprehensif + `git init`, `.gitignore` aman, push awal ke GitHub | `DONE` | `PRD.md` disetujui + repo GitHub aktif (`main` & `dev`) |
-| **M2** | **Setup `.agents/` & Sistem Dokumentasi ala `adminShuttleV3`** | `AGENTS.md`, modular `rules/`, `workflows/`, `menu-docs/` V2, `knowledge/`, `02-session-state/`, `04-case-bank/`, `skills/`, & `sync-docs.js` | `NEXT` | `session-manager.js` & `sync-docs.js` berjalan bersih |
-| **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan fitur lapangan dari PRD, kunci Tech Stack, Skema DB, Kontrak EDL JSON, Zod Schemas, ASCII Wireframe & Design DNA | `PENDING` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
+| **M2** | **Setup `.agents/` & Sistem Dokumentasi ala `adminShuttleV3`** | `AGENTS.md`, modular `rules/`, `workflows/`, `menu-docs/` V2, `knowledge/`, `02-session-state/`, `04-case-bank/`, `skills/`, & `sync-docs.js` | `DONE` | `session-manager.js` & `sync-docs.js` berjalan bersih |
+| **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan fitur lapangan dari PRD, kunci Tech Stack, Skema DB, Kontrak EDL JSON, Zod Schemas, ASCII Wireframe & Design DNA | `NEXT` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
 | **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Scaffold proyek, FFmpeg/FFprobe preflight check, Auth & Workspace, Enkripsi AES-256-GCM BYOK API Keys + Test Connection + Token Cost Estimator | `PENDING` | Unit test enkripsi & test koneksi provider sukses |
 | **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.doc/.docx/.pdf` ke aturan terstruktur, Chunked Video Upload, FFprobe metadata, Word-level Transcription & Silence Detection | `PENDING` | Brief PDF/DOCX terekstrak akurat + transkrip ber-timestamp |
 | **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form parameter viral lengkap, AI Director EDL Generator (multi-angle), Async Queue Worker + SSE Progress, FFmpeg + HyperFrames Caption/Hook Renderer | `PENDING` | Batch 3-5 variasi video ter-render mulus 1080x1920 |
@@ -141,11 +141,11 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 
 Mengadaptasi penuh standar tata kelola dan pelacakan `adminShuttleV3` ke konteks `clip-content-rewards`:
 
-- [ ] **2.1 Root Governance File (`AGENTS.md`)**:
+- [x] **2.1 Root Governance File (`AGENTS.md`)**:
   - System Identity Card (`clip-content-rewards`, Tech Stack, Arsitektur, Media Engine, Dev Server).
   - Larangan Mutlak (Zero Secret/API-Key Leak, Review Gate Wajib Sebelum Koding, Zero-Outflow Code Comments, No Dead Code, Strict Layer Separation, Docs-First Retrieval & Self-Enrichment, Relative-Path API, No Uncontrolled FFmpeg Shell Injection).
   - Alur Kerja Wajib (Review Task 8 Pilar -> Approval -> Coding -> QA -> Docs V2 + `sync-docs.js`).
-- [ ] **2.2 Struktur Modular `.agents/`**:
+- [x] **2.2 Struktur Modular `.agents/`**:
   - `.agents/README.md` : Peta navigasi aturan, workflow, knowledge base, skills, dan session state.
   - `.agents/rules/` :
     - `00-core-guardrails.md` (Guardrails mutlak, keamanan BYOK, proteksi file media, larangan shell injection FFmpeg).
