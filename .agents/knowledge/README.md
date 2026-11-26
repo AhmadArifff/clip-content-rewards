@@ -4,6 +4,7 @@ Direktori ini adalah memori jangka panjang proyek `clip-content-rewards` untuk m
 
 ## Indeks Knowledge Base
 
+- **[technical-blueprint-m3.md](./technical-blueprint-m3.md)**: Blueprint Teknis Final M3 (Prisma Schema 11 model, 6 Zod Contracts, API/SSE Map, ASCII Wireframes 5 Layar, Design Direction Gate, & Tech Critic Pre-Mortem Verdict).
 - **[domain-reference/01-content-rewards-and-edl.md](./domain-reference/01-content-rewards-and-edl.md)**: Referensi domain *Content Rewards*, rubrik Viral Score 6 dimensi, koordinat Safe-Zone TikTok vs YouTube Shorts, dan standar EDL JSON.
 - **[cross-menu-disambiguation.md](./cross-menu-disambiguation.md)**: Kamus disambiguasi fitur kembar lintas-halaman agar agen tidak salah sasaran saat mengedit kode atau menjelaskan alur.
 - **[bug-cases.md](./bug-cases.md)**: Catatan kronologis kendala teknis (FFmpeg, SQLite WAL, AI JSON parsing, audio sync, upload chunking) dan solusi terverifikasi.

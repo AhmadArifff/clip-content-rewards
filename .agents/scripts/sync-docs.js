@@ -97,7 +97,7 @@ mdFiles.forEach((srcPath) => {
   });
 });
 
-console.log('\nMenyinkronkan 4 Berkas Fondasi Global:');
+console.log('\nMenyinkronkan 5 Berkas Fondasi Global:');
 
 const GLOBAL_FOUNDATION_FILES = [
   {
@@ -105,6 +105,13 @@ const GLOBAL_FOUNDATION_FILES = [
     destName: 'system-architecture.md',
     id: 'system-architecture',
     title: 'Standar Arsitektur Sistem (Nuxt 3 + Express TS + Local Queue)',
+    category: '00-arsitektur-dan-knowledge'
+  },
+  {
+    src: path.resolve(__dirname, '../knowledge/technical-blueprint-m3.md'),
+    destName: 'technical-blueprint-m3.md',
+    id: 'technical-blueprint-m3',
+    title: 'Technical Blueprint M3 (Prisma Schema, Zod Contracts, API Map & Wireframes)',
     category: '00-arsitektur-dan-knowledge'
   },
   {

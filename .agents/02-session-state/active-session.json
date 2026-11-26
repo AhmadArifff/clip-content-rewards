@@ -4,7 +4,7 @@
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Nuxt 3/Vue 3 + Express TS + Local FFmpeg)",
   "active_branch": "main",
   "status": "IN_PROGRESS",
-  "current_sprint": "M2 Completed -> Ready for M3 (Deep Planning, Gap Audit PRD & Visual-First Gate)",
+  "current_sprint": "M3 Completed -> Ready for M4 (Scaffolding App, Auth, System Doctor & BYOK API Manager)",
   "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
   "last_updated": "2026-11-26",
   "completed_milestones": [
@@ -27,35 +27,41 @@
       "title": "Pendirian Tata Kelola .agents/, Adopsi 25 Core Skills & Sistem Dokumentasi Standar V2",
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
-      "details": "Membangun root AGENTS.md, 7 berkas modular .agents/rules/, 4 SOP .agents/workflows/, Indeks & Template V2 10 Bagian di .agents/menu-docs/, Knowledge Base (bug-cases, cross-menu-disambiguation, domain-reference), Manifest 25 Core Skills + lokal skill edl-video-renderer, session-manager.js, case-bank, dan skrip sync-docs.js siap mirror ke portal documentasi-projects."
+      "details": "Membangun root AGENTS.md, 7 berkas modular .agents/rules/, 4 SOP .agents/workflows/, Indeks & Template V2 10 Bagian di .agents/menu-docs/, Knowledge Base, Manifest 25 Core Skills + lokal skill edl-video-renderer, session-manager.js, sync-docs.js (live mirror ke documentasi-projects), dan push commit 41a134d ke GitHub."
+    },
+    {
+      "id": "M3_DEEP_PLANNING_GAP_AUDIT_AND_VISUAL_GATE",
+      "title": "Deep Technical Planning, PRD.md v1.1 (7 Field Gaps Closed), Prisma 11-Model Schema, 6 Zod Contracts, API Map & Visual-First ASCII Wireframes",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-26",
+      "details": "Mengupgrade PRD.md ke v1.1 dengan menutup 7 celah lapangan (Whisper audio chunking <=20MB/chunk, supporting assets watermark/outro/B-roll, 3 mode framing 16:9->9:16, reusable target_profiles, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate), menyusun .agents/knowledge/technical-blueprint-m3.md lengkap dengan Tech Critic Approved Verdict dan 3 mitigasi wajib (startup zombie-job recovery, Windows relative cwd FFmpeg, HTTP 206 Range streaming)."
     }
   ],
   "in_progress_milestones": [
     {
-      "id": "M3_DEEP_PLANNING_GAP_AUDIT_AND_VISUAL_GATE",
-      "title": "Deep Technical Planning, Gap Analysis PRD.md (v1.1), Prisma Schema, Zod Contracts & ASCII Wireframe Gate",
+      "id": "M4_SCAFFOLDING_AUTH_DOCTOR_AND_BYOK",
+      "title": "Pondasi Monorepo (Nuxt 3 + Express TS + Prisma SQLite WAL), Local Auth, System Doctor & BYOK AES-256-GCM Manager",
       "status": "NEXT"
     }
   ],
   "recent_changes_summary": [
-    "Membuat root AGENTS.md dengan System Identity Card, 12 Larangan Mutlak, dan peta navigasi .agents/",
-    "Membuat 7 modular rulebooks (00-core-guardrails sampai 50-video-ai-pipeline) dan 4 workflows baku",
-    "Membuat template dokumentasi Standar V2 10 Bagian (.agents/menu-docs/TEMPLATE-MENU-DOC.md) dan skrip mirroring .agents/scripts/sync-docs.js",
-    "Mendaftarkan manifest 25 Core Skills dan local domain skill edl-video-renderer",
-    "Mengaktifkan session state tracker (.agents/02-session-state/session-manager.js)"
+    "Menutup 7 celah lapangan di PRD.md v1.1 dan memperbarui EDL JSON Contract ke v1.1",
+    "Membuat .agents/knowledge/technical-blueprint-m3.md (11 Model Prisma, 6 Zod Contracts, REST/SSE API Map, 5 ASCII Wireframes, Tech Critic Verdict)",
+    "Memperbarui local skill edl-video-renderer dengan 3 mode framing dan guardrail Windows relative cwd",
+    "Menambahkan technical-blueprint-m3.md ke fondasi global sync-docs.js (total 5 dokumen fondasi)"
   ],
   "established_constraints": [
     "Frontend: Nuxt 3 / Vue 3 (TypeScript, SPA Studio Mode, Pinia, TanStack Vue Query, Tailwind CSS, Shadcn Vue)",
     "Backend: Express.js (Node.js v24.18.0, TypeScript) dengan pola Route -> Controller -> Zod -> Service (ServiceResult) -> Repository/Adapter",
-    "Database & Queue: SQLite (WAL mode) + Prisma ORM (siap migrasi PostgreSQL) + Persistent Local Job Queue tanpa ketergantungan VPS/Docker",
-    "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { shell: false }) - nol biaya cloud render",
-    "AI Integration: BYOK Multi-Provider terenkripsi AES-256-GCM (zero plaintext leak di UI/API/log)",
-    "Zero Hardcoded Master Data: Country, Age Group, Editing Style, Hook Type, Prompt Presets dikelola di tabel master_presets",
+    "Database & Queue: SQLite (WAL mode) + Prisma ORM (11 model, siap migrasi PostgreSQL) + Persistent Local Job Queue dengan startup zombie-job recovery",
+    "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { cwd, shell: false }) + bundled fonts + HTTP 206 Range video streaming",
+    "AI Integration: BYOK Multi-Provider terenkripsi AES-256-GCM (zero plaintext leak di UI/API/log) + auto-chunking audio <=20MB untuk Whisper API",
+    "Zero Hardcoded Master Data: Country, Age Group, Editing Style, Hook Type, Framing Mode, Prompt Presets dikelola di tabel master_presets",
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Review dampak & celah PRD.md dari audit M2 bersama pengguna",
-    "Eksekusi M3: Lengkapi PRD.md ke v1.1 dengan solusi celah lapangan, rancang Prisma Schema final, Zod Contracts, dan ASCII Wireframe Visual-First Gate",
-    "Commit & push checkpoint M2 ke GitHub setelah dikonfirmasi pengguna"
+    "Konfirmasi 3 hal singkat pra-M4 dari pengguna: pilihan tema visual DESIGN.md (Dark Editing Room vs Daylight vs Dual), mode antislop (During vs After), dan persetujuan mulai coding M4",
+    "Eksekusi M4: Buat DESIGN.md, scaffold server/ & client/, jalankan migrasi Prisma SQLite WAL + seed master_presets, bangun Auth + System Doctor + BYOK AES-256-GCM API Key Manager + unit tests",
+    "Dokumentasikan modul M4 ke .agents/menu-docs/01-pengaturan/ dan mirror via sync-docs.js"
   ]
 }

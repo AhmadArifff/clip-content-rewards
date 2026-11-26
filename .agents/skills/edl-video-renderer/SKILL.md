@@ -16,9 +16,14 @@ description: Panduan teknis dan spesifikasi pipeline rendering video lokal (EDL 
    - Ambil *word-level timestamps* hasil transkrip yang jatuh di rentang segmen EDL, lalu geser (*re-time*) terhadap timeline video hasil concat!
    - Terapkan `edl.captions.overrides` (koreksi typo dari Inline Subtitle Editor) sebelum menulis `.ass`/`.srt`.
    - Set `PlayResX: 1080`, `PlayResY: 1920`, `MarginR: 180`, `MarginL: 70`, dan `MarginV` sesuai preset Safe-Zone (`tiktok_9_16` default `MarginV: 420`, `youtube_shorts_9_16` default `MarginV: 380`).
-3. **Susun `filter_complex` Video:**
-   - Trim setiap segmen `[0:v]trim=start=...:end=...,setpts=PTS-STARTPTS` -> scale & crop ke `1080x1920` (atau `1920x1080` untuk 16:9) -> `concat=n=K:v=1:a=0`.
-   - Burn-in subtitle `.ass` (gunakan path ter-escape aman untuk Windows drive colon) + Hook Banner 0-3 detik jika `hookBanner.enabled = true`.
+3. **Susun `filter_complex` Video (3 Mode Framing + Windows Safe Path):**
+   - Trim setiap segmen `[0:v]trim=start=...:end=...,setpts=PTS-STARTPTS`.
+   - Terapkan `framingMode`:
+     - `center_crop`: scale height/width cover lalu `crop=1080:1920`.
+     - `fit_blur_bg`: latar belakang versi scale cover + `gblur=sigma=28` ditumpuk foreground `scale=1080:-2` di tengah (menjaga teks/presentasi 16:9 tidak terpotong).
+     - `split_screen`: gabungkan 2 region vertikal atas-bawah (pembicara + produk/B-roll).
+   - Concat segmen -> tempel watermark/logo (`supportingOverlays`) jika ada -> burn-in subtitle `.ass` & Hook Banner 0-3 detik.
+   - **Guardrail Windows Path Escaping:** Jalankan `spawn('ffmpeg', args, { cwd: clipWorkDir, shell: false })` dan referensikan `ass=subtitles.ass:fontsdir=../../../server/assets/fonts` memakai path relatif bersih tanpa huruf drive (`C:`) agar bebas eror parser filter FFmpeg di Windows.
 4. **Susun `filter_complex` Audio (Kritis untuk Skenario Lapangan):**
    - Jika `audio.muteOriginal === true` atau `audio.originalVolume === 0`:
      - Gunakan sumber audio hening deterministik `anullsrc=channel_layout=stereo:sample_rate=48000` dengan durasi sama persis agar container MP4 tetap punya track AAC valid (tidak ditolak TikTok/YouTube/iOS!).

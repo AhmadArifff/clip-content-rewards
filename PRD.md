@@ -4,9 +4,10 @@
 **Author:** Product Management & Architecture Team
 **Owner:** AhmadArifff
 **Date:** 2026-11-26
-**Version:** v1.0
-**Status:** Baseline Approved for M1 Backup (Ready for M2 Governance & M3 Deep Audit)
+**Version:** v1.1
+**Status:** Gap-Audited & Technically Blueprinted (M3 Complete -> Ready for M4 Scaffolding)
 **Repository:** `https://github.com/AhmadArifff/clip-content-rewards.git`
+**Technical Blueprint:** [technical-blueprint-m3.md](./.agents/knowledge/technical-blueprint-m3.md)
 
 ---
 
@@ -90,9 +91,9 @@ Sistem terdiri dari dua lapisan ringan yang berjalan di mesin lokal user:
 | 1 | **Local Auth & Workspace Guard** | `P0 (Must)` | Login aman + JWT/Session lokal untuk melindungi halaman studio dan brankas API Key. |
 | 2 | **BYOK AI API Key Manager & System Doctor** | `P0 (Must)` | Input & enkripsi API Key (Gemini, OpenAI, Claude, OpenRouter, Groq Whisper), tombol Test Connection, estimasi token, dan cek kesiapan FFmpeg/FFprobe lokal. |
 | 3 | **Campaign & Brief Document Parser** | `P0 (Must)` | CRUD Campaign, upload brief `.pdf`/`.docx`/`.doc`/teks, ekstraksi AI ke aturan terstruktur (Do's, Don'ts, CTA, Tag wajib, Durasi) yang dapat disunting user. |
-| 4 | **Raw Video Ingestion & Word-Level Transcript** | `P0 (Must)` | Chunked upload video mentah, ekstraksi metadata FFprobe, transkripsi ber-timestamp per kata, dan deteksi jeda hening (*silence detection*). |
-| 5 | **Target Audience & Viral Strategy Configurator** | `P0 (Must)` | Pengaturan lengkap target audiens (Country, Usia, Bahasa, Persona, Level Kontroversi, Hook, Emosi, KPI, Platform, Gaya Edit, Caption, Mode Audio Awal, Jumlah Variasi). |
-| 6 | **Multi-Variant AI Auto-Editor (EDL + FFmpeg)** | `P0 (Must)` | AI Director menyusun banyak EDL JSON berbeda; Worker lokal merender batch MP4 9:16/16:9 dengan progress live (SSE), safe-zone caption, hook banner, dan audio control. |
+| 4 | **Raw Video, Supporting Assets & Chunked Transcript** | `P0 (Must)` | Chunked upload video mentah + supporting assets (logo/watermark PNG, outro, B-roll), FFprobe + Audio Diagnostic, auto-chunking audio (<=20MB/chunk) untuk video panjang >1 jam ke STT, dan silence detection. |
+| 5 | **Target Audience Matrix, Framing & Saved Profiles** | `P0 (Must)` | Parameter target lengkap + 3 Mode Framing 16:9->9:16 (*Center Crop*, *Fit-Width Blurred BG*, *Split-Screen*), Mode Batch (*Distinct Moments <=30% overlap* vs *A/B Hook Test*), dan simpan/muat Profil Target Audiens reusable. |
+| 6 | **Multi-Variant AI Auto-Editor (EDL + FFmpeg + Bundled Fonts)** | `P0 (Must)` | AI Director menyusun banyak EDL JSON berbeda; Worker lokal merender batch MP4 9:16/16:9 dengan progress live (SSE), bundled local fonts Windows, safe-zone caption, watermark/outro overlay, hook banner, dan audio control. |
 | 7 | **Viral Score, Impact Prediction & Critique** | `P0 (Must)` | Skor 0-100 dalam 6 dimensi + Brief Compliance Checklist + Narasi dampak upload + Kritik spesifik ber-timestamp dengan tombol 1-klik kirim ke prompt regenerate. |
 | 8 | **Upload Playbook Generator** | `P0 (Must)` | Panduan siap pakai per video: strategi backsound/trending sound TikTok & YT, 3 judul A/B, caption/deskripsi, hashtag tiered, jam tayang optimal lintas country/timezone/usia, pinned comment, cover frame. |
 | 9 | **Iterative Prompt Re-Editor & Versioning** | `P0 (Must)` | Edit ulang 1 video spesifik lewat prompt natural atau Quick-Action Presets lapangan (mute 0%, ducking 15-30%, normalize, cut hook, tighten silence, geser safe-zone, edit typo subtitle) + riwayat `v1..vN` & rollback. |
@@ -236,15 +237,17 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 - [ ] Jika file `.pdf` berupa hasil scan gambar (teks kosong saat diekstrak `pdf-parse`), sistem mendeteksi teks kosong dan menawarkan fallback: ekstraksi via multimodal vision LLM (jika provider mendukung) atau input paste teks manual.
 - [ ] File korup atau ekstensi di luar whitelist ditolak dengan pesan validasi yang jelas.
 
-#### Story 2.2: Upload Video Mentah & Auto-Transcription
+#### Story 2.2: Upload Video Mentah, Supporting Assets, Audio Diagnostic & Auto-Chunked Transcription
 **As a** clipper,
-**I want to** mengunggah satu atau beberapa video mentah berukuran besar dan mendapatkan transkrip ber-timestamp otomatis,
-**So that** AI dapat memotong adegan secara akurat tepat di batas kalimat tanpa memotong suara pembicara secara kasar.
+**I want to** mengunggah video mentah (termasuk rekaman panjang >1 jam) beserta asset tambahan campaign (logo/watermark PNG, outro, B-roll) dan mendapatkan transkrip ber-timestamp plus diagnosa audio otomatis,
+**So that** AI tidak pernah gagal karena batas ukuran API Whisper dan dapat menempelkan logo/watermark wajib brief sekaligus memberi saran mode audio terbaik.
 
 **Priority:** `P0` | **Milestone:** `M5`
 
 **Acceptance Criteria:**
-- [ ] **Given** user mengunggah video mentah (`.mp4`/`.mov`/`.mkv`/`.webm`), **When** upload selesai via chunked upload, **Then** sistem menjalankan `ffprobe` untuk menyimpan durasi, resolusi, FPS, codec audio, dan loudness, lalu mengekstrak audio terkompresi untuk transkripsi *word-level timestamps* serta peta *silence intervals*.
+- [ ] **Given** user mengunggah video mentah (`.mp4`/`.mov`/`.mkv`/`.webm`), **When** upload selesai via chunked upload, **Then** sistem menjalankan `ffprobe` (durasi, resolusi, FPS, codec audio, loudness LUFS, ada/tidaknya track audio), menampilkan **Audio Diagnostic Card** (rekomendasi otomatis *Original*, *Ducking 15-30%*, atau *Mute 0%*), dan mendeteksi *silence intervals*.
+- [ ] **Given** video mentah berdurasi panjang sehingga ekstrak audio melebihi `20 MB` (batas aman API Groq/OpenAI Whisper 25 MB), **When** proses transkripsi berjalan, **Then** sistem otomatis memecah audio menjadi segmen <=10 menit (overlap 2 detik), mentranskrip berurutan, lalu menggabungkan kembali *word-level timestamps* secara mulus tanpa duplikasi kata.
+- [ ] **Given** pemilik campaign memberikan logo/watermark PNG transparan, bumper outro, atau video B-roll terpisah, **When** user mengunggahnya sebagai *Supporting Asset* (`asset_type: watermark | outro | broll`), **Then** asset tersebut terdaftar di campaign dan dapat dipilih untuk dirender otomatis melalui EDL.
 - [ ] **Given** video mentah tidak memiliki dialog (murni visual/B-roll), **When** transkripsi menghasilkan teks kosong, **Then** sistem tidak gagal, melainkan menandai mode *Visual-Only / B-Roll* dan menggunakan deteksi perubahan adegan (*scene detection*) sebagai dasar pemotongan.
 
 ---
@@ -263,7 +266,8 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
   1. **Platform & Rasio:** TikTok (9:16), YouTube Shorts (9:16), YouTube Long (16:9).
   2. **Demografi & Wilayah:** Country/Region (ID, US, UK, MY, SG, Global, dll.), Bahasa & Gaya Bahasa, Rentang Usia (13-17, 18-24, 25-34, 35-44, 45+), Gender Focus.
   3. **Personalisasi & Psikologi Viral:** Persona/Niche audiens, Tingkat Kontroversi/Polarisasi (*Aman/Edukasi*, *Opini Tegas*, *Hot Take*, *Debat Terkendali - Policy Safe*), Tipe Hook 3 Detik Pertama (*Curiosity Gap*, *Bold Claim*, *Pattern Interrupt*, *Pain Point*, *Storytelling*, *Myth-Busting*, *Listicle*), Pemicu Emosi Utama, dan Primary KPI Goal (*Watch-Time/Loop*, *Comments/Debate*, *Shares/Saves*, *Conversion/Click*).
-  4. **Gaya Produksi & Audio Awal:** Editing Style/Pacing (*Fast-Cut Retention*, *Clean Talking-Head*, *Cinematic Story*, *Podcast Highlight*), Gaya Caption/Subtitle (*Hormozi Bold*, *Clean Minimal*, *Bilingual*, *Off*), Mode Audio Awal (*Original 100% Normalized*, *Original Ducking 20% untuk Sound Platform*, *Mute Total 0% untuk Full Trending Sound*), serta **Jumlah Variasi** (1-10 clip).
+  4. **Gaya Produksi, Framing & Audio Awal:** Editing Style/Pacing (*Fast-Cut Retention*, *Clean Talking-Head*, *Cinematic Story*, *Podcast Highlight*), **Mode Framing 16:9 -> 9:16** (*Center Crop*, *Fit-Width + Blurred Background* agar teks/presentasi pinggir tidak terpotong, *Split-Screen Atas-Bawah*), Gaya Caption/Subtitle (*Hormozi Bold*, *Clean Minimal*, *Bilingual*, *Off* menggunakan *bundled local fonts* di `server/assets/fonts/`), Mode Audio Awal (*Original 100% Normalized*, *Original Ducking 20% untuk Sound Platform*, *Mute Total 0% untuk Full Trending Sound*), **Mode Diversifikasi Batch** (*Distinct Moments* dengan batas overlap antar clip <= 30% vs *A/B Hook Test* pada momen inti sama), serta **Jumlah Variasi** (1-10 clip).
+  5. **Profil Preset Target Audiens Reusable:** User dapat menyimpan kombinasi parameter target di atas sebagai *Target Profile* (misal `"Akun ID Gen-Z Santai"`, `"Akun US Finance Hot-Take"`) dan memuat ulang dalam 1 klik untuk campaign berikutnya.
 - [ ] **Given** parameter lengkap dipilih, **When** user menekan *Generate Batch*, **Then** sistem menampilkan estimasi token API terlebih dahulu, lalu menjalankan queue worker lokal yang memancarkan progress real-time via SSE untuk setiap clip (*Planning EDL -> Cutting -> Audio Mixing -> Subtitles -> Scoring -> Done*).
 - [ ] **Given** 1 dari 5 clip gagal karena timeout/rate-limit API, **When** batch selesai diproses, **Then** 4 clip yang berhasil tetap tersimpan utuh dan clip yang gagal memiliki tombol *Retry Clip Ini* tanpa mengulang keseluruhan batch.
 
@@ -335,27 +339,30 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 
 ## 7. Core Data Contracts (Overview)
 
-### 7.1 Entity Overview (SQLite + Prisma)
+### 7.1 Entity Overview (SQLite WAL + Prisma - Detail Skema di `technical-blueprint-m3.md`)
 
-Tabel inti yang dirancang di M3 dan diimplementasikan sejak M4:
+Tabel inti yang dikunci di M3 dan diimplementasikan sejak M4 (11 model):
 - `users` (autentikasi lokal, role RBAC)
 - `api_keys` (provider, role `brain`/`stt`/`tts`, ciphertext AES-256-GCM, iv, auth_tag, masked_preview, model_default, is_active)
-- `master_presets` (category: `country`/`age_group`/`editing_style`/`hook_type`/`prompt_preset`, code, label_id, config_json, sort_order, is_active - **Zero Hardcoded Policy**)
+- `master_presets` (category: `country`/`age_group`/`editing_style`/`hook_type`/`framing_mode`/`prompt_preset`, code, label_id, config_json, sort_order, is_active - **Zero Hardcoded Policy**)
+- `target_profiles` (user_id, profile_name, description, target_config_json, is_default - profil target audiens reusable multi-akun)
 - `campaigns` (user_id, title, brand_owner, platform_targets_json, reward_notes, deadline_at, status)
 - `campaign_briefs` (campaign_id, source_type, original_filename, raw_text, parsed_rulebook_json, confirmed_by_user)
-- `media_assets` (campaign_id, asset_type, file_path, duration_sec, width, height, fps, loudness_lufs, transcript_json, silences_json)
-- `generation_batches` (campaign_id, target_config_json, requested_count, status, estimated_tokens, actual_tokens)
+- `media_assets` (campaign_id, asset_type `raw_video`/`watermark`/`outro`/`broll`, file_path, duration_sec, width, height, fps, has_audio, loudness_lufs, audio_diagnostic_json, transcript_json, silences_json)
+- `generation_batches` (campaign_id, target_profile_id, target_config_json, batch_diversity_mode, requested_count, status, estimated_tokens, actual_tokens)
 - `clips` (batch_id, angle_title, active_version_id, is_approved, status)
 - `clip_versions` (clip_id, version_number, user_prompt, edl_json, output_video_path, output_srt_path, cover_image_path, viral_score_total, score_breakdown_json, impact_critique_json, upload_playbook_json, render_duration_ms)
 - `render_jobs` (entity_type, entity_id, status `queued`/`processing`/`completed`/`failed`, progress_pct, stage_label, error_message, retry_count)
 
-### 7.2 Kontrak Deterministik `EDL JSON` (Edit Decision List)
+### 7.2 Kontrak Deterministik `EDL JSON v1.1` (Edit Decision List)
 
 Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalidasi Zod agar hasil render deterministik dan perubahan lewat prompt di M8 bersifat terarah (*targeted patch*):
 
 ```json
 {
+  "schemaVersion": "1.1",
   "aspectRatio": "9:16",
+  "framingMode": "fit_blur_bg",
   "resolution": { "width": 1080, "height": 1920, "fps": 30 },
   "segments": [
     { "mediaAssetId": "asset_01", "startSec": 12.4, "endSec": 18.9, "zoom": 1.05, "cropX": "center" },
@@ -377,9 +384,16 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
   "captions": {
     "enabled": true,
     "style": "hormozi_bold",
+    "fontFamily": "Montserrat-ExtraBold",
     "safeZonePreset": "tiktok_9_16",
     "verticalOffsetPct": 72,
     "overrides": []
+  },
+  "supportingOverlays": {
+    "watermarkAssetId": null,
+    "watermarkPosition": "top_left_safe",
+    "watermarkOpacity": 0.85,
+    "outroAssetId": null
   },
   "complianceOverlays": {
     "ctaText": "Cek link di bio",
@@ -473,3 +487,4 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
 | Version | Date | Author | Changes |
 | :--- | :--- | :--- | :--- |
 | `v1.0` | 2026-11-26 | AhmadArifff & AI PM | Initial baseline PRD (M1): Locked Nuxt 3/Vue 3 + Express + SQLite/Prisma + Local FFmpeg + BYOK architecture, full 3-stage flow, targeting matrix, upload playbook, prompt re-editor, & bulk ZIP export. |
+| `v1.1` | 2026-11-26 | AhmadArifff & AI Architect/Critic | M3 Gap Audit upgrade: Menambahkan Whisper audio chunking (<=20MB/chunk) untuk video >1 jam, supporting assets (watermark/logo/outro/B-roll), 3 mode framing 16:9->9:16, reusable `target_profiles`, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate, serta tautan ke `technical-blueprint-m3.md`. |

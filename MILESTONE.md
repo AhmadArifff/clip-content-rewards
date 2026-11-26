@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M2 Selesai (`.agents/` Governance & Docs V2) -> Siap Masuk ke M3 (Deep Planning, Gap Audit `PRD.md` & Visual-First Gate)**
+> Status Saat Ini: **M3 Selesai (`PRD.md` v1.1 & Technical Blueprint + ASCII Wireframe Gate) -> Siap Masuk ke M4 (Scaffolding App, Auth & BYOK Manager)**
 > Terakhir Diperbarui: **2026-11-26**
 
 ---
@@ -103,8 +103,8 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M0** | **Kickoff & Roadmap Induk** | Pemetaan flow produk, audit 62 skill global, pembuatan `MILESTONE.md` | `DONE` | Review & persetujuan user atas urutan milestone |
 | **M1** | **PRD Lengkap & GitHub Backup** | Penyusunan `PRD.md` komprehensif + `git init`, `.gitignore` aman, push awal ke GitHub | `DONE` | `PRD.md` disetujui + repo GitHub aktif (`main` & `dev`) |
 | **M2** | **Setup `.agents/` & Sistem Dokumentasi ala `adminShuttleV3`** | `AGENTS.md`, modular `rules/`, `workflows/`, `menu-docs/` V2, `knowledge/`, `02-session-state/`, `04-case-bank/`, `skills/`, & `sync-docs.js` | `DONE` | `session-manager.js` & `sync-docs.js` berjalan bersih |
-| **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan fitur lapangan dari PRD, kunci Tech Stack, Skema DB, Kontrak EDL JSON, Zod Schemas, ASCII Wireframe & Design DNA | `NEXT` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
-| **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Scaffold proyek, FFmpeg/FFprobe preflight check, Auth & Workspace, Enkripsi AES-256-GCM BYOK API Keys + Test Connection + Token Cost Estimator | `PENDING` | Unit test enkripsi & test koneksi provider sukses |
+| **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan 7 fitur lapangan (`PRD.md` v1.1), Prisma Schema 11 model, Kontrak EDL v1.1 & Zod Schemas, API/SSE Map, ASCII Wireframe & Tech Critic Pre-Mortem | `DONE` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
+| **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Scaffold proyek, FFmpeg/FFprobe preflight check, Auth & Workspace, Enkripsi AES-256-GCM BYOK API Keys + Test Connection + Token Cost Estimator | `NEXT` | Unit test enkripsi & test koneksi provider sukses |
 | **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.doc/.docx/.pdf` ke aturan terstruktur, Chunked Video Upload, FFprobe metadata, Word-level Transcription & Silence Detection | `PENDING` | Brief PDF/DOCX terekstrak akurat + transkrip ber-timestamp |
 | **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form parameter viral lengkap, AI Director EDL Generator (multi-angle), Async Queue Worker + SSE Progress, FFmpeg + HyperFrames Caption/Hook Renderer | `PENDING` | Batch 3-5 variasi video ter-render mulus 1080x1920 |
 | **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `PENDING` | Playbook & kritik akurat sesuai country/usia/platform |
@@ -179,26 +179,16 @@ Mengadaptasi penuh standar tata kelola dan pelacakan `adminShuttleV3` ke konteks
 
 Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci seluruh keputusan teknis:
 
-- [ ] **3.1 Audit Celah Lapangan (*Field Edge-Case & Gap Audit*) atas `PRD.md`**:
-  - Penanganan file video mentah berukuran besar (500MB - 2GB+): *chunked/resumable upload* & local/S3 storage.
-  - Penanganan brief kompleks (PDF hasil scan/gambar vs teks, file `.doc` lama vs `.docx`, tabel persyaratan brief).
-  - Penanganan *audio copyright & TikTok/YT policy*: deteksi apakah raw video sudah punya musik berhak cipta sehingga sistem memberi peringatan & saran *vocal-isolation / mute*.
-  - Penanganan kegagalan parsial pada batch generate (misal 4 dari 5 clip sukses, 1 gagal karena rate limit API -> bisa retry 1 clip saja tanpa ulang semua).
-  - Penanganan biaya token API user: *dry-run token estimator* & batas maksimal variasi per batch agar API key user tidak jebol.
-  - Penanganan *safe-zone UI* yang berbeda antara TikTok (kanan + bawah + atas) dan YouTube Shorts (kanan + bawah).
-  - Melengkapi kekurangan yang ditemukan langsung kembali ke `PRD.md` (versi `v1.1`) dan `MILESTONE.md`.
-- [ ] **3.2 Penetapan & Penguncian Tech Stack (`established_constraints`)**:
-  - Menentukan pilihan final bersama user (rekomendasi default yang efisien untuk video processing lokal/server):
-    - **Frontend**: Next.js (App Router, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, Zustand) atau Nuxt 3 / Vue 3 sesuai preferensi user.
-    - **Backend & Worker**: Node.js / Express + TypeScript + Prisma ORM + PostgreSQL (Supabase / lokal) + BullMQ + Redis (atau fallback SQLite/in-process queue untuk mode *local single-machine* tanpa ribet Docker!).
-    - **Media Engine**: FFmpeg + FFprobe + ASS/HyperFrames Subtitle/Overlay Renderer (100% gratis biaya render!).
-    - **AI Adapters (BYOK)**: OpenAI SDK, Google Gemini SDK, Anthropic SDK, OpenRouter, Groq Whisper.
-- [ ] **3.3 Desain Data Model, Kontrak EDL JSON & AI Prompt Schemas**:
-  - ERD tabel utama: `users`, `api_keys` (encrypted), `campaigns`, `campaign_briefs`, `media_assets`, `generation_batches`, `clips`, `clip_versions`, `clip_scores`, `upload_playbooks`, `render_jobs`, `master_presets` (zero hardcoded master data!).
-  - Skema kontrak **EDL JSON (Edit Decision List)** untuk menjamin *deterministic rendering* & *targeted prompt patching* di M8.
-  - Skema output terstruktur Zod untuk: `ParsedBriefSchema`, `EditPlanSchema`, `ViralScoreCritiqueSchema`, `UploadPlaybookSchema`, `EdlPatchSchema`.
-- [ ] **3.4 Visual-First Engineering Gate**:
-  - Menyajikan **ASCII Wireframe** seluruh halaman inti (Dashboard Campaign, Studio Upload & Target Matrix, Multi-Variant Results Grid, Clip Inspector + Safe-Zone Player + Playbook + Prompt Re-Editor, Settings BYOK) dan menetapkan **Design DNA** untuk disetujui user sebelum M4.
+- [x] **3.1 Audit Celah Lapangan (*Field Edge-Case & Gap Audit*) atas `PRD.md` (`v1.0 -> v1.1`)**:
+  - Penanganan file video mentah berukuran besar (500MB - 2GB+): *chunked/resumable upload* + **auto-chunking audio <=20MB/chunk** untuk batas Whisper API pada video >1 jam.
+  - Dukungan **Supporting Assets** (logo/watermark PNG, outro, B-roll), **3 Mode Framing 16:9->9:16** (*Center Crop*, *Fit-Width Blur BG*, *Split-Screen*), **Reusable Target Profiles**, **Anti-Duplicate Batch Mode** (`<=30%` overlap vs A/B Hook Test), **Bundled Local Windows Fonts**, dan **Pre-Generate Audio Diagnostic**.
+  - Seluruh temuan telah dituangkan ke `PRD.md` (`v1.1`) dan `.agents/knowledge/technical-blueprint-m3.md`.
+- [x] **3.2 Penetapan & Penguncian Tech Stack (`established_constraints`)**:
+  - Terkunci: **Nuxt 3 / Vue 3** (TypeScript, Pinia, TanStack Vue Query, Tailwind CSS, Shadcn Vue) + **Express.js** (Node.js v24.18.0, TypeScript) + **SQLite WAL & Prisma ORM** (PostgreSQL-portable) + **Local Persistent Job Queue** + **Local FFmpeg `8.1.2` & FFprobe** + **BYOK Multi-Provider Adapters**.
+- [x] **3.3 Desain Data Model, Kontrak EDL JSON v1.1 & AI Prompt Schemas**:
+  - Final Prisma Schema 11 model (`User`, `ApiKey`, `MasterPreset`, `TargetProfile`, `Campaign`, `CampaignBrief`, `MediaAsset`, `GenerationBatch`, `Clip`, `ClipVersion`, `RenderJob`) + 6 Zod Contracts + REST/SSE Endpoint Map di `.agents/knowledge/technical-blueprint-m3.md`.
+- [x] **3.4 Visual-First Engineering Gate & Tech Critic Pre-Mortem**:
+  - ASCII Wireframe 5 layar utama (Desktop 1440px + Mobile 390px), 3 opsi arah visual (`DESIGN.md` menunggu pilihan user sebelum M4), dan Tech Critic Approved Verdict (dengan 3 mitigasi wajib: startup zombie-job recovery, FFmpeg relative `cwd` anti drive-colon Windows, dan HTTP 206 Range video streaming).
 
 ---
 
