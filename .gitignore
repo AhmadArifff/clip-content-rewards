@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment & Secrets (NEVER commit BYOK keys or encryption secrets)
+.env
+.env.*
+!.env.example
+
+# Nuxt / Vue Build Outputs
+.nuxt/
+.output/
+.nitro/
+.cache/
+dist/
+
+# Backend Build & Logs
+logs/
+*.log
+npm-debug.log*
+
+# Local SQLite Database Files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+prisma/*.db
+prisma/*.db-*
+
+# Local Media Storage (Raw Uploads, Rendered Videos, Temp Chunks, Exports)
+storage/uploads/
+storage/renders/
+storage/temp/
+storage/exports/
+storage/transcripts/
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.zip
+
+# Testing & Coverage
+coverage/
+playwright-report/
+test-results/
+
+# Scratch & Temporary Agent Files
+scratch/
+.agents/scratch/
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
