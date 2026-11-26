@@ -2,7 +2,16 @@
 
 Log historis kendala teknis, akar masalah, dan solusi terverifikasi untuk `clip-content-rewards`.
 
-> **Status Saat Ini:** Belum ada kasus bug runtime (proyek berada di tahap fondasi tata kelola M2 sebelum scaffolding kode M4). Kasus preventif dari *Pre-Mortem Audit* dicatat sebagai guardrail di `.agents/rules/40-security-byok.md` dan `.agents/rules/50-video-ai-pipeline.md`.
+> **Status Saat Ini:** 1 kasus teknis lokal terverifikasi & diselesaikan sejak Milestone 4 (`M4`).
+
+---
+
+### Kasus #01: Prisma SQLite Menolak `PRAGMA busy_timeout = 5000` pada `$executeRawUnsafe`
+- **Tanggal & Milestone:** `2026-11-26` (`M4`)
+- **Konteks & Gejala (Symptom):** Saat `initDatabaseAndRecoverJobs()` dipanggil pada pengujian Vitest, Prisma melempar `PrismaClientKnownRequestError: Execute returned results, which is not allowed in SQLite`.
+- **Akar Masalah (Root Cause):** Di SQLite, pernyataan `PRAGMA busy_timeout = 5000;` mengembalikan 1 baris hasil (`timeout`), sedangkan metode Prisma `$executeRawUnsafe()` hanya mengizinkan statement tanpa baris hasil.
+- **Solusi yang Diterapkan (Fix Applied):** Mengganti pemanggilan `PRAGMA busy_timeout = 5000;` dan `PRAGMA foreign_keys = ON;` di `apps/api/src/config/prisma.ts` dari `$executeRawUnsafe()` menjadi `$queryRawUnsafe()`.
+- **Pelajaran Pencegahan (Key Takeaway):** Selalu gunakan `$queryRawUnsafe()` untuk seluruh konfigurasi `PRAGMA` SQLite di Prisma.
 
 ---
 

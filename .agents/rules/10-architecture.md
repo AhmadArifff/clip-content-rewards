@@ -2,30 +2,34 @@
 
 Dokumen fondasi arsitektur sistem `clip-content-rewards` untuk pengembangan lokal berkinerja tinggi.
 
-## 1. Topologi Monorepo Ringan
+## 1. Topologi Monorepo (`npm Workspaces`)
 
 ```text
 clip-content-rewards/
-├── client/                  # Nuxt 3 / Vue 3 SPA Studio (TypeScript, Pinia, Vue Query, Tailwind, Shadcn Vue)
-│   ├── components/          # Komponen reusable (player, safe-zone, playbook, re-editor, modals)
-│   ├── composables/         # Hooks SSE progress, chunked uploader, clipboard playbook
-│   ├── pages/               # Route halaman (/login, /campaigns, /campaigns/[id]/studio, /clips/[id], /settings/api-keys)
-│   ├── services/            # Typed API client (relative /api/... via Nuxt proxy)
-│   └── stores/              # Pinia client state (auth, active studio session, player overlay)
-├── server/                  # Express.js + TypeScript Backend & Local Render Worker
-│   ├── config/              # Env loader (Zod validated), storage paths, FFmpeg binary resolver
-│   ├── controllers/         # HTTP request/response mapping ONLY (zero business logic)
-│   ├── middlewares/         # Auth guard, RBAC, error handler, upload validator, rate limiter
-│   ├── repositories/        # Prisma DB access layer (isolated queries)
-│   ├── routes/              # Modular routes per resource (/auth, /api-keys, /campaigns, /media, /batches, /clips, /exports, /presets)
-│   ├── schemas/             # Zod contracts (BriefRulebook, EDL, ViralScore, Playbook, EdlPatch)
-│   ├── services/            # Core business logic mengembalikan ServiceResult<T>
-│   │   ├── ai/              # Provider Adapters (Gemini, OpenAI, Claude, OpenRouter, Groq Whisper)
-│   │   ├── media/           # FFprobe, Audio Extractor, FFmpeg EDL Renderer, ASS Caption Builder
-│   │   └── export/          # Single & Streaming ZIP Archiver
-│   └── workers/             # Persistent SQLite Job Queue runner + SSE Event Bus
-├── prisma/                  # schema.prisma & migrations (SQLite WAL default, PostgreSQL compatible)
-└── storage/                 # Git-ignored local media (uploads, renders, transcripts, temp)
+├── package.json             # Root npm Workspaces (`apps/*`, `packages/*`) - 1 perintah `npm run dev`
+├── DESIGN.md                # Arah visual resmi 3 Tema Switchable (editing-room, daylight-editorial, creator-tactile)
+├── packages/
+│   └── shared/              # @clip/shared: 6 Kontrak Zod, TypeScript Types, Theme IDs & API Contracts BERSAMA
+├── apps/
+│   ├── web/                 # Nuxt 3 / Vue 3 SPA Studio (TypeScript, Pinia, Vue Query, Tailwind, 3-Theme Engine)
+│   │   ├── assets/css/      # Token CSS & slicing 3 tema (themes.css)
+│   │   ├── components/      # Shell & komponen reusable lintas tema (ThemeSwitcher, DoctorCard, Modals)
+│   │   ├── composables/     # useApi, useThemeCopy, SSE progress, chunked uploader
+│   │   ├── pages/           # /login, /setup, /campaigns, /campaigns/[id]/studio, /clips/[id], /settings/*
+│   │   └── stores/          # Pinia stores (auth, theme, studio)
+│   └── api/                 # Express.js + TypeScript Backend, Prisma ORM & Local FFmpeg Worker
+│       ├── prisma/          # schema.prisma (11 model SQLite WAL, Postgres-portable) & seed.ts
+│       ├── assets/fonts/    # Bundled local fonts untuk FFmpeg ASS subtitle Windows
+│       └── src/
+│           ├── config/      # Env loader (Zod), storage path guard, Prisma client (WAL)
+│           ├── controllers/ # HTTP request/response mapping ONLY
+│           ├── middlewares/ # Auth guard, RBAC, Zod validator, error handler
+│           ├── repositories/# Prisma DB access layer
+│           ├── routes/      # Modular routes per resource (/auth, /system, /api-keys, /presets, /target-profiles, ...)
+│           ├── services/    # Core business logic mengembalikan ServiceResult<T> + AI Adapters + FFmpeg Engine
+│           ├── utils/       # AES-256-GCM crypto, key masking, log sanitizer
+│           └── workers/     # Persistent SQLite Job Queue + startup zombie-job recovery + SSE Event Bus
+└── storage/                 # Git-ignored local media (uploads, renders, transcripts, exports, temp, SQLite .db)
 ```
 
 ## 2. Kontrak Layer & `ServiceResult<T>` Pattern

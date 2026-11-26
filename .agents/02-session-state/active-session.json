@@ -1,11 +1,11 @@
 {
   "session_id": "SESSION-20261126-CLIP-CONTENT-REWARDS-INIT",
   "project": "clip-content-rewards",
-  "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Nuxt 3/Vue 3 + Express TS + Local FFmpeg)",
+  "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
   "status": "IN_PROGRESS",
-  "current_sprint": "M3 Completed -> Ready for M4 (Scaffolding App, Auth, System Doctor & BYOK API Manager)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
+  "current_sprint": "M4 Completed -> Ready for M5 (Campaign Manager, Brief Parser .doc/.docx/.pdf & Raw Media Ingestion)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) dalam arsitektur Monorepo dengan 3 tema switchable untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
   "last_updated": "2026-11-26",
   "completed_milestones": [
     {
@@ -34,34 +34,45 @@
       "title": "Deep Technical Planning, PRD.md v1.1 (7 Field Gaps Closed), Prisma 11-Model Schema, 6 Zod Contracts, API Map & Visual-First ASCII Wireframes",
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
-      "details": "Mengupgrade PRD.md ke v1.1 dengan menutup 7 celah lapangan (Whisper audio chunking <=20MB/chunk, supporting assets watermark/outro/B-roll, 3 mode framing 16:9->9:16, reusable target_profiles, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate), menyusun .agents/knowledge/technical-blueprint-m3.md lengkap dengan Tech Critic Approved Verdict dan 3 mitigasi wajib (startup zombie-job recovery, Windows relative cwd FFmpeg, HTTP 206 Range streaming)."
+      "details": "Mengupgrade PRD.md ke v1.1 dengan menutup 7 celah lapangan, menyusun .agents/knowledge/technical-blueprint-m3.md lengkap dengan Tech Critic Approved Verdict, dan push commit 801b3a6 ke GitHub."
+    },
+    {
+      "id": "M4_MONOREPO_3THEMES_AUTH_DOCTOR_AND_BYOK",
+      "title": "Monorepo (apps/web + apps/api + packages/shared), DESIGN.md 3 Tema Switchable, SQLite WAL + 37 Master Presets, Auth, System Doctor & BYOK AES-256-GCM Manager",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-26",
+      "details": "Membangun monorepo npm Workspaces penuh (@clip/shared 6 Zod contracts, @clip/api Express TS + Prisma 11 model SQLite WAL + 37 seeded presets + Auth HttpOnly JWT + AES-256-GCM BYOK Vault + Test Connection 6 provider + System Doctor FFmpeg 8.1.2, dan @clip/web Nuxt 3 SPA dengan 3 tema berbeda slicing/warna/tipografi/interaksi/copywriting: editing-room, daylight-editorial, creator-tactile). Diverifikasi 5/5 Vitest PASS, build shared/api/web PASS, Kasus #01 dicatat ke bug-cases.md, dan 2 menu-docs Standar V2 ditulis."
     }
   ],
   "in_progress_milestones": [
     {
-      "id": "M4_SCAFFOLDING_AUTH_DOCTOR_AND_BYOK",
-      "title": "Pondasi Monorepo (Nuxt 3 + Express TS + Prisma SQLite WAL), Local Auth, System Doctor & BYOK AES-256-GCM Manager",
+      "id": "M5_CAMPAIGN_BRIEF_PARSER_AND_RAW_MEDIA",
+      "title": "Modul Campaign Manager, Brief Parser (.doc/.docx/.pdf) & Raw Media Ingestion (Chunked Upload, FFprobe, Audio Diagnostic, Auto-Chunked Whisper Transcript)",
       "status": "NEXT"
     }
   ],
   "recent_changes_summary": [
-    "Menutup 7 celah lapangan di PRD.md v1.1 dan memperbarui EDL JSON Contract ke v1.1",
-    "Membuat .agents/knowledge/technical-blueprint-m3.md (11 Model Prisma, 6 Zod Contracts, REST/SSE API Map, 5 ASCII Wireframes, Tech Critic Verdict)",
-    "Memperbarui local skill edl-video-renderer dengan 3 mode framing dan guardrail Windows relative cwd",
-    "Menambahkan technical-blueprint-m3.md ke fondasi global sync-docs.js (total 5 dokumen fondasi)"
+    "Menulis DESIGN.md dengan 3 tema studio switchable yang berbeda layout slicing, palet WCAG AA, tipografi, interaksi, dan copywriting",
+    "Membentuk monorepo npm Workspaces: packages/shared, apps/api, dan apps/web",
+    "Menginisialisasi SQLite WAL lokal (storage/clip_content_rewards.db) dengan 11 tabel Prisma dan 37 master presets dinamis",
+    "Membangun Auth lokal, System Doctor FFmpeg/FFprobe, Brankas BYOK AES-256-GCM + Test Connection, dan CRUD Master Presets",
+    "Menyelesaikan Kasus #01 SQLite PRAGMA ($queryRawUnsafe) dan memverifikasi 5/5 Vitest + build penuh Nuxt 3 & Express",
+    "Menambahkan 2 dokumen Standar V2 di .agents/menu-docs/01-pengaturan/ (byok-api-keys.md & master-presets-doctor.md)"
   ],
   "established_constraints": [
-    "Frontend: Nuxt 3 / Vue 3 (TypeScript, SPA Studio Mode, Pinia, TanStack Vue Query, Tailwind CSS, Shadcn Vue)",
+    "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
+    "Design Direction (DESIGN.md): 3 Tema Switchable (editing-room, daylight-editorial, creator-tactile) berbeda slicing UI, warna WCAG AA, tipografi, interaksi, dan microcopy; Mode antislop = 1 (DURING)",
+    "Frontend: Nuxt 3 / Vue 3 (TypeScript, SPA Studio Mode, Pinia, TanStack Vue Query, Tailwind CSS, relative /api proxy)",
     "Backend: Express.js (Node.js v24.18.0, TypeScript) dengan pola Route -> Controller -> Zod -> Service (ServiceResult) -> Repository/Adapter",
-    "Database & Queue: SQLite (WAL mode) + Prisma ORM (11 model, siap migrasi PostgreSQL) + Persistent Local Job Queue dengan startup zombie-job recovery",
-    "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { cwd, shell: false }) + bundled fonts + HTTP 206 Range video streaming",
+    "Database & Queue: SQLite (WAL mode via $queryRawUnsafe PRAGMA) + Prisma ORM (11 model, siap migrasi PostgreSQL) + Persistent Local Job Queue dengan startup zombie-job recovery",
+    "Media Engine: Local FFmpeg 8.1.2-full_build & FFprobe via spawn(bin, argsArray, { cwd, shell: false }) + bundled/system fonts + HTTP 206 Range video streaming",
     "AI Integration: BYOK Multi-Provider terenkripsi AES-256-GCM (zero plaintext leak di UI/API/log) + auto-chunking audio <=20MB untuk Whisper API",
-    "Zero Hardcoded Master Data: Country, Age Group, Editing Style, Hook Type, Framing Mode, Prompt Presets dikelola di tabel master_presets",
+    "Zero Hardcoded Master Data: 37+ presets dikelola dinamis di tabel master_presets",
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Konfirmasi 3 hal singkat pra-M4 dari pengguna: pilihan tema visual DESIGN.md (Dark Editing Room vs Daylight vs Dual), mode antislop (During vs After), dan persetujuan mulai coding M4",
-    "Eksekusi M4: Buat DESIGN.md, scaffold server/ & client/, jalankan migrasi Prisma SQLite WAL + seed master_presets, bangun Auth + System Doctor + BYOK AES-256-GCM API Key Manager + unit tests",
-    "Dokumentasikan modul M4 ke .agents/menu-docs/01-pengaturan/ dan mirror via sync-docs.js"
+    "Minta izin user untuk commit & push checkpoint M4 ke GitHub (main & dev)",
+    "Sajikan Review Task 8 Pilar untuk Milestone 5 (M5): Campaign CRUD, Brief Parser (.doc/.docx/.pdf), Supporting Assets, Chunked Raw Video Upload, Audio Diagnostic & Auto-Chunked Whisper Transcript",
+    "Eksekusi M5 setelah mendapat persetujuan pengguna"
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "name": "clip-content-rewards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo studio lokal AI Auto-Editor, Viral Scorer & Upload Playbook untuk Content Rewards (Nuxt 3 + Express TS + SQLite + Local FFmpeg)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c green,cyan \"npm run dev -w @clip/api\" \"npm run dev -w @clip/web\"",
+    "dev:api": "npm run dev -w @clip/api",
+    "dev:web": "npm run dev -w @clip/web",
+    "build": "npm run build -w @clip/shared && npm run build -w @clip/api && npm run build -w @clip/web",
+    "test": "npm run test -w @clip/api",
+    "typecheck": "npm run typecheck -w @clip/shared && npm run typecheck -w @clip/api && npm run typecheck -w @clip/web",
+    "db:generate": "npm run db:generate -w @clip/api",
+    "db:push": "npm run db:push -w @clip/api",
+    "db:seed": "npm run db:seed -w @clip/api",
+    "session:status": "node .agents/02-session-state/session-manager.js",
+    "docs:sync": "node .agents/scripts/sync-docs.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

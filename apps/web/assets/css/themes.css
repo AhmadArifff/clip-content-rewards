@@ -1,0 +1,255 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   THEME 1: Dark Editing Room (Pro NLE Broadcast Console)
+   ========================================================================== */
+:root,
+[data-theme='editing-room'] {
+  --bg-canvas: #0d0f12;
+  --bg-surface: #151921;
+  --bg-elevated: #1c222d;
+  --bg-input: #0f131a;
+  --border-color: #2a3241;
+  --border-strong: #3b465b;
+  --border-width: 1px;
+  --radius-card: 6px;
+  --radius-control: 4px;
+  --shadow-card: none;
+  --shadow-btn: none;
+
+  --text-primary: #f1f5f9;
+  --text-muted: #94a3b8;
+  --accent-bg: #10b981;
+  --accent-hover: #059669;
+  --accent-fg: #042419;
+  --accent-soft-bg: rgba(16, 185, 129, 0.14);
+  --accent-soft-fg: #6ee7b7;
+
+  --status-ok-bg: rgba(16, 185, 129, 0.14);
+  --status-ok-fg: #6ee7b7;
+  --status-warn-bg: rgba(245, 158, 11, 0.16);
+  --status-warn-fg: #fcd34d;
+  --status-err-bg: rgba(244, 63, 94, 0.16);
+  --status-err-fg: #fda4af;
+
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --transition-speed: 120ms;
+}
+
+/* ==========================================================================
+   THEME 2: Crisp Daylight Editorial (Warm Paper & Magazine Desk)
+   ========================================================================== */
+[data-theme='daylight-editorial'] {
+  --bg-canvas: #f6f3ec;
+  --bg-surface: #ffffff;
+  --bg-elevated: #efeae0;
+  --bg-input: #fcfbf8;
+  --border-color: #d6cec0;
+  --border-strong: #9f9584;
+  --border-width: 1px;
+  --radius-card: 2px;
+  --radius-control: 3px;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-btn: none;
+
+  --text-primary: #18181b;
+  --text-muted: #57534e;
+  --accent-bg: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-fg: #ffffff;
+  --accent-soft-bg: #ffedd5;
+  --accent-soft-fg: #9a3412;
+
+  --status-ok-bg: #dcfce7;
+  --status-ok-fg: #166534;
+  --status-warn-bg: #fef3c7;
+  --status-warn-fg: #92400e;
+  --status-err-bg: #ffe4e6;
+  --status-err-fg: #9f1239;
+
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --transition-speed: 200ms;
+}
+
+/* ==========================================================================
+   THEME 3: Tactile Creator Workbench (Crisp Desk + Physical Press Controls)
+   ========================================================================== */
+[data-theme='creator-tactile'] {
+  --bg-canvas: #eef2f6;
+  --bg-surface: #ffffff;
+  --bg-elevated: #e2e8f0;
+  --bg-input: #ffffff;
+  --border-color: #0f172a;
+  --border-strong: #0f172a;
+  --border-width: 2px;
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --shadow-card: 4px 4px 0px #0f172a;
+  --shadow-btn: 3px 3px 0px #0f172a;
+
+  --text-primary: #0f172a;
+  --text-muted: #334155;
+  --accent-bg: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-fg: #ffffff;
+  --accent-soft-bg: #dbeafe;
+  --accent-soft-fg: #1e3a8a;
+
+  --status-ok-bg: #d1fae5;
+  --status-ok-fg: #065f46;
+  --status-warn-bg: #fef3c7;
+  --status-warn-fg: #92400e;
+  --status-err-bg: #fee2e2;
+  --status-err-fg: #991b1b;
+
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --transition-speed: 140ms;
+}
+
+html,
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent-bg);
+  outline-offset: 2px;
+}
+
+.studio-heading {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+.studio-muted {
+  color: var(--text-muted);
+}
+
+.studio-card {
+  background-color: var(--bg-surface);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+[data-theme='daylight-editorial'] .studio-card-editorial {
+  background-color: transparent;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.studio-input {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-control);
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  font-size: 0.9rem;
+  transition: border-color var(--transition-speed) ease;
+}
+
+.studio-input:focus {
+  border-color: var(--accent-bg);
+  outline: none;
+}
+
+.studio-btn-primary {
+  background-color: var(--accent-bg);
+  color: var(--accent-fg);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-btn);
+  min-height: 44px;
+  padding: 0.55rem 1.1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: transform var(--transition-speed) ease, background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+[data-theme='editing-room'] .studio-btn-primary {
+  border-color: transparent;
+}
+
+[data-theme='daylight-editorial'] .studio-btn-primary {
+  border-color: transparent;
+}
+
+.studio-btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+[data-theme='creator-tactile'] .studio-btn-primary:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #0f172a;
+}
+
+[data-theme='creator-tactile'] .studio-btn-primary:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.studio-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.studio-btn-secondary {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-btn);
+  min-height: 40px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.84rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: transform var(--transition-speed) ease, background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.studio-btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-elevated);
+}
+
+[data-theme='creator-tactile'] .studio-btn-secondary:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.studio-badge-ok {
+  background-color: var(--status-ok-bg);
+  color: var(--status-ok-fg);
+}
+
+.studio-badge-warn {
+  background-color: var(--status-warn-bg);
+  color: var(--status-warn-fg);
+}
+
+.studio-badge-err {
+  background-color: var(--status-err-bg);
+  color: var(--status-err-fg);
+}

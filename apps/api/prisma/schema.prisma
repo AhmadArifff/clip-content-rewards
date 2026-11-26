@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  apiKeys        ApiKey[]
+  targetProfiles TargetProfile[]
+  campaigns      Campaign[]
+
+  @@map("users")
+}
+
+model ApiKey {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  provider      String
+  role          String
+  label         String
+  encryptedKey  String    @map("encrypted_key")
+  iv            String
+  authTag       String    @map("auth_tag")
+  maskedPreview String    @map("masked_preview")
+  defaultModel  String    @map("default_model")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastTestedAt  DateTime? @map("last_tested_at")
+  lastTestOk    Boolean?  @map("last_test_ok")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, role, isActive])
+  @@map("api_keys")
+}
+
+model MasterPreset {
+  id         String   @id @default(cuid())
+  category   String
+  code       String
+  labelId    String   @map("label_id")
+  configJson String   @map("config_json")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([category, code])
+  @@index([category, isActive, sortOrder])
+  @@map("master_presets")
+}
+
+model TargetProfile {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  profileName      String   @map("profile_name")
+  description      String?
+  targetConfigJson String   @map("target_config_json")
+  isDefault        Boolean  @default(false) @map("is_default")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batches GenerationBatch[]
+
+  @@index([userId])
+  @@map("target_profiles")
+}
+
+model Campaign {
+  id                  String    @id @default(cuid())
+  userId              String    @map("user_id")
+  title               String
+  brandOwner          String?   @map("brand_owner")
+  platformTargetsJson String    @map("platform_targets_json")
+  rewardNotes         String?   @map("reward_notes")
+  deadlineAt          DateTime? @map("deadline_at")
+  status              String    @default("draft")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brief       CampaignBrief?
+  mediaAssets MediaAsset[]
+  batches     GenerationBatch[]
+
+  @@index([userId, status])
+  @@map("campaigns")
+}
+
+model CampaignBrief {
+  id                 String   @id @default(cuid())
+  campaignId         String   @unique @map("campaign_id")
+  sourceType         String   @map("source_type")
+  originalFilename   String?  @map("original_filename")
+  storedFilePath     String?  @map("stored_file_path")
+  rawText            String   @map("raw_text")
+  parsedRulebookJson String   @map("parsed_rulebook_json")
+  confirmedByUser    Boolean  @default(false) @map("confirmed_by_user")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("campaign_briefs")
+}
+
+model MediaAsset {
+  id                  String   @id @default(cuid())
+  campaignId          String   @map("campaign_id")
+  assetType           String   @map("asset_type")
+  originalFilename    String   @map("original_filename")
+  filePath            String   @map("file_path")
+  mimeType            String   @map("mime_type")
+  fileSizeBytes       Int      @map("file_size_bytes")
+  durationSec         Float?   @map("duration_sec")
+  width               Int?
+  height              Int?
+  fps                 Float?
+  hasAudio            Boolean  @default(true) @map("has_audio")
+  loudnessLufs        Float?   @map("loudness_lufs")
+  audioDiagnosticJson String?  @map("audio_diagnostic_json")
+  transcriptJson      String?  @map("transcript_json")
+  silencesJson        String?  @map("silences_json")
+  status              String   @default("uploaded")
+  errorMessage        String?  @map("error_message")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, assetType])
+  @@map("media_assets")
+}
+
+model GenerationBatch {
+  id                 String   @id @default(cuid())
+  campaignId         String   @map("campaign_id")
+  targetProfileId    String?  @map("target_profile_id")
+  targetConfigJson   String   @map("target_config_json")
+  batchDiversityMode String   @default("distinct_moments") @map("batch_diversity_mode")
+  requestedCount     Int      @map("requested_count")
+  status             String   @default("queued")
+  estimatedTokens    Int?     @map("estimated_tokens")
+  actualTokens       Int?     @map("actual_tokens")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  campaign      Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  targetProfile TargetProfile? @relation(fields: [targetProfileId], references: [id], onDelete: SetNull)
+  clips         Clip[]
+
+  @@index([campaignId, status])
+  @@map("generation_batches")
+}
+
+model Clip {
+  id              String   @id @default(cuid())
+  batchId         String   @map("batch_id")
+  sequenceIndex   Int      @map("sequence_index")
+  angleTitle      String   @map("angle_title")
+  hookSummary     String?  @map("hook_summary")
+  activeVersionId String?  @map("active_version_id")
+  isApproved      Boolean  @default(false) @map("is_approved")
+  status          String   @default("queued")
+  errorMessage    String?  @map("error_message")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  batch    GenerationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  versions ClipVersion[]
+
+  @@index([batchId, status])
+  @@map("clips")
+}
+
+model ClipVersion {
+  id                 String   @id @default(cuid())
+  clipId             String   @map("clip_id")
+  versionNumber      Int      @map("version_number")
+  userPrompt         String?  @map("user_prompt")
+  appliedPresetsJson String?  @map("applied_presets_json")
+  edlJson            String   @map("edl_json")
+  outputVideoPath    String?  @map("output_video_path")
+  outputSrtPath      String?  @map("output_srt_path")
+  outputAssPath      String?  @map("output_ass_path")
+  coverImagePath     String?  @map("cover_image_path")
+  actualDurationSec  Float?   @map("actual_duration_sec")
+  viralScoreTotal    Int?     @map("viral_score_total")
+  briefCompliance    String?  @map("brief_compliance")
+  scoreBreakdownJson String?  @map("score_breakdown_json")
+  impactCritiqueJson String?  @map("impact_critique_json")
+  uploadPlaybookJson String?  @map("upload_playbook_json")
+  renderDurationMs   Int?     @map("render_duration_ms")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  clip Clip @relation(fields: [clipId], references: [id], onDelete: Cascade)
+
+  @@unique([clipId, versionNumber])
+  @@index([clipId, viralScoreTotal])
+  @@map("clip_versions")
+}
+
+model RenderJob {
+  id           String    @id @default(cuid())
+  jobType      String    @map("job_type")
+  entityId     String    @map("entity_id")
+  payloadJson  String    @map("payload_json")
+  status       String    @default("queued")
+  progressPct  Int       @default(0) @map("progress_pct")
+  stageLabel   String    @default("Menunggu antrean") @map("stage_label")
+  errorMessage String?   @map("error_message")
+  retryCount   Int       @default(0) @map("retry_count")
+  maxRetries   Int       @default(2) @map("max_retries")
+  startedAt    DateTime? @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([entityId])
+  @@map("render_jobs")
+}

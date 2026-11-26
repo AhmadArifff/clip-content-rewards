@@ -8,8 +8,8 @@
 
 | No | Kategori | Nama Menu / Modul | Route | Milestone | Status | Berkas Dokumen |
 | :-: | :--- | :--- | :--- | :---: | :---: | :--- |
-| **01** | **01-pengaturan** | Autentikasi Lokal & Brankas BYOK API Keys | `/settings/api-keys` | `M4` | `Planned` | `01-pengaturan/byok-api-keys.md` |
-| **02** | **01-pengaturan** | Master Presets Dinamis & System Doctor | `/settings/presets` | `M4` | `Planned` | `01-pengaturan/master-presets-doctor.md` |
+| **01** | **01-pengaturan** | Autentikasi Lokal & Brankas BYOK API Keys | `/settings/api-keys` | `M4` | `Done` | [`01-pengaturan/byok-api-keys.md`](./01-pengaturan/byok-api-keys.md) |
+| **02** | **01-pengaturan** | Master Presets Dinamis & System Doctor | `/settings/presets` | `M4` | `Done` | [`01-pengaturan/master-presets-doctor.md`](./01-pengaturan/master-presets-doctor.md) |
 | **03** | **02-campaign** | Manajemen Campaign & Parser Brief (`.doc/.docx/.pdf`) | `/campaigns` | `M5` | `Planned` | `02-campaign/campaign-dan-brief.md` |
 | **04** | **02-campaign** | Raw Video Ingestion, Transkrip & Silence Map | `/campaigns/:id/media` | `M5` | `Planned` | `02-campaign/raw-media-ingestion.md` |
 | **05** | **03-studio** | Target Audience Matrix & Multi-Variant Auto-Editor | `/campaigns/:id/studio` | `M6` | `Planned` | `03-studio/ai-video-generator.md` |

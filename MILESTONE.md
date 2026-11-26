@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M3 Selesai (`PRD.md` v1.1 & Technical Blueprint + ASCII Wireframe Gate) -> Siap Masuk ke M4 (Scaffolding App, Auth & BYOK Manager)**
+> Status Saat Ini: **M4 Selesai (Monorepo, 3 Tema Switchable, Auth, System Doctor, BYOK Vault & 37 Master Presets) -> Siap Masuk ke M5 (Campaign, Brief Parser & Raw Media Ingestion)**
 > Terakhir Diperbarui: **2026-11-26**
 
 ---
@@ -104,8 +104,8 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M1** | **PRD Lengkap & GitHub Backup** | Penyusunan `PRD.md` komprehensif + `git init`, `.gitignore` aman, push awal ke GitHub | `DONE` | `PRD.md` disetujui + repo GitHub aktif (`main` & `dev`) |
 | **M2** | **Setup `.agents/` & Sistem Dokumentasi ala `adminShuttleV3`** | `AGENTS.md`, modular `rules/`, `workflows/`, `menu-docs/` V2, `knowledge/`, `02-session-state/`, `04-case-bank/`, `skills/`, & `sync-docs.js` | `DONE` | `session-manager.js` & `sync-docs.js` berjalan bersih |
 | **M3** | **Deep Planning, Gap Audit PRD & Visual-First Gate** | Tambahan 7 fitur lapangan (`PRD.md` v1.1), Prisma Schema 11 model, Kontrak EDL v1.1 & Zod Schemas, API/SSE Map, ASCII Wireframe & Tech Critic Pre-Mortem | `DONE` | Approval Review Gate + verifikasi `tech-critic` & `qa` |
-| **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Scaffold proyek, FFmpeg/FFprobe preflight check, Auth & Workspace, Enkripsi AES-256-GCM BYOK API Keys + Test Connection + Token Cost Estimator | `NEXT` | Unit test enkripsi & test koneksi provider sukses |
-| **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.doc/.docx/.pdf` ke aturan terstruktur, Chunked Video Upload, FFprobe metadata, Word-level Transcription & Silence Detection | `PENDING` | Brief PDF/DOCX terekstrak akurat + transkrip ber-timestamp |
+| **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Monorepo (`apps/web`, `apps/api`, `packages/shared`), `DESIGN.md` 3 tema switchable, SQLite WAL + 37 presets, Auth, System Doctor & BYOK AES-256-GCM + Test Connection | `DONE` | 5/5 Vitest PASS + Nuxt 3 & Express build PASS |
+| **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.doc/.docx/.pdf` ke aturan terstruktur, Chunked Video Upload, FFprobe metadata, Word-level Transcription & Silence Detection | `NEXT` | Brief PDF/DOCX terekstrak akurat + transkrip ber-timestamp |
 | **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form parameter viral lengkap, AI Director EDL Generator (multi-angle), Async Queue Worker + SSE Progress, FFmpeg + HyperFrames Caption/Hook Renderer | `PENDING` | Batch 3-5 variasi video ter-render mulus 1080x1920 |
 | **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `PENDING` | Playbook & kritik akurat sesuai country/usia/platform |
 | **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `PENDING` | Regenerate mute/duck audio & compare v1 vs v2 lulus |
@@ -195,21 +195,16 @@ Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci selu
 ### Milestone 4 (`M4`): Pondasi Aplikasi, Auth, System Preflight & BYOK API Key Manager
 **Skill Aktif**: `backend`, `frontend`, `shadcn-ui`, `untitled-ui`, `design-dna`, `antislop-ui`, `qa`
 
-- [ ] **4.1 Project Scaffolding & Media Environment Doctor**:
-  - Inisialisasi struktur repo bersih, linting, TypeScript strict, env template (`.env.example`), dan skema Prisma + migrasi awal.
-  - Endpoint & indikator status *System Doctor*: mengecek ketersediaan `ffmpeg`, `ffprobe`, font subtitle, direktori storage, dan koneksi queue/DB.
-- [ ] **4.2 Autentikasi & RBAC Dasar**:
-  - Login/Register, sesi aman, proteksi seluruh route aplikasi & API (*Mandatory Auth Policy*).
-- [ ] **4.3 Modul BYOK AI API Key Manager (`/settings/api-keys`)**:
-  - Penyimpanan API key terenkripsi **AES-256-GCM** di server (key tampil ter-masking `sk-...xxxx`, tidak pernah ditulis ke log).
-  - Pemilihan provider & model aktif per peran:
-    - *AI Director & Scorer* (Gemini / OpenAI / Claude / OpenRouter),
-    - *Speech-to-Text Transcriber* (Groq Whisper / OpenAI Whisper / Deepgram),
-    - *Opsional Voice/TTS*.
-  - Tombol **Test Connection** real-time + deteksi error yang ramah manusia (invalid key, quota habis, model tidak tersedia).
-  - Master Data dinamis untuk daftar *Target Countries*, *Age Groups*, *Editing Styles*, dan *Quick-Action Prompt Presets* (anti hardcoded).
-- [ ] **4.4 Dokumentasi & Verifikasi M4**:
-  - Buat `.agents/menu-docs/01-pengaturan/byok-api-keys.md` (Standar V2) + update `active-session.json` + unit test enkripsi.
+- [x] **4.1 Project Scaffolding Monorepo (`npm Workspaces`), `DESIGN.md` 3 Tema & Media Environment Doctor**:
+  - Monorepo terbentuk: `packages/shared` (6 Zod contracts), `apps/api` (Express TS + Prisma 11 model SQLite WAL + startup zombie-job recovery), dan `apps/web` (Nuxt 3 SPA Studio dengan 3 Tema Switchable berbeda slicing layout, warna, tipografi, interaksi, dan copywriting: `editing-room`, `daylight-editorial`, `creator-tactile`).
+  - `GET /api/system/doctor` + komponen `DoctorPanel.vue` (3 variasi slicing) terverifikasi mengecek `ffmpeg 8.1.2`, `ffprobe 8.1.2`, SQLite `WAL`, font subtitle, storage lokal, dan concurrency CPU.
+- [x] **4.2 Autentikasi Lokal & Auth Guard**:
+  - Setup akun pertama `/api/auth/setup`, Login `/api/auth/login`, Logout, Me (`bcryptjs` cost 12 + `HttpOnly SameSite=Lax JWT Cookie`) serta proteksi global frontend `auth.global.ts` dan middleware `requireAuth`.
+- [x] **4.3 Modul BYOK AI API Key Manager (`/settings/api-keys`) & Dynamic Master Presets (`/settings/presets`)**:
+  - Enkripsi **AES-256-GCM** di server, masking `AIza...xxxx`, zero plaintext leak, dan **Test Connection** live 6 penyedia (Gemini, OpenAI, Claude, OpenRouter, Groq Whisper, Deepgram).
+  - Seed & CRUD **37 Master Presets dinamis** (Countries, Age Groups, Editing Styles, Hook Types, Controversy Levels, Framing Modes 9:16, & 9 Quick-Action Prompt Presets Lapangan) + API `target_profiles`.
+- [x] **4.4 Dokumentasi V2 & Verifikasi M4**:
+  - Dibuat `.agents/menu-docs/01-pengaturan/byok-api-keys.md` & `master-presets-doctor.md` (Standar V2 10 Bagian), dicatat Kasus #01 SQLite PRAGMA di `bug-cases.md`, 5/5 Vitest lulus, dan build `@clip/shared`, `@clip/api`, `@clip/web` lulus 100%.
 
 ---
 
