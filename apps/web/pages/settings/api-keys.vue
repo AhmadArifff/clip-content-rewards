@@ -203,9 +203,9 @@ onMounted(() => {
             <div class="space-y-1">
               <label for="key-role" class="block text-xs font-semibold">Peran di Studio</label>
               <select id="key-role" v-model="role" class="studio-input">
-                <option value="brain">Otak Analisis & Skor Viral</option>
-                <option value="stt">Transkrip Kata Video (STT)</option>
-                <option value="tts">Suara Tambahan (Opsional)</option>
+                <option value="brain">Otak Analisis (LLM)</option>
+                <option value="stt">Transkrip Video (STT)</option>
+                <option value="tts">Suara Tambahan (TTS)</option>
               </select>
             </div>
           </div>

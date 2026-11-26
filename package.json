@@ -13,6 +13,7 @@
     "dev:web": "npm run dev -w @clip/web",
     "build": "npm run build -w @clip/shared && npm run build -w @clip/api && npm run build -w @clip/web",
     "test": "npm run test -w @clip/api",
+    "test:e2e": "node --env-file=.env tests/e2e/m4-studio.e2e.mjs",
     "typecheck": "npm run typecheck -w @clip/shared && npm run typecheck -w @clip/api && npm run typecheck -w @clip/web",
     "db:generate": "npm run db:generate -w @clip/api",
     "db:push": "npm run db:push -w @clip/api",
@@ -21,7 +22,8 @@
     "docs:sync": "node .agents/scripts/sync-docs.js"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "playwright-core": "^1.51.1"
   },
   "engines": {
     "node": ">=22.0.0"

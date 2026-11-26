@@ -36,11 +36,11 @@ const copy = useThemeCopy();
   >
     <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
       <div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <h2 class="studio-heading text-lg font-bold">{{ copy.doctorTitle }}</h2>
           <span
             v-if="report"
-            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded whitespace-nowrap shrink-0"
             :class="report.overallStatus === 'healthy' ? 'studio-badge-ok' : 'studio-badge-warn'"
           >
             <CheckCircle2 v-if="report.overallStatus === 'healthy'" class="w-3.5 h-3.5" />
