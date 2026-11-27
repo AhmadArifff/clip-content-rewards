@@ -10,7 +10,10 @@ import {
   Volume2,
   VolumeX,
   CheckCircle2,
-  Clock
+  Clock,
+  SlidersHorizontal,
+  Award,
+  ShieldCheck
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import { apiRequest } from '~/composables/useApi';
@@ -69,11 +72,48 @@ const loading = ref(false);
 const liveProgressPct = ref(0);
 const liveStageLabel = ref('Menghubungkan status render lokal...');
 const errorMsg = ref('');
+const sortBy = ref<'score' | 'sequence'>('score');
+const filterMode = ref<'all' | 'high_score' | 'brief_pass' | 'approved'>('all');
 
 let sseSource: EventSource | null = null;
 let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
 const isRunning = computed(() => ['queued', 'processing'].includes(batch.value?.status ?? ''));
+
+const filteredSortedClips = computed(() => {
+  const list = [...(batch.value?.clips ?? [])];
+  const filtered = list.filter((c) => {
+    if (filterMode.value === 'high_score') return (c.activeVersion?.viralScoreTotal ?? 0) >= 80;
+    if (filterMode.value === 'brief_pass') return c.activeVersion?.briefCompliance === 'pass';
+    if (filterMode.value === 'approved') return c.isApproved;
+    return true;
+  });
+
+  if (sortBy.value === 'score') {
+    filtered.sort((a, b) => {
+      const sa = a.activeVersion?.viralScoreTotal ?? -1;
+      const sb = b.activeVersion?.viralScoreTotal ?? -1;
+      if (sb !== sa) return sb - sa;
+      return a.sequenceIndex - b.sequenceIndex;
+    });
+  } else {
+    filtered.sort((a, b) => a.sequenceIndex - b.sequenceIndex);
+  }
+  return filtered;
+});
+
+function scoreBadgeClass(score: number | null | undefined): string {
+  if (typeof score !== 'number') return 'studio-badge-warn';
+  if (score >= 80) return 'studio-badge-ok';
+  if (score >= 65) return 'studio-badge-warn';
+  return 'studio-badge-err';
+}
+
+function complianceBadgeClass(status: string | null | undefined): string {
+  if (status === 'pass') return 'studio-badge-ok';
+  if (status === 'fail') return 'studio-badge-err';
+  return 'studio-badge-warn';
+}
 
 function audioSummary(edl: EdlDocument | null | undefined): string {
   if (!edl) return '-';
@@ -223,13 +263,62 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <!-- Grid Kartu Multi-Varian -->
+      <!-- Kontrol Ranking & Filter Variasi -->
       <div
         v-if="batch && batch.clips.length > 0"
+        class="flex flex-wrap items-center justify-between gap-3"
+      >
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded text-xs font-semibold min-h-[38px]"
+            :style="filterMode === 'all' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : { background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }"
+            @click="filterMode = 'all'"
+          >
+            Semua ({{ batch.clips.length }})
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded text-xs font-semibold min-h-[38px]"
+            :style="filterMode === 'high_score' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : { background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }"
+            @click="filterMode = 'high_score'"
+          >
+            Skor &gt;= 80
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded text-xs font-semibold min-h-[38px]"
+            :style="filterMode === 'brief_pass' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : { background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }"
+            @click="filterMode = 'brief_pass'"
+          >
+            Brief PASS
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded text-xs font-semibold min-h-[38px]"
+            :style="filterMode === 'approved' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : { background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }"
+            @click="filterMode = 'approved'"
+          >
+            Ditandai Final
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+          <label for="sort-clips" class="studio-muted font-semibold whitespace-nowrap">Urutkan:</label>
+          <select id="sort-clips" v-model="sortBy" class="studio-input !w-auto !min-h-[38px] text-xs py-1">
+            <option value="score">Skor Viral Tertinggi</option>
+            <option value="sequence">Urutan Variasi</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Grid Kartu Multi-Varian -->
+      <div
+        v-if="batch && filteredSortedClips.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
       >
         <article
-          v-for="clip in batch.clips"
+          v-for="clip in filteredSortedClips"
           :key="clip.id"
           class="studio-card overflow-hidden flex flex-col justify-between"
         >
@@ -238,11 +327,12 @@ onBeforeUnmount(() => {
             <div class="bg-black relative flex items-center justify-center aspect-[9/14] max-h-[420px] w-full overflow-hidden">
               <video
                 v-if="clip.status === 'ready' && clip.activeVersion?.hasVideo"
+                :key="clip.activeVersion.id"
                 controls
                 playsinline
                 preload="metadata"
-                :poster="clip.activeVersion.hasCover ? `/api/clips/${clip.id}/cover` : undefined"
-                :src="`/api/clips/${clip.id}/stream-video`"
+                :poster="clip.activeVersion.hasCover ? `/api/clips/${clip.id}/cover?versionId=${clip.activeVersion.id}` : undefined"
+                :src="`/api/clips/${clip.id}/stream-video?versionId=${clip.activeVersion.id}`"
                 class="w-full h-full object-contain"
               />
               <div v-else class="p-6 text-center text-xs text-slate-300 space-y-2">
@@ -269,13 +359,41 @@ onBeforeUnmount(() => {
                 </span>
               </div>
 
+              <!-- Badge Viral Score, Brief Compliance & Final -->
+              <div v-if="clip.activeVersion" class="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                <span
+                  v-if="typeof clip.activeVersion.viralScoreTotal === 'number'"
+                  class="px-2 py-0.5 rounded font-mono inline-flex items-center gap-1"
+                  :class="scoreBadgeClass(clip.activeVersion.viralScoreTotal)"
+                >
+                  <Award class="w-3.5 h-3.5" />
+                  <span>Skor {{ clip.activeVersion.viralScoreTotal }}/100</span>
+                </span>
+
+                <span
+                  v-if="clip.activeVersion.briefCompliance"
+                  class="px-2 py-0.5 rounded uppercase inline-flex items-center gap-1"
+                  :class="complianceBadgeClass(clip.activeVersion.briefCompliance)"
+                >
+                  <ShieldCheck class="w-3.5 h-3.5" />
+                  <span>Brief: {{ clip.activeVersion.briefCompliance }}</span>
+                </span>
+
+                <span
+                  v-if="clip.isApproved"
+                  class="px-2 py-0.5 rounded uppercase studio-badge-ok"
+                >
+                  FINAL
+                </span>
+              </div>
+
               <p v-if="clip.hookSummary" class="text-xs studio-muted">
                 Hook: "{{ clip.hookSummary }}"
               </p>
 
               <div v-if="clip.activeVersion" class="flex flex-wrap gap-1.5 font-mono text-[11px]">
                 <span class="px-2 py-0.5 rounded" style="background: var(--bg-elevated);">
-                  v{{ clip.activeVersion.versionNumber }} | {{ clip.activeVersion.actualDurationSec?.toFixed(1) ?? '-' }}s
+                  v{{ clip.activeVersion.versionNumber }} ({{ clip.versionCount }} ver) | {{ clip.activeVersion.actualDurationSec?.toFixed(1) ?? '-' }}s
                 </span>
                 <span
                   class="px-2 py-0.5 rounded inline-flex items-center gap-1"
@@ -293,13 +411,23 @@ onBeforeUnmount(() => {
             class="p-4 pt-3 flex flex-wrap items-center gap-2"
             :style="{ borderTop: themeStore.current === 'creator-tactile' ? '2px solid #0f172a' : '1px solid var(--border-color)' }"
           >
-            <a
+            <NuxtLink
               v-if="clip.status === 'ready' && clip.activeVersion?.hasVideo"
-              :href="`/api/clips/${clip.id}/stream-video?download=true`"
+              :to="`/clips/${clip.id}`"
               class="studio-btn-primary flex-1 text-xs"
             >
+              <SlidersHorizontal class="w-4 h-4" />
+              <span>Inspeksi, Playbook & Edit</span>
+            </NuxtLink>
+
+            <a
+              v-if="clip.status === 'ready' && clip.activeVersion?.hasVideo"
+              :href="`/api/clips/${clip.id}/stream-video?versionId=${clip.activeVersion.id}&download=true`"
+              class="studio-btn-secondary text-xs"
+              title="Unduh file MP4"
+            >
               <Download class="w-4 h-4" />
-              <span>Unduh MP4</span>
+              <span>MP4</span>
             </a>
 
             <button
@@ -313,6 +441,10 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </article>
+      </div>
+
+      <div v-else-if="batch && batch.clips.length > 0" class="studio-card p-6 text-center text-sm studio-muted">
+        Tidak ada variasi yang cocok dengan filter terpilih. Pilih "Semua" untuk melihat seluruh variasi.
       </div>
     </div>
   </StudioShell>

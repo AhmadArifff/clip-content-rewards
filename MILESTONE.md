@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M6 Selesai (Target Audience Matrix, AI Director, Local Queue + SSE & FFmpeg 1080x1920 Safe-Zone Auto-Editor) -> Siap Masuk ke M7 (Viral Score 6 Dimensi, Upload Impact/Critique, Upload Playbook & Safe-Zone Player)**
+> Status Saat Ini: **M7 & M8 Selesai (Viral Score 6 Dimensi, Projected Impact/Critique, Upload Playbook, Safe-Zone Player & Iterative Prompt Re-Editor + Versioning) -> Siap Masuk ke M9 (Single & Bulk Streaming ZIP Export + Storage Hygiene)**
 > Terakhir Diperbarui: **2026-11-26**
 
 ---
@@ -107,9 +107,9 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M4** | **Pondasi App, Auth & BYOK AI Key Manager** | Monorepo (`apps/web`, `apps/api`, `packages/shared`), `DESIGN.md` 3 tema switchable, SQLite WAL + 37 presets, Auth, System Doctor & BYOK AES-256-GCM + Test Connection | `DONE` | 5/5 Vitest PASS + Nuxt 3 & Express build PASS |
 | **M5** | **Campaign Manager, Brief Parser & Raw Media Ingestion** | CRUD Campaign, Parser `.pdf/.docx/.doc`/teks + Editable Rulebook, Chunked Upload 4MB/part + Supporting Assets, FFprobe, Audio Diagnostic, Silence Map & Auto-Chunked Whisper STT | `DONE` | 6/6 Vitest PASS + 5/5 Playwright E2E M5 PASS |
 | **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form Target Matrix dinamis + Target Profiles, AI Director EDL Planner, Local Queue + SSE, FFmpeg 1080x1920 3 Framing + Mute/Duck Audio + ASS Safe-Zone + HTTP 206 Streaming | `DONE` | 7/7 Vitest PASS + 5/5 Playwright E2E M6 PASS |
-| **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `NEXT` | Playbook & kritik akurat sesuai country/usia/platform |
-| **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `PENDING` | Regenerate mute/duck audio & compare v1 vs v2 lulus |
-| **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `PENDING` | Unduh satuan & ZIP multi-clip bebas korupsi/OOM |
+| **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `DONE` | 8/8 Vitest PASS + 7/7 Playwright E2E M78 PASS |
+| **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `DONE` | FFprobe `< -60 dB` Mute v2 + Playbook sinkron + Rollback lulus |
+| **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `NEXT` | Unduh satuan & ZIP multi-clip bebas korupsi/OOM |
 | **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `PENDING` | Semua test hijau + Delivery Gate PASS + Docs tersinkron |
 
 ---
@@ -243,61 +243,30 @@ Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci selu
 ### Milestone 7 (`M7`): Viral Score Engine, Upload Impact & Critique, dan Upload Playbook
 **Skill Aktif**: `showtime`, `motionmaxxing`, `antislop-copywriting`, `frontend`, `untitled-ui`, `backend`, `qa`
 
-- [ ] **7.1 Viral Score Breakdown & Brief Compliance Engine**:
-  - Penilaian terukur (0-100) dengan bobot transparan di 6 dimensi:
-    1. *Hook Power (0-3 detik pertama)*,
-    2. *Retention & Pacing Flow*,
-    3. *Brief Compliance* (daftar checklist wajib & larangan brief: Pass / Warning / Fail),
-    4. *Target Audience Fit* (kecocokan bahasa, referensi budaya country, usia, persona, angle kontroversi),
-    5. *Engagement & Shareability Trigger*,
-    6. *Audio & Safe-Zone Technical Health* (cek apakah ada subtitle melanggar batas UI TikTok/YT Shorts atau audio terlalu pelan/clipping).
-  - Urutkan hasil variasi dari skor viral tertinggi, lengkap dengan tampilan *Comparison Matrix*.
-- [ ] **7.2 Upload Playbook Generator (Siap Eksekusi Upload)**:
-  - **Panduan Backsound & Audio**: rekomendasi genre/BPM/vibe musik + instruksi eksak cara pasang sound di aplikasi TikTok/YouTube sesuai kondisi audio hasil render (contoh: *"Audio asli di-mute -> gunakan Trending Sound [X] 100%"* atau *"Audio asli di-set 25% -> tambahkan Trending Sound 15%-20%"*).
-  - **Judul / Cover Hook** (3 variasi A/B siap klik copy).
-  - **Caption / Deskripsi** (otomatis menyisipkan mention/CTA/disclosure wajib brief).
-  - **Hashtag / Tag Pack** (Tiered: Mandatory Campaign Tags + Niche Tags + Broad Discovery Tags).
-  - **Jam Tayang Optimal (Posting Schedule)**: rekomendasi hari & jam spesifik dalam zona waktu target Country & kebiasaan Age Group, disertai alasannya.
-  - **Engagement Toolkit**: 2 ide *Pinned Comment* pemicu diskusi & tips 15 menit pertama pasca-upload.
-- [ ] **7.3 Projected Upload Impact & Actionable Critique Panel**:
-  - Narasi **Prediksi Dampak Upload**: simulasi bagaimana audiens target bereaksi di 3 detik pertama, pertengahan, dan akhir.
-  - Daftar **Kritik Spesifik & Berbasis Timestamp** (misal: *"00:00-00:02 pembukaan terlalu lambat"*, *"Audio asli masih 100%, berisiko tabrakan saat ditambah musik TikTok"*, *"CTA wajib brief belum muncul di layar"*).
-  - Tombol **1-Klik "Perbaiki dengan Prompt"** yang otomatis mengirim poin kritik ke panel Re-Editor M8.
-- [ ] **7.4 Video Preview Player dengan Safe-Zone Overlay**:
-  - Toggle overlay simulasi UI **TikTok** dan **YouTube Shorts** langsung di atas video player agar user bisa mengecek visual sebelum download.
-- [ ] **7.5 Dokumentasi & Verifikasi M7**:
-  - Buat `.agents/menu-docs/03-studio/viral-score-dan-playbook.md` + verifikasi konsistensi skor/playbook + update `active-session.json`.
+- [x] **7.1 Viral Score Breakdown & Brief Compliance Engine**:
+  - Penilaian terukur (0-100) dengan bobot transparan di 6 dimensi (*Hook Power*, *Retention & Pacing*, *Brief Compliance*, *Target Audience Fit*, *Engagement Trigger*, *Audio & Safe-Zone Health*) + checklist `PASS`/`WARN`/`FAIL` + ranking & filter variasi pada halaman batch.
+- [x] **7.2 Upload Playbook Generator (Siap Eksekusi Upload)**:
+  - Panduan backsound & audio tersinkron otomatis terhadap kondisi fisik audio video (`Original 100%` / `Ducking %` / `Mute 0%`), 3 opsi judul A/B, caption siap tempel, hashtag bertingkat (`Mandatory`/`Niche`/`Broad`), jadwal tayang optimal lintas zona waktu (`ID`/`US`/`UK`/`MY`/`SG`), pinned comments, 15-min checklist, dan 1-klik *Salin Semua Playbook*.
+- [x] **7.3 Projected Upload Impact & Actionable Critique Panel**:
+  - Narasi 4 kartu proyeksi dampak upload + daftar kritik spesifik berbasis timestamp (klik *Lompat ke 00:xx* langsung seek video) + tombol **1-Klik "Perbaiki dengan Prompt"** yang otomatis mengisi kotak Re-Editor M8.
+- [x] **7.4 Video Preview Player dengan Safe-Zone Overlay**:
+  - Komponen `SafeZoneOverlay.vue` (`Off` | `TikTok` | `YT Shorts`) di atas video player `/clips/:clipId`.
+- [x] **7.5 Dokumentasi & Verifikasi M7**:
+  - Dibuat `.agents/menu-docs/03-studio/viral-score-dan-playbook.md` (Standar V2) + terverifikasi lewat Vitest & Playwright E2E M78.
 
 ---
 
 ### Milestone 8 (`M8`): Iterative Prompt Re-Editor (Regenerate per Video) & Clip Versioning
 **Skill Aktif**: `herk-edit-kit`, `hyperframes`, `frontend`, `backend`, `motion`, `qa`
 
-- [ ] **8.1 Prompt-Based Regenerate per Video (Targeted EDL Patching)**:
-  - Panel edit ulang khusus untuk 1 video terpilih (tanpa mengganggu video lain dalam batch).
-  - AI menerjemahkan prompt bahasa alami user menjadi **EDL Patch JSON** yang presisi, menampilkan ringkasan perubahan (*Edit Diff Preview*) sebelum/saat render ulang.
-- [ ] **8.2 Quick-Action Presets Lapangan (1-Klik & Kombinasi)**:
-  - **Audio Presets**:
-    - *Mute Audio Asli (0%)* untuk ganti full musik TikTok/YouTube,
-    - *Kecilkan Audio Asli (15% / 30%)* untuk latar belakang sound trending,
-    - *Perjelas & Normalize Vokal Asli*,
-    - *Hapus / Ganti Backsound Embedded*.
-  - **Pacing & Hook Presets**:
-    - *Potong intro lambat / langsung ke punchline*,
-    - *Perketat semua jeda hening (jump-cut cepat)*,
-    - *Ringkas durasi ke <= 30 detik / <= 45 detik*.
-  - **Caption, Visual & Brief Presets**:
-    - *Naikkan posisi subtitle ke Safe-Zone*,
-    - *Inline Subtitle Editor* (perbaiki kata typo pada transkrip langsung tanpa nebak lewat prompt!),
-    - *Ubah ukuran/warna/style subtitle*,
-    - *Zoom-in / Re-frame crop 9:16*,
-    - *Sisipkan Hook Banner 3 detik / CTA & Disclaimer Wajib Brief*.
-- [ ] **8.3 Clip Versioning, Re-Scoring & Rollback**:
-  - Setiap regenerate menghasilkan versi baru (`v1`, `v2`, `v3`) lengkap dengan catatan prompt yang dipakai.
-  - Perbandingan otomatis **Before vs After** (Video Player + Delta Viral Score + Kritik terselesaikan vs tersisa).
-  - Fitur **Set as Final Version** atau **Rollback ke versi sebelumnya** kapan saja.
-- [ ] **8.4 Dokumentasi & Verifikasi M8**:
-  - Buat `.agents/menu-docs/03-studio/prompt-reeditor-versioning.md` + uji skenario lapangan (mute audio, ducking 15%, koreksi subtitle, rollback) + update `active-session.json`.
+- [x] **8.1 Prompt-Based Regenerate per Video (Targeted EDL Patching)**:
+  - `edl-patcher.service.ts` menerjemahkan prompt bahasa alami + preset cepat menjadi `EdlPatchSchema` tervalidasi Zod lalu merender hanya 1 klip terpilih via `POST /api/clips/:clipId/regenerate`.
+- [x] **8.2 Quick-Action Presets Lapangan (1-Klik & Kombinasi) & Inline Subtitle Editor**:
+  - Terhubung dinamis ke 9 `prompt_preset` di tabel `master_presets` (Mute Audio 0%, Ducking 15%/30%, Normalize Vokal -14 LUFS, Potong 2 Detik Awal, Perketat Jeda Hening, Naikkan Subtitle Safe-Zone, Zoom-In 115%, CTA Brief) + **Editor Teks Subtitle Inline** (`subtitleOverrides`).
+- [x] **8.3 Clip Versioning, Re-Scoring & Rollback**:
+  - Penyimpanan non-destruktif per versi (`v1`, `v2`, `v3`), kalkulasi ulang Viral Score + delta skor (`+N vs v1`), sinkronisasi otomatis Upload Playbook, tombol **Jadikan Versi Aktif (Rollback)** (`PATCH /active-version`), dan **Tandai Final** (`PATCH /approve`).
+- [x] **8.4 Dokumentasi & Verifikasi M8**:
+  - Dibuat `.agents/menu-docs/03-studio/prompt-reeditor-versioning.md` (Standar V2) + terverifikasi 8/8 Vitest PASS (verifikasi fisik FFprobe `< -60 dB` Mute `v2` & Playbook sinkron) + 7/7 Playwright E2E M78 PASS (3 tema + mobile 390px).
 
 ---
 

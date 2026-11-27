@@ -4,7 +4,7 @@
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
   "status": "IN_PROGRESS",
-  "current_sprint": "M6 Completed -> Ready for M7 (Viral Score Engine 6 Dimensi, Projected Impact, Actionable Critique, Upload Playbook & Safe-Zone Player)",
+  "current_sprint": "M7 & M8 Completed -> Ready for M9 (Single Download .mp4/.txt/.srt/.jpg & Bulk Streaming ZIP + Storage Temp Cleanup)",
   "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) dalam arsitektur Monorepo dengan 3 tema switchable untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
   "last_updated": "2026-11-26",
   "completed_milestones": [
@@ -56,21 +56,34 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
       "details": "Membangun TargetGeneratorPanel (dinamis dari master_presets + TargetProfile CRUD + Token/Render Estimator), AI Director EDL Planner (BYOK + heuristic fallback), Local Persistent SQLite Queue (concurrency 1) + Live SSE stream, FFmpeg 8.1.2 EDL Renderer (3 framing modes center_crop/fit_blur_bg/split_screen, watermark safe-zone, anullsrc mute 0% / ducking 20% / loudnorm -14 LUFS, ASS Safe-Zone captions + Hook Banner + CTA, cover.jpg), dan HTTP 206 Range Streaming. Diverifikasi 7/7 Vitest PASS (real FFprobe 1080x1920 & audio check), 5/5 Playwright E2E M6 PASS (3 tema + mobile 390px), serta menu-docs V2 ai-video-generator.md."
+    },
+    {
+      "id": "M7_VIRAL_SCORE_IMPACT_CRITIQUE_AND_UPLOAD_PLAYBOOK",
+      "title": "Viral Score Engine 6 Dimensi + Brief Compliance Checklist, Projected Upload Impact, Actionable Critique per Timestamp, Upload Playbook & Safe-Zone Overlay Video Player",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-26",
+      "details": "Membangun viral-evaluator.service.ts (6 dimensi skor viral, brief compliance PASS/WARN/FAIL, 4 kartu proyeksi dampak upload, kritik bertimestamp dengan 1-klik saran prompt, Upload Playbook lengkap tersinkron kondisi fisik audio & zona waktu), ranking/filter batch, SafeZoneOverlay.vue (TikTok & YT Shorts), serta menu-docs V2 viral-score-dan-playbook.md."
+    },
+    {
+      "id": "M8_ITERATIVE_PROMPT_REEDITOR_AND_VERSIONING",
+      "title": "Iterative Prompt Re-Editor per Klip, 9 Dynamic Quick-Action Presets, Inline Subtitle Editor, Non-Destructive Versioning (v1..vN), Rollback & Approval Final",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-26",
+      "details": "Membangun edl-patcher.service.ts, clip.service.ts, clip.controller.ts, clip.routes.ts, dan halaman Clip Inspector (/clips/:clipId) pada 3 tema switchable + mobile 390px. Diverifikasi 8/8 Vitest PASS (real FFprobe < -60 dB Mute v2 + sinkronisasi Playbook + Rollback v1 + Approve) dan 7/7 Playwright E2E M78 PASS + menu-docs V2 prompt-reeditor-versioning.md."
     }
   ],
   "in_progress_milestones": [
     {
-      "id": "M7_VIRAL_SCORE_IMPACT_CRITIQUE_AND_UPLOAD_PLAYBOOK",
-      "title": "Viral Score Engine 6 Dimensi + Brief Compliance Checklist, Projected Upload Impact, Actionable Critique per Timestamp, Upload Playbook & Safe-Zone Overlay Video Player",
+      "id": "M9_SINGLE_AND_BULK_STREAMING_ZIP_EXPORT",
+      "title": "Single File Export (.mp4, upload-playbook.txt, .srt, cover.jpg), Bulk Streaming ZIP (archiver anti-OOM + filter skor/Final) & Storage Hygiene Temp Cleanup",
       "status": "NEXT"
     }
   ],
   "recent_changes_summary": [
-    "Membangun ASS Safe-Zone Subtitle + Hook Banner + CTA Builder (ass-subtitle.builder.ts) dengan re-timing per segmen dan support overrides M8",
-    "Membangun FFmpeg 8.1.2 EDL Renderer deterministik (3 mode framing 9:16, watermark safe-zone, anullsrc mute AAC stereo, ducking, loudnorm, Windows relative cwd)",
-    "Membangun AI Director Multi-Variant Planner + Local Persistent Render Queue Worker + Live SSE Progress + HTTP 206 Range Video Streaming",
-    "Membangun TargetGeneratorPanel.vue dan halaman Live Multi-Variant Results (/campaigns/:id/batches/:batchId) pada 3 tema switchable",
-    "Memverifikasi 7/7 Vitest PASS, 5/5 Playwright E2E M6 PASS, dan menambahkan .agents/menu-docs/03-studio/ai-video-generator.md"
+    "Membangun Viral Score Engine 6 dimensi, Brief Compliance Checklist, Projected Impact, Actionable Critique & Upload Playbook tersinkron audio (viral-evaluator.service.ts)",
+    "Membangun Iterative Prompt Re-Editor (edl-patcher.service.ts), clip API (/api/clips/:clipId, /regenerate, /active-version, /approve) & integrasi auto-evaluasi di render-queue.worker.ts",
+    "Membangun SafeZoneOverlay.vue, halaman Clip Inspector (/clips/:clipId) 3-tab pada 3 tema switchable, serta ranking/filter skor di halaman daftar batch",
+    "Memverifikasi 8/8 Vitest PASS (FFprobe < -60 dB Mute v2), 7/7 Playwright E2E M78 PASS, inspeksi visual 4 screenshot + 3 micro-polish UI, serta 2 menu-docs V2 baru"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -85,8 +98,8 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M6 ke GitHub (main & dev)",
-    "Sajikan Review Task 8 Pilar untuk Milestone 7 (M7) & Milestone 8 (M8) agar Viral Score + Upload Playbook + Safe-Zone Player + Prompt Re-Editor terhubung mulus",
-    "Eksekusi setelah mendapat persetujuan pengguna"
+    "Minta izin user untuk commit & push checkpoint M7 + M8 ke GitHub (main & dev)",
+    "Sajikan Review Task 8 Pilar untuk Milestone 9 (M9: Single Export .mp4/.txt/.srt/.jpg + Bulk Streaming ZIP archiver + Storage Hygiene Temp Cleanup)",
+    "Eksekusi M9 setelah mendapat persetujuan pengguna"
   ]
 }

@@ -13,8 +13,8 @@
 | **03** | **02-campaign** | Manajemen Campaign & Parser Brief (`.doc/.docx/.pdf`) | `/campaigns` | `M5` | `Done` | [`02-campaign/campaign-dan-brief.md`](./02-campaign/campaign-dan-brief.md) |
 | **04** | **02-campaign** | Raw Video Ingestion, Transkrip & Silence Map | `/campaigns/:id/studio` | `M5` | `Done` | [`02-campaign/raw-media-ingestion.md`](./02-campaign/raw-media-ingestion.md) |
 | **05** | **03-studio** | Target Audience Matrix & Multi-Variant Auto-Editor | `/campaigns/:id/batches/:batchId` | `M6` | `Done` | [`03-studio/ai-video-generator.md`](./03-studio/ai-video-generator.md) |
-| **06** | **03-studio** | Viral Score, Projected Impact, Critique & Upload Playbook | `/campaigns/:id/batches/:batchId` | `M7` | `Planned` | `03-studio/viral-score-dan-playbook.md` |
-| **07** | **03-studio** | Iterative Prompt Re-Editor, Inline Subtitle & Versioning | `/clips/:clipId` | `M8` | `Planned` | `03-studio/prompt-reeditor-versioning.md` |
+| **06** | **03-studio** | Viral Score, Projected Impact, Critique & Upload Playbook | `/clips/:clipId` | `M7` | `Done` | [`03-studio/viral-score-dan-playbook.md`](./03-studio/viral-score-dan-playbook.md) |
+| **07** | **03-studio** | Iterative Prompt Re-Editor, Inline Subtitle & Versioning | `/clips/:clipId` | `M8` | `Done` | [`03-studio/prompt-reeditor-versioning.md`](./03-studio/prompt-reeditor-versioning.md) |
 | **08** | **04-export** | Single Download & Bulk Streaming ZIP Bundle | `/campaigns/:id/export` | `M9` | `Planned` | `04-export/download-dan-bundle.md` |
 
 ---

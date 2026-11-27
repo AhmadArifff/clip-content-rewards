@@ -9,6 +9,7 @@ import {
 import { env } from '../config/env.js';
 import { batchRepository } from '../repositories/batch.repository.js';
 import { planMultiVariantEdls } from '../services/ai/edl-director.service.js';
+import { evaluateClipVersion } from '../services/ai/viral-evaluator.service.js';
 import { renderEdlToMp4, type RenderMediaSource } from '../services/media/edl-renderer.service.js';
 
 export interface BatchProgressEvent {
@@ -298,6 +299,21 @@ class LocalRenderQueueWorker {
         watermarkRelPath
       });
 
+      const targetConfig = JSON.parse(batch.targetConfigJson) as TargetConfig;
+      const rulebook = batch.campaign.brief?.parsedRulebookJson
+        ? (JSON.parse(batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
+        : null;
+
+      const { evaluation, playbook } = await evaluateClipVersion({
+        userId: batch.campaign.userId,
+        edl: rendered.clampedEdl,
+        actualDurationSec: rendered.actualDurationSec,
+        rulebook,
+        targetConfig,
+        angleTitle: clip.angleTitle,
+        hookSummary: clip.hookSummary ?? ''
+      });
+
       await batchRepository.updateClipVersion(activeVer.id, {
         edlJson: JSON.stringify(rendered.clampedEdl),
         outputVideoPath: rendered.outputVideoRelPath,
@@ -305,6 +321,15 @@ class LocalRenderQueueWorker {
         outputAssPath: rendered.outputAssRelPath,
         coverImagePath: rendered.coverImageRelPath,
         actualDurationSec: rendered.actualDurationSec,
+        viralScoreTotal: evaluation.totalScore,
+        briefCompliance: evaluation.briefComplianceStatus,
+        scoreBreakdownJson: JSON.stringify(evaluation.dimensions),
+        impactCritiqueJson: JSON.stringify({
+          briefChecklist: evaluation.briefChecklist,
+          projectedImpact: evaluation.projectedImpact,
+          critiques: evaluation.critiques
+        }),
+        uploadPlaybookJson: JSON.stringify(playbook),
         renderDurationMs: rendered.renderDurationMs
       });
 
