@@ -13,7 +13,9 @@ import {
   Clock,
   SlidersHorizontal,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  Archive,
+  FileText
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import { apiRequest } from '~/composables/useApi';
@@ -72,6 +74,9 @@ const loading = ref(false);
 const liveProgressPct = ref(0);
 const liveStageLabel = ref('Menghubungkan status render lokal...');
 const errorMsg = ref('');
+const exportNotice = ref('');
+const exportingZip = ref(false);
+const selectedClipIds = ref<string[]>([]);
 const sortBy = ref<'score' | 'sequence'>('score');
 const filterMode = ref<'all' | 'high_score' | 'brief_pass' | 'approved'>('all');
 
@@ -79,6 +84,78 @@ let sseSource: EventSource | null = null;
 let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
 const isRunning = computed(() => ['queued', 'processing'].includes(batch.value?.status ?? ''));
+const readyClipsCount = computed(() => (batch.value?.clips ?? []).filter((c) => c.status === 'ready' && c.activeVersion?.hasVideo).length);
+
+function toggleClipSelection(clipId: string) {
+  const idx = selectedClipIds.value.indexOf(clipId);
+  if (idx >= 0) selectedClipIds.value.splice(idx, 1);
+  else selectedClipIds.value.push(clipId);
+}
+
+async function handleBulkZipExport(filter: 'all' | 'approved' | 'high_score' | 'selected') {
+  errorMsg.value = '';
+  exportNotice.value = '';
+
+  const readyClips = (batch.value?.clips ?? []).filter((c) => c.status === 'ready' && c.activeVersion?.hasVideo);
+  if (filter === 'approved' && !readyClips.some((c) => c.isApproved)) {
+    errorMsg.value = 'Tidak ada variasi klip yang memenuhi kriteria Final. Tandai minimal 1 klip sebagai Final terlebih dahulu.';
+    return;
+  }
+  if (filter === 'high_score' && !readyClips.some((c) => (c.activeVersion?.viralScoreTotal ?? 0) >= 80)) {
+    errorMsg.value = 'Tidak ada variasi klip yang memenuhi kriteria Skor >= 80.';
+    return;
+  }
+  if (filter === 'selected' && selectedClipIds.value.length === 0) {
+    errorMsg.value = 'Pilih minimal 1 variasi klip terlebih dahulu untuk diunduh.';
+    return;
+  }
+
+  exportingZip.value = true;
+  try {
+    const response = await fetch(`/api/batches/${batchId.value}/export-zip`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filter,
+        minScore: 80,
+        clipIds: filter === 'selected' ? selectedClipIds.value : undefined
+      })
+    });
+
+    if (!response.ok) {
+      let msg = 'Gagal mengemas arsip ZIP.';
+      try {
+        const errPayload = (await response.json()) as { error?: { message?: string } };
+        if (errPayload.error?.message) msg = errPayload.error.message;
+      } catch {
+        // Gunakan pesan default
+      }
+      errorMsg.value = msg;
+      return;
+    }
+
+    const blob = await response.blob();
+    const disp = response.headers.get('content-disposition') || '';
+    const match = disp.match(/filename="([^"]+)"/i);
+    const filename = match?.[1] || `campaign-export-${Date.now()}.zip`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    exportNotice.value = `Arsip ZIP berhasil diunduh: ${filename}`;
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal mengunduh arsip ZIP.';
+  } finally {
+    exportingZip.value = false;
+  }
+}
 
 const filteredSortedClips = computed(() => {
   const list = [...(batch.value?.clips ?? [])];
@@ -243,6 +320,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="errorMsg" class="p-3.5 rounded text-sm font-medium studio-badge-err">{{ errorMsg }}</div>
+      <div v-if="exportNotice" class="p-3.5 rounded text-sm font-medium studio-badge-ok">{{ exportNotice }}</div>
 
       <!-- Panel Live SSE Progress -->
       <section v-if="batch" class="studio-card p-5 space-y-3">
@@ -260,6 +338,66 @@ onBeforeUnmount(() => {
             class="h-full transition-all duration-300"
             :style="{ width: `${Math.max(4, liveProgressPct)}%`, backgroundColor: 'var(--accent-bg)' }"
           />
+        </div>
+      </section>
+
+      <!-- Panel Export Keseluruhan (Bulk Streaming ZIP - M9) -->
+      <section v-if="batch && readyClipsCount > 0" class="studio-card p-5 space-y-3">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="space-y-0.5">
+            <h2 class="studio-heading text-base font-bold inline-flex items-center gap-1.5">
+              <Archive class="w-4 h-4" />
+              <span>Export &amp; Unduh Keseluruhan (Bulk Streaming ZIP)</span>
+            </h2>
+            <p class="text-xs studio-muted">
+              Setiap folder ZIP otomatis berisi video-ready-upload.mp4, upload-playbook.txt, subtitles.srt, cover.jpg, dan ringkasan jadwal upload.
+            </p>
+          </div>
+          <span class="font-mono text-xs font-semibold px-2.5 py-1 rounded" style="background: var(--bg-elevated);">
+            {{ readyClipsCount }} Klip Siap | {{ selectedClipIds.length }} Dipilih
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="studio-btn-primary text-xs"
+            :disabled="exportingZip"
+            @click="handleBulkZipExport('all')"
+          >
+            <Archive class="w-4 h-4" />
+            <span>{{ exportingZip ? 'Mengemas ZIP...' : `Unduh Semua Siap (${readyClipsCount} ZIP)` }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="studio-btn-secondary text-xs"
+            :disabled="exportingZip"
+            @click="handleBulkZipExport('high_score')"
+          >
+            <Download class="w-4 h-4" />
+            <span>ZIP Skor &gt;= 80</span>
+          </button>
+
+          <button
+            type="button"
+            class="studio-btn-secondary text-xs"
+            :disabled="exportingZip"
+            @click="handleBulkZipExport('approved')"
+          >
+            <CheckCircle2 class="w-4 h-4" />
+            <span>ZIP Hanya Final</span>
+          </button>
+
+          <button
+            type="button"
+            class="studio-btn-secondary text-xs"
+            :disabled="exportingZip || selectedClipIds.length === 0"
+            @click="handleBulkZipExport('selected')"
+          >
+            <Download class="w-4 h-4" />
+            <span>ZIP Terpilih ({{ selectedClipIds.length }})</span>
+          </button>
         </div>
       </section>
 
@@ -344,7 +482,17 @@ onBeforeUnmount(() => {
 
             <div class="p-4 space-y-2.5">
               <div class="flex items-start justify-between gap-2">
-                <h2 class="studio-heading text-base font-bold leading-snug">{{ clip.angleTitle }}</h2>
+                <div class="flex items-start gap-2 min-w-0">
+                  <input
+                    v-if="clip.status === 'ready' && clip.activeVersion?.hasVideo"
+                    type="checkbox"
+                    :checked="selectedClipIds.includes(clip.id)"
+                    :aria-label="`Pilih ${clip.angleTitle} untuk ZIP`"
+                    class="mt-1 w-4 h-4 shrink-0 cursor-pointer accent-emerald-600"
+                    @change="toggleClipSelection(clip.id)"
+                  />
+                  <h2 class="studio-heading text-base font-bold leading-snug break-words">{{ clip.angleTitle }}</h2>
+                </div>
                 <span
                   class="px-2 py-0.5 rounded text-[11px] font-semibold uppercase whitespace-nowrap shrink-0"
                   :class="
@@ -408,32 +556,45 @@ onBeforeUnmount(() => {
           </div>
 
           <div
-            class="p-4 pt-3 flex flex-wrap items-center gap-2"
+            class="p-4 pt-3 space-y-2"
             :style="{ borderTop: themeStore.current === 'creator-tactile' ? '2px solid #0f172a' : '1px solid var(--border-color)' }"
           >
             <NuxtLink
               v-if="clip.status === 'ready' && clip.activeVersion?.hasVideo"
               :to="`/clips/${clip.id}`"
-              class="studio-btn-primary flex-1 text-xs"
+              class="studio-btn-primary w-full text-xs"
             >
               <SlidersHorizontal class="w-4 h-4" />
               <span>Inspeksi, Playbook & Edit</span>
             </NuxtLink>
 
-            <a
+            <div
               v-if="clip.status === 'ready' && clip.activeVersion?.hasVideo"
-              :href="`/api/clips/${clip.id}/stream-video?versionId=${clip.activeVersion.id}&download=true`"
-              class="studio-btn-secondary text-xs"
-              title="Unduh file MP4"
+              class="grid grid-cols-2 gap-2"
             >
-              <Download class="w-4 h-4" />
-              <span>MP4</span>
-            </a>
+              <a
+                :href="`/api/clips/${clip.id}/download?type=mp4&versionId=${clip.activeVersion.id}`"
+                class="studio-btn-secondary text-xs !min-h-[40px]"
+                title="Unduh file MP4"
+              >
+                <Download class="w-3.5 h-3.5" />
+                <span>Unduh MP4</span>
+              </a>
+
+              <a
+                :href="`/api/clips/${clip.id}/download?type=playbook&versionId=${clip.activeVersion.id}`"
+                class="studio-btn-secondary text-xs !min-h-[40px]"
+                title="Unduh Upload Playbook (.txt)"
+              >
+                <FileText class="w-3.5 h-3.5" />
+                <span>Playbook .txt</span>
+              </a>
+            </div>
 
             <button
               v-if="clip.status === 'failed'"
               type="button"
-              class="studio-btn-primary flex-1 text-xs"
+              class="studio-btn-primary w-full text-xs"
               @click="handleRetryClip(clip.id)"
             >
               <RotateCcw class="w-4 h-4" />

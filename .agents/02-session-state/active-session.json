@@ -4,9 +4,9 @@
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
   "status": "IN_PROGRESS",
-  "current_sprint": "M7 & M8 Completed -> Ready for M9 (Single Download .mp4/.txt/.srt/.jpg & Bulk Streaming ZIP + Storage Temp Cleanup)",
+  "current_sprint": "M9 Completed -> Ready for M10 (Full E2E Regression M4-M9, Mandatory Delivery Gate 4-Blok, Case-Bank YAML & Release v1.0.0)",
   "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) dalam arsitektur Monorepo dengan 3 tema switchable untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
-  "last_updated": "2026-11-26",
+  "last_updated": "2026-11-27",
   "completed_milestones": [
     {
       "id": "M0_ROADMAP_AND_SKILL_AUDIT",
@@ -70,20 +70,27 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-26",
       "details": "Membangun edl-patcher.service.ts, clip.service.ts, clip.controller.ts, clip.routes.ts, dan halaman Clip Inspector (/clips/:clipId) pada 3 tema switchable + mobile 390px. Diverifikasi 8/8 Vitest PASS (real FFprobe < -60 dB Mute v2 + sinkronisasi Playbook + Rollback v1 + Approve) dan 7/7 Playwright E2E M78 PASS + menu-docs V2 prompt-reeditor-versioning.md."
+    },
+    {
+      "id": "M9_SINGLE_AND_BULK_STREAMING_ZIP_EXPORT",
+      "title": "Single File Export (.mp4, upload-playbook.txt, .srt, cover.jpg), Bulk Streaming ZIP (archiver anti-OOM + filter skor/Final/checklist) & Storage Hygiene Temp Cleanup",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-27",
+      "details": "Membangun export.service.ts, export.controller.ts, export.routes.ts (Single Download 4 tipe aset + Bulk Streaming ZIP archiver store:true dengan 00-RINGKASAN-CAMPAIGN-DAN-JADWAL-UPLOAD.md), Storage Breakdown + safe cleanup-temp pada doctor.service.ts & DoctorPanel.vue, panel Export ZIP + checklist di halaman batch, dan Paket Unduh Satuan di Clip Inspector. Diverifikasi 9/9 Vitest PASS (header PK + tar -tf isi ZIP), 5/5 Playwright E2E M9 PASS (3 tema + mobile 390px), dan menu-docs V2 download-dan-bundle.md."
     }
   ],
   "in_progress_milestones": [
     {
-      "id": "M9_SINGLE_AND_BULK_STREAMING_ZIP_EXPORT",
-      "title": "Single File Export (.mp4, upload-playbook.txt, .srt, cover.jpg), Bulk Streaming ZIP (archiver anti-OOM + filter skor/Final) & Storage Hygiene Temp Cleanup",
+      "id": "M10_FINAL_QA_DELIVERY_GATE_AND_RELEASE_V1",
+      "title": "End-to-End QA Regression (M4-M9), Mandatory Delivery Gate 4-Blok, Case-Bank YAML Promotion, Docs Sync Final & GitHub Release v1.0.0",
       "status": "NEXT"
     }
   ],
   "recent_changes_summary": [
-    "Membangun Viral Score Engine 6 dimensi, Brief Compliance Checklist, Projected Impact, Actionable Critique & Upload Playbook tersinkron audio (viral-evaluator.service.ts)",
-    "Membangun Iterative Prompt Re-Editor (edl-patcher.service.ts), clip API (/api/clips/:clipId, /regenerate, /active-version, /approve) & integrasi auto-evaluasi di render-queue.worker.ts",
-    "Membangun SafeZoneOverlay.vue, halaman Clip Inspector (/clips/:clipId) 3-tab pada 3 tema switchable, serta ranking/filter skor di halaman daftar batch",
-    "Memverifikasi 8/8 Vitest PASS (FFprobe < -60 dB Mute v2), 7/7 Playwright E2E M78 PASS, inspeksi visual 4 screenshot + 3 micro-polish UI, serta 2 menu-docs V2 baru"
+    "Commit & push checkpoint M7 + M8 ke GitHub (commit 1185e0d pada main & dev)",
+    "Membangun Single Export (.mp4/.txt/.srt/.jpg) & Bulk Streaming ZIP (archiver store:true anti-OOM + ringkasan MD + folder terurut skor)",
+    "Membangun Storage Breakdown (Uploads/Renders/Temp) & Safe Temp Cleanup API (proteksi 409 saat render aktif) pada DoctorPanel",
+    "Memverifikasi 9/9 Vitest PASS (integritas ZIP via tar -tf), 5/5 Playwright E2E M9 PASS, dan menulis menu-docs V2 download-dan-bundle.md"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -98,8 +105,8 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M7 + M8 ke GitHub (main & dev)",
-    "Sajikan Review Task 8 Pilar untuk Milestone 9 (M9: Single Export .mp4/.txt/.srt/.jpg + Bulk Streaming ZIP archiver + Storage Hygiene Temp Cleanup)",
-    "Eksekusi M9 setelah mendapat persetujuan pengguna"
+    "Minta izin user untuk commit & push checkpoint M9 ke GitHub (main & dev)",
+    "Sajikan Review Task 8 Pilar untuk Milestone 10 (M10: Full Regression QA M4-M9, Mandatory Delivery Gate 4-Blok, Case-Bank YAML & Release v1.0.0)",
+    "Eksekusi M10 dan tag v1.0.0 setelah mendapat persetujuan pengguna"
   ]
 }

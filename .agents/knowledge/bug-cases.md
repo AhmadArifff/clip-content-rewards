@@ -2,9 +2,16 @@
 
 Log historis kendala teknis, akar masalah, dan solusi terverifikasi untuk `clip-content-rewards`.
 
-> **Status Saat Ini:** 4 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M6`.
+> **Status Saat Ini:** 5 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M9`.
 
 ---
+
+### Kasus #05: Breaking Change ESM pada `archiver@8.0.0` (`default` Export Dihapus, Diganti `ZipArchive`)
+- **Tanggal & Milestone:** `2026-11-27` (`M9`)
+- **Konteks & Gejala (Symptom):** Pengujian integrasi Bulk Streaming ZIP (`m9.export-zip-storage.test.ts`) menerima HTTP `500` dengan error `(0 , __vite_ssr_import_0__.default) is not a function`.
+- **Akar Masalah (Root Cause):** Pada `archiver@8.0.0` (pure ESM), factory default `archiver('zip', opts)` sudah tidak diekspor; paket mengekspor class bernama `ZipArchive`, `TarArchive`, dan `JsonArchive`.
+- **Solusi yang Diterapkan (Fix Applied):** Memperbarui `apps/api/src/types/archiver.d.ts` dan `apps/api/src/controllers/export.controller.ts` agar menggunakan `import { ZipArchive } from 'archiver'` dan `new ZipArchive({ zlib: { level: 6 } })`.
+- **Pelajaran Pencegahan (Key Takeaway):** Selalu verifikasi `index.js` / `exports` paket ESM mayor (`v8+`) sebelum mengasumsikan pola default export versi lama.
 
 ### Kasus #04: Teks Hook Banner 9:16 Terpotong Kiri-Kanan Akibat ASS `WrapStyle: 2`
 - **Tanggal & Milestone:** `2026-11-26` (`M6`)

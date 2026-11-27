@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.routes.js';
 import { batchRouter } from './routes/batch.routes.js';
 import { campaignRouter } from './routes/campaign.routes.js';
 import { clipRouter } from './routes/clip.routes.js';
+import { exportRouter } from './routes/export.routes.js';
 import { mediaRouter } from './routes/media.routes.js';
 import { presetRouter } from './routes/preset.routes.js';
 import { systemRouter } from './routes/system.routes.js';
@@ -26,6 +27,7 @@ export function createApp() {
   app.use('/api/campaigns', campaignRouter);
   app.use('/api', mediaRouter);
   app.use('/api', batchRouter);
+  app.use('/api', exportRouter);
   app.use('/api/clips', clipRouter);
   app.use('/api', presetRouter);
 

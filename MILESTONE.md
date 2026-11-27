@@ -2,8 +2,8 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M7 & M8 Selesai (Viral Score 6 Dimensi, Projected Impact/Critique, Upload Playbook, Safe-Zone Player & Iterative Prompt Re-Editor + Versioning) -> Siap Masuk ke M9 (Single & Bulk Streaming ZIP Export + Storage Hygiene)**
-> Terakhir Diperbarui: **2026-11-26**
+> Status Saat Ini: **M9 Selesai (Single Export .mp4/.txt/.srt/.jpg, Bulk Streaming ZIP anti-OOM & Storage Hygiene Cleanup) -> Siap Masuk ke M10 (End-to-End QA Regresi, Mandatory Delivery Gate 4-Blok & Release v1.0.0)**
+> Terakhir Diperbarui: **2026-11-27**
 
 ---
 
@@ -109,8 +109,8 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M6** | **Target Audience Matrix & Multi-Variant Auto-Editor Engine** | Form Target Matrix dinamis + Target Profiles, AI Director EDL Planner, Local Queue + SSE, FFmpeg 1080x1920 3 Framing + Mute/Duck Audio + ASS Safe-Zone + HTTP 206 Streaming | `DONE` | 7/7 Vitest PASS + 5/5 Playwright E2E M6 PASS |
 | **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `DONE` | 8/8 Vitest PASS + 7/7 Playwright E2E M78 PASS |
 | **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `DONE` | FFprobe `< -60 dB` Mute v2 + Playbook sinkron + Rollback lulus |
-| **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `NEXT` | Unduh satuan & ZIP multi-clip bebas korupsi/OOM |
-| **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `PENDING` | Semua test hijau + Delivery Gate PASS + Docs tersinkron |
+| **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `DONE` | 9/9 Vitest PASS (verifikasi ZIP `tar -tf`) + 5/5 E2E M9 PASS |
+| **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `NEXT` | Semua test hijau + Delivery Gate PASS + Docs tersinkron |
 
 ---
 
@@ -273,28 +273,14 @@ Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci selu
 ### Milestone 9 (`M9`): Modul Export & Download (Satuan & Bulk Streaming ZIP)
 **Skill Aktif**: `backend`, `frontend`, `antislop-layoutmobile`, `qa`
 
-- [ ] **9.1 Single Clip Export**:
-  - Download 1 video `.mp4` (encoding H.264/AAC high-compatibility siap langsung upload TikTok & YouTube di HP maupun desktop).
-  - Tombol *Copy All Playbook* (1-klik salin judul, caption, hashtag, jam tayang, instruksi musik) serta opsi unduh `upload-playbook.txt`, `subtitles.srt`, dan `cover.jpg`.
-- [ ] **9.2 Bulk Download Keseluruhan (Streaming ZIP)**:
-  - Pilih semua clip atau filter tertentu (*Semua Final*, *Hanya Score >= 80*, atau *Checklist Manual*).
-  - Streaming ZIP (`archiver` / stream pipeline) agar tidak membebani RAM server (*anti-OOM*) meski ukuran total ratusan MB hingga GB.
-  - Struktur arsip rapi:
-    ```text
-    campaign-[slug]-[tanggal].zip
-    ├── 00-RINGKASAN-CAMPAIGN-DAN-JADWAL-UPLOAD.md
-    ├── 01-score-92-[angle-slug]/
-    │   ├── video-ready-upload.mp4
-    │   ├── upload-playbook.txt
-    │   ├── subtitles.srt
-    │   └── cover.jpg
-    └── 02-score-86-[angle-slug]/
-        └── ...
-    ```
-- [ ] **9.3 Storage Hygiene & Retention Policy**:
-  - Jadwal pembersihan berkas render sementara/versi usang secara aman dengan indikator kapasitas storage di dashboard.
-- [ ] **9.4 Dokumentasi & Verifikasi M9**:
-  - Buat `.agents/menu-docs/04-export/download-dan-bundle.md` + uji integrity file ZIP & pemutaran MP4 + update `active-session.json`.
+- [x] **9.1 Single Clip Export**:
+  - Endpoint `GET /api/clips/:clipId/download?type=mp4|playbook|srt|cover&versionId=...` + panel **Paket Unduh Satuan** di `/clips/:clipId` & tombol cepat `MP4` + `Playbook` di halaman batch.
+- [x] **9.2 Bulk Download Keseluruhan (Streaming ZIP)**:
+  - Endpoint `POST /api/batches/:batchId/export-zip` berbasis `archiver` (`store: true` untuk `.mp4` & `.jpg` agar hemat CPU & anti-OOM) mendukung filter `all`, `high_score` (`>= 80`), `approved` (Final), dan `selected` (checklist manual per kartu) lengkap dengan `00-RINGKASAN-CAMPAIGN-DAN-JADWAL-UPLOAD.md` dan folder terurut berdasarkan skor viral.
+- [x] **9.3 Storage Hygiene & Retention Policy**:
+  - Endpoint `GET /api/system/storage` + `POST /api/system/cleanup-temp` (proteksi `409` saat render aktif) dan tampilan rincian kapasitas (`Uploads`, `Renders`, `Temp`) + tombol **Bersihkan File Sementara** di `DoctorPanel.vue`.
+- [x] **9.4 Dokumentasi & Verifikasi M9**:
+  - Dibuat `.agents/menu-docs/04-export/download-dan-bundle.md` (Standar V2) + terverifikasi 9/9 Vitest PASS (header `PK\x03\x04` & `tar -tf` isi ZIP) + 5/5 Playwright E2E M9 PASS (3 tema + mobile 390px).
 
 ---
 

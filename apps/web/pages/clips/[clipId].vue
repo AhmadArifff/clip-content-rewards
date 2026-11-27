@@ -430,7 +430,7 @@ onMounted(async () => {
 
           <a
             v-if="selectedVersion.hasVideo"
-            :href="`/api/clips/${clip.id}/stream-video?versionId=${selectedVersion.id}&download=true`"
+            :href="`/api/clips/${clip.id}/download?type=mp4&versionId=${selectedVersion.id}`"
             class="studio-btn-primary text-xs"
           >
             <Download class="w-4 h-4" />
@@ -531,6 +531,46 @@ onMounted(async () => {
               <span v-if="selectedVersion.edl" class="px-2 py-1 rounded" style="background: var(--bg-elevated);">
                 Framing: {{ selectedVersion.edl.framingMode }} | Sub: {{ selectedVersion.edl.captions.verticalOffsetPct }}%
               </span>
+            </div>
+
+            <!-- Paket Unduh Satuan Lengkap (M9) -->
+            <div
+              class="px-3.5 pb-3.5 pt-2.5 space-y-2"
+              :style="{ borderTop: themeStore.current === 'creator-tactile' ? '2px solid #0f172a' : '1px solid var(--border-color)' }"
+            >
+              <div class="text-xs font-bold">Paket Unduh Satuan (v{{ selectedVersion.versionNumber }})</div>
+              <div class="grid grid-cols-2 gap-2">
+                <a
+                  v-if="selectedVersion.hasVideo"
+                  :href="`/api/clips/${clip.id}/download?type=mp4&versionId=${selectedVersion.id}`"
+                  class="studio-btn-secondary text-xs !min-h-[40px]"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <span>Video (.mp4)</span>
+                </a>
+                <a
+                  :href="`/api/clips/${clip.id}/download?type=playbook&versionId=${selectedVersion.id}`"
+                  class="studio-btn-secondary text-xs !min-h-[40px]"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <span>Playbook (.txt)</span>
+                </a>
+                <a
+                  :href="`/api/clips/${clip.id}/download?type=srt&versionId=${selectedVersion.id}`"
+                  class="studio-btn-secondary text-xs !min-h-[40px]"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <span>Subtitle (.srt)</span>
+                </a>
+                <a
+                  v-if="selectedVersion.hasCover"
+                  :href="`/api/clips/${clip.id}/download?type=cover&versionId=${selectedVersion.id}`"
+                  class="studio-btn-secondary text-xs !min-h-[40px]"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <span>Cover (.jpg)</span>
+                </a>
+              </div>
             </div>
           </section>
 

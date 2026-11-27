@@ -17,6 +17,7 @@
     "test:e2e:m5": "node --env-file=.env tests/e2e/m5-campaign.e2e.mjs",
     "test:e2e:m6": "node --env-file=.env tests/e2e/m6-generator.e2e.mjs",
     "test:e2e:m78": "node --env-file=.env tests/e2e/m7-m8-inspector.e2e.mjs",
+    "test:e2e:m9": "node --env-file=.env tests/e2e/m9-export.e2e.mjs",
     "typecheck": "npm run typecheck -w @clip/shared && npm run typecheck -w @clip/api && npm run typecheck -w @clip/web",
     "db:generate": "npm run db:generate -w @clip/api",
     "db:push": "npm run db:push -w @clip/api",

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { RefreshCw, CheckCircle2, AlertTriangle, Trash2, HardDrive } from 'lucide-vue-next';
+import { apiRequest } from '~/composables/useApi';
 import { useThemeStore } from '~/stores/theme';
 import { useThemeCopy } from '~/composables/useThemeCopy';
 
@@ -9,7 +11,17 @@ export interface DoctorReport {
   ffprobe: { available: boolean; versionLine: string };
   database: { walMode: string; masterPresetCount: number; activeApiKeyCount: number };
   fonts: { bundledCount: number; bundledFiles: string[]; windowsSystemFallbackReady: boolean };
-  storage: { rootPath: string; usedBytes: number; usedMb: number };
+  storage: {
+    rootPath: string;
+    usedBytes: number;
+    usedMb: number;
+    breakdown?: {
+      uploadsMb: number;
+      rendersMb: number;
+      tempMb: number;
+      databaseMb: number;
+    };
+  };
   runtime: { nodeVersion: string; platform: string; cpuCores: number; maxRenderConcurrency: number };
 }
 
@@ -18,12 +30,43 @@ defineProps<{
   loading: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   refresh: [];
 }>();
 
 const themeStore = useThemeStore();
 const copy = useThemeCopy();
+
+const cleaning = ref(false);
+const cleanupMsg = ref<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+async function handleCleanupTemp() {
+  cleaning.value = true;
+  cleanupMsg.value = null;
+  try {
+    const res = await apiRequest<{ deletedItemsCount: number; freedMb: number }>('/api/system/cleanup-temp', {
+      method: 'POST',
+      body: JSON.stringify({ includeInactiveVersions: false })
+    });
+    const count = res.data?.deletedItemsCount ?? 0;
+    const freed = res.data?.freedMb ?? 0;
+    cleanupMsg.value = {
+      type: 'ok',
+      text:
+        count > 0
+          ? `Berhasil membersihkan ${count} berkas sementara (${freed} MB dibebaskan).`
+          : 'Folder berkas sementara sudah bersih (0 MB).'
+    };
+    emit('refresh');
+  } catch (err) {
+    cleanupMsg.value = {
+      type: 'err',
+      text: err instanceof Error ? err.message : 'Gagal membersihkan berkas sementara.'
+    };
+  } finally {
+    cleaning.value = false;
+  }
+}
 </script>
 
 <template>
@@ -135,6 +178,47 @@ const copy = useThemeCopy();
         <p class="studio-heading text-lg font-bold mt-1">Max {{ report.runtime.maxRenderConcurrency }} Antrean</p>
         <p class="text-xs mt-1">{{ report.runtime.cpuCores }} core terdeteksi</p>
       </div>
+    </div>
+
+    <!-- Bar Kebersihan Penyimpanan Lokal (M9 Storage Hygiene) -->
+    <div
+      v-if="report?.storage?.breakdown"
+      class="mt-4 pt-3.5 flex flex-wrap items-center justify-between gap-3 text-xs"
+      :style="{ borderTop: themeStore.current === 'creator-tactile' ? '2px solid #0f172a' : '1px solid var(--border-color)' }"
+    >
+      <div class="flex flex-wrap items-center gap-2 font-mono">
+        <span class="inline-flex items-center gap-1 font-bold">
+          <HardDrive class="w-3.5 h-3.5" />
+          <span>Storage:</span>
+        </span>
+        <span class="px-2 py-0.5 rounded" style="background: var(--bg-elevated);">
+          Uploads {{ report.storage.breakdown.uploadsMb }} MB
+        </span>
+        <span class="px-2 py-0.5 rounded" style="background: var(--bg-elevated);">
+          Renders {{ report.storage.breakdown.rendersMb }} MB
+        </span>
+        <span class="px-2 py-0.5 rounded" style="background: var(--bg-elevated);">
+          Temp {{ report.storage.breakdown.tempMb }} MB
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="studio-btn-secondary text-xs !min-h-[40px]"
+        :disabled="cleaning"
+        @click="handleCleanupTemp"
+      >
+        <Trash2 class="w-3.5 h-3.5" />
+        <span>{{ cleaning ? 'Membersihkan...' : 'Bersihkan File Sementara' }}</span>
+      </button>
+    </div>
+
+    <div
+      v-if="cleanupMsg"
+      class="mt-3 p-2.5 rounded text-xs font-semibold"
+      :class="cleanupMsg.type === 'ok' ? 'studio-badge-ok' : 'studio-badge-err'"
+    >
+      {{ cleanupMsg.text }}
     </div>
   </section>
 </template>
