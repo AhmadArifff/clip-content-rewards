@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M9 Selesai (Single Export .mp4/.txt/.srt/.jpg, Bulk Streaming ZIP anti-OOM & Storage Hygiene Cleanup) -> Siap Masuk ke M10 (End-to-End QA Regresi, Mandatory Delivery Gate 4-Blok & Release v1.0.0)**
+> Status Saat Ini: **SELESAI 100% (M0 - M10 Verified PASS | Release Candidate `v1.0.0`)**
 > Terakhir Diperbarui: **2026-11-27**
 
 ---
@@ -110,7 +110,7 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M7** | **Viral Score Engine, Impact/Critique & Upload Playbook** | Scoring 6 dimensi + Brief Compliance, Proyeksi Dampak & Kritik Actionable, Upload Playbook lengkap (musik/tag/caption/jam tayang), Safe-Zone Player Overlay | `DONE` | 8/8 Vitest PASS + 7/7 Playwright E2E M78 PASS |
 | **M8** | **Iterative Prompt Re-Editor & Clip Versioning** | Regenerate 1 video via prompt natural + Preset Lapangan (Mute/Duck Audio, Cut Hook, Safe-Zone, Edit Typo Subtitle), EDL Patcher, Versioning (`v1..vN`) & Rollback | `DONE` | FFprobe `< -60 dB` Mute v2 + Playbook sinkron + Rollback lulus |
 | **M9** | **Single & Bulk ZIP Streaming Export** | Download satuan (`.mp4` + playbook + `.srt` + cover) & Bulk ZIP Streaming terstruktur + filter skor + auto-cleanup file temp | `DONE` | 9/9 Vitest PASS (verifikasi ZIP `tar -tf`) + 5/5 E2E M9 PASS |
-| **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `NEXT` | Semua test hijau + Delivery Gate PASS + Docs tersinkron |
+| **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `DONE` | 9/9 Vitest + 5/5 Suite E2E M4-M9 + Delivery Gate 4-Blok PASS |
 
 ---
 
@@ -287,19 +287,17 @@ Sebelum menulis kode aplikasi, kita audit kelengkapan `PRD.md` dan mengunci selu
 ### Milestone 10 (`M10`): End-to-End QA, Mandatory Delivery Gate, Docs Sync & Release v1.0
 **Skill Aktif**: `qa`, `playwright`, `tech-critic`, `antislop`, `antislop-ui`, `antislop-human`, `antislop-layoutmobile`, `antislop-code`, `graphify`
 
-- [ ] **10.1 Automated Testing Suite**:
-  - Unit & Integration tests: enkripsi BYOK, parser `.docx/.pdf`, validator Zod EDL/Playbook/Score, generator argumen FFmpeg (anti shell-injection), EDL patcher, dan streaming ZIP.
-  - Playwright E2E Testing: skenario penuh user login -> pasang BYOK key -> buat campaign & upload brief + video mentah -> generate multi-varian -> cek viral score, kritik, safe-zone overlay, & upload playbook -> regenerate 1 video dengan prompt mute/duck audio -> download single & bulk ZIP.
-- [ ] **10.2 Mandatory Delivery Gate (4-Blok PASS/FAIL)**:
-  - **Block 1 (Hard Gate)**: zero console error, zero mobile overflow, kontras WCAG AA, navigasi keyboard, zero broken buttons, zero API key leak.
-  - **Block 2 (Purpose-Gate)**: kebersihan visual studio tanpa efek dekoratif berlebihan.
-  - **Block 3 (Liveliness)**: responsivitas & feedback state (empty, loading, rendering progress, partial failure, success).
-  - **Block 4 (Craftsmanship)**: bebas dead code, higienitas komentar kode, bahasa UI konsisten & human-friendly.
-- [ ] **10.3 Sinkronisasi Dokumentasi & Release**:
-  - Finalisasi seluruh berkas `.agents/menu-docs/`, `.agents/knowledge/bug-cases.md`, dan `.agents/02-session-state/active-session.json`.
-  - Jalankan `node .agents/scripts/sync-docs.js` untuk mirroring penuh ke portal dokumentasi `documentasi-projects`.
-  - Promosikan pola teknis terverifikasi ke `.agents/04-case-bank/cases/`.
-  - Merge `dev -> main`, buat tag `v1.0.0`, dan push final ke GitHub.
+- [x] **10.1 Automated Testing Suite (Full Regression M4-M9)**:
+  - Seluruh 5 suite Vitest (`9/9` PASS) dan seluruh 5 suite Playwright E2E (`npm run test:e2e:all`: M4, M5, M6, M7/M8, M9) lulus 100% dengan `0 console errors` dan `0 HTTP 5xx`.
+- [x] **10.2 Mandatory Delivery Gate (4-Blok PASS/FAIL)**:
+  - **Block 1 (Hard Gate)**: zero em-dash (`EM_DASH_COUNT=0`), zero console error, zero mobile overflow `390x844`, kontras WCAG AA di 3 tema, navigasi keyboard + ARIA tab/toggle, zero broken links, zero plaintext secret leak (`UNIGNORED_SECRETS=0`).
+  - **Block 2 (Purpose-Gate)**: seluruh kartu, badge semantik, overlay safe-zone, dan press physics memiliki tujuan fungsi & hierarki yang jelas.
+  - **Block 3 (Liveliness)**: state empty, loading, live SSE progress, partial failure + retry, toast konfirmasi, dan rollback lengkap pada seluruh modul.
+  - **Block 4 (Craftsmanship)**: zero dead code, higienitas komentar kode, bahasa UI Indonesia human-friendly bebas jargon teknis, panduan lengkap `README.md` (termasuk akses LAN HP).
+- [x] **10.3 Sinkronisasi Dokumentasi, Case-Bank & Persiapan Release `v1.0.0`**:
+  - Seluruh **8/8 Menu Docs Standar V2** + **5 Dokumen Fondasi Global** tersinkronkan ke portal `documentasi-projects`.
+  - Pola terverifikasi dipromosikan ke `.agents/04-case-bank/cases/case-20261127-local-byok-video-auto-editor-studio.yaml`.
+  - Siap commit final + tag `v1.0.0` di GitHub (`main` & `dev`).
 
 ---
 

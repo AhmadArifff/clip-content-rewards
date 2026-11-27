@@ -1,0 +1,62 @@
+id: "case-20261127-local-byok-video-auto-editor-studio"
+title: "Local-First BYOK AI Video Auto-Editor, Viral Scorer & Streaming ZIP Studio (Monorepo)"
+project: "clip-content-rewards"
+version: "1.0.0"
+status: "VERIFIED_PRODUCTION_PATTERN"
+verified_date: "2026-11-27"
+dual_approved_by:
+  - "qa-engineer"
+  - "tech-critic"
+tags:
+  - "monorepo"
+  - "nuxt3"
+  - "express-typescript"
+  - "prisma-sqlite-wal"
+  - "ffmpeg-local"
+  - "byok-aes-256-gcm"
+  - "edl-json"
+  - "archiver-v8"
+  - "multi-theme-wcag-aa"
+
+problem_context: >
+  Kreator dan clipper Content Rewards membutuhkan studio video lokal tanpa biaya server cloud yang
+  mampu mengubah brief campaign (.pdf/.docx/.doc/teks) dan raw footage besar menjadi banyak variasi
+  video siap upload TikTok & YouTube (1080x1920 atau 16:9), lengkap dengan Viral Score 6 dimensi,
+  proyeksi dampak, kritik bertimestamp, Upload Playbook tersinkron audio, Prompt Re-Editor per klip
+  (mute/duck audio, inline subtitle, versioning & rollback), serta Single & Bulk Streaming ZIP export.
+
+architecture_summary:
+  workspace_layout:
+    - "packages/shared (@clip/shared): 6 Zod boundary contracts & shared TS types"
+    - "apps/api (@clip/api): Express TS (Route -> Controller -> Zod -> ServiceResult -> Repository/Adapter/Worker), Prisma SQLite WAL, Local FFmpeg 8.1.2 & Archiver v8"
+    - "apps/web (@clip/web): Nuxt 3 SPA Studio, Pinia, Tailwind CSS, 3-Theme Switchable Engine, typed H3 relative /api proxy"
+  key_invariants:
+    - "BYOK API keys dienkripsi AES-256-GCM sebelum disimpan ke DB, hanya tampil masked (sk-...xxxx) di UI/API, dan 0 plaintext leak di log/git."
+    - "Seluruh eksekusi FFmpeg/FFprobe memakai spawn(bin, argsArray, { cwd, shell: false }) dengan path tervalidasi di dalam storage/."
+    - "Seluruh keluaran AI (BriefRulebook, EDL v1.1, ViralScoreCritique, UploadPlaybook, EdlPatch) divalidasi Zod + fallback deterministik lokal."
+    - "Concurrency worker render lokal dibatasi MAX_RENDER_CONCURRENCY=1 dengan startup zombie-job recovery."
+    - "Seluruh master parameter (37+ presets) tersimpan dinamis di tabel master_presets."
+
+resolved_field_lessons:
+  - id: "LESSON-01"
+    topic: "Prisma SQLite PRAGMA Query"
+    solution: "Gunakan $queryRawUnsafe() alih-alih $executeRawUnsafe() untuk PRAGMA busy_timeout & foreign_keys karena SQLite mengembalikan 1 baris hasil."
+  - id: "LESSON-02"
+    topic: "FFmpeg ASS Filter Path Escaping di Windows"
+    solution: "Jalankan spawn(ffmpeg, args, { cwd: clipVersionAbsDir, shell: false }) dan oper filter relatif ass=subtitles.ass untuk menghindari konflik titik dua drive C:\\."
+  - id: "LESSON-03"
+    topic: "ASS 9:16 HookBanner Wrapping & Valid Mute Audio"
+    solution: "Gunakan WrapStyle: 0 + helper wrapAssLines(22 chars) agar teks 9:16 tidak terpotong tepi, dan pakai anullsrc stereo 48kHz AAC untuk mode Mute 0% agar lolos parser TikTok/YouTube/iOS."
+  - id: "LESSON-04"
+    topic: "Archiver v8 Pure ESM Streaming ZIP Anti-OOM"
+    solution: "Gunakan named export `import { ZipArchive } from 'archiver'` (`new ZipArchive(...)`) dengan `{ store: true }` untuk file .mp4 & .jpg agar bebas double compression dan hemat RAM/CPU."
+  - id: "LESSON-05"
+    topic: "Nuxt 3.21 Type-Safe API Proxy & LAN Access"
+    solution: "Gunakan catch-all H3 handler `apps/web/server/api/[...].ts` dengan `proxyRequest` alih-alih nitro.devProxy agar lulus vue-tsc dan lancar diakses dari HP lewat Wi-Fi LAN."
+
+verification_evidence:
+  typecheck: "PASS (@clip/shared, @clip/api, @clip/web)"
+  build: "PASS (tsc + Nuxt Nitro node-server bundle)"
+  vitest_integration: "9/9 PASS across 5 suites (M4 Auth/BYOK, M5 Brief/Chunked/AudioDiag, M6 FFmpeg 9:16 & HTTP 206, M7/M8 Score/Playbook/Re-Edit FFprobe <-60dB, M9 Single/ZIP tar -tf/Temp Cleanup)"
+  playwright_e2e: "Full 5-suite regression (M4, M5, M6, M78, M9) covering 3 switchable themes + Mobile 390x844 zero overflow + 0 console errors + 0 HTTP 5xx"
+  guardrails: "EM_DASH_COUNT=0, UNIGNORED_SECRETS=0, 8/8 Menu Docs V2 mirrored to documentasi-projects"
