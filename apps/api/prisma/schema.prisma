@@ -20,6 +20,7 @@ model User {
   targetProfiles TargetProfile[]
   campaigns      Campaign[]
   pacingProfiles ReferencePacingProfile[]
+  brandKits      BrandAssetKit[]
 
   @@map("users")
 }
@@ -185,8 +186,9 @@ model Clip {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  batch    GenerationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  versions ClipVersion[]
+  batch       GenerationBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  versions    ClipVersion[]
+  annotations ClipAnnotation[]
 
   @@index([batchId, status])
   @@index([publishStatus, scheduledAt])
@@ -263,4 +265,46 @@ model ReferencePacingProfile {
 
   @@index([userId, createdAt])
   @@map("reference_pacing_profiles")
+}
+
+model ClipAnnotation {
+  id           String   @id @default(cuid())
+  clipId       String   @map("clip_id")
+  versionId    String?  @map("version_id")
+  timestampSec Float    @map("timestamp_sec")
+  xPct         Float    @map("x_pct")
+  yPct         Float    @map("y_pct")
+  category     String   @default("visual")
+  noteText     String   @map("note_text")
+  status       String   @default("open")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  clip Clip @relation(fields: [clipId], references: [id], onDelete: Cascade)
+
+  @@index([clipId, status, timestampSec])
+  @@map("clip_annotations")
+}
+
+model BrandAssetKit {
+  id                      String   @id @default(cuid())
+  userId                  String   @map("user_id")
+  name                    String
+  brandTagline            String?  @map("brand_tagline")
+  primaryColorHex         String   @default("#10B981") @map("primary_color_hex")
+  accentColorHex          String   @default("#F59E0B") @map("accent_color_hex")
+  captionFontFamily       String   @default("Segoe UI") @map("caption_font_family")
+  defaultCaptionStyle     String   @default("hormozi_bold") @map("default_caption_style")
+  defaultWatermarkPos     String   @default("top_left_safe") @map("default_watermark_pos")
+  defaultWatermarkOpacity Float    @default(0.85) @map("default_watermark_opacity")
+  logoFilePath            String?  @map("logo_file_path")
+  logoOriginalName        String?  @map("logo_original_name")
+  defaultCtaTemplate      String?  @map("default_cta_template")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("brand_asset_kits")
 }

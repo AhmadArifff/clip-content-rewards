@@ -27,10 +27,15 @@ import {
   Eye,
   Film,
   Camera,
-  Star
+  Star,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Trash2
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import SafeZoneOverlay from '~/components/studio/SafeZoneOverlay.vue';
+import FrameAnnotationOverlay, { type FrameAnnotationPin } from '~/components/studio/FrameAnnotationOverlay.vue';
 import VisualTimelineEditor, { type SourceMediaInfo } from '~/components/studio/VisualTimelineEditor.vue';
 import { apiRequest } from '~/composables/useApi';
 import { useThemeStore } from '~/stores/theme';
@@ -132,6 +137,15 @@ const coverCandidates = ref<CoverCandidateRow[]>([]);
 const scanningCovers = ref(false);
 const savingCover = ref(false);
 const activeCoverTs = ref<number | null>(null);
+
+const annotations = ref<FrameAnnotationPin[]>([]);
+const pinMode = ref(false);
+const draftPin = ref<{ xPct: number; yPct: number; timestampSec: number } | null>(null);
+const draftPinCategory = ref<'visual' | 'subtitle' | 'audio' | 'hook'>('visual');
+const draftPinNote = ref('');
+const savingPin = ref(false);
+
+const openAnnotations = computed(() => annotations.value.filter((a) => a.status === 'open'));
 
 const selectedVersion = computed<ClipVersionItem | null>(() => {
   if (!clip.value) return null;
@@ -480,8 +494,109 @@ async function handleApplyCover(timestampSec: number) {
   }
 }
 
+function stepFrame(deltaSec: number) {
+  if (!videoEl.value) return;
+  videoEl.value.pause();
+  const maxDur = selectedVersion.value?.actualDurationSec ?? videoEl.value.duration ?? 60;
+  const next = Math.min(Math.max(0, maxDur - 0.03), Math.max(0, (videoEl.value.currentTime || 0) + deltaSec));
+  videoEl.value.currentTime = next;
+  currentTimeSec.value = next;
+}
+
+function handleVideoPinClick(coords: { xPct: number; yPct: number }) {
+  if (videoEl.value) {
+    videoEl.value.pause();
+    currentTimeSec.value = videoEl.value.currentTime || 0;
+  }
+  draftPin.value = {
+    xPct: coords.xPct,
+    yPct: coords.yPct,
+    timestampSec: Math.round(currentTimeSec.value * 100) / 100
+  };
+}
+
+function jumpToAnnotation(ann: FrameAnnotationPin) {
+  if (videoEl.value) {
+    videoEl.value.pause();
+    videoEl.value.currentTime = ann.timestampSec;
+    currentTimeSec.value = ann.timestampSec;
+  }
+}
+
+async function fetchAnnotations() {
+  try {
+    const res = await apiRequest<FrameAnnotationPin[]>(`/api/clips/${clipId.value}/annotations`);
+    annotations.value = res.data ?? [];
+  } catch {
+    annotations.value = [];
+  }
+}
+
+async function handleSaveAnnotation() {
+  if (!draftPin.value || draftPinNote.value.trim().length < 2) {
+    errorMsg.value = 'Tuliskan catatan revisi minimal 2 karakter pada pin frame ini.';
+    return;
+  }
+  savingPin.value = true;
+  errorMsg.value = '';
+  try {
+    await apiRequest(`/api/clips/${clipId.value}/annotations`, {
+      method: 'POST',
+      body: JSON.stringify({
+        versionId: selectedVersion.value?.id,
+        timestampSec: draftPin.value.timestampSec,
+        xPct: draftPin.value.xPct,
+        yPct: draftPin.value.yPct,
+        category: draftPinCategory.value,
+        noteText: draftPinNote.value.trim()
+      })
+    });
+    draftPin.value = null;
+    draftPinNote.value = '';
+    pinMode.value = false;
+    noticeMsg.value = 'Pin catatan frame berhasil disimpan!';
+    await fetchAnnotations();
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal menyimpan pin catatan.';
+  } finally {
+    savingPin.value = false;
+  }
+}
+
+async function handleToggleAnnotationStatus(ann: FrameAnnotationPin) {
+  const nextStatus = ann.status === 'resolved' ? 'open' : 'resolved';
+  try {
+    await apiRequest(`/api/annotations/${ann.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: nextStatus })
+    });
+    await fetchAnnotations();
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal memperbarui status pin.';
+  }
+}
+
+async function handleDeleteAnnotation(ann: FrameAnnotationPin) {
+  try {
+    await apiRequest(`/api/annotations/${ann.id}`, { method: 'DELETE' });
+    await fetchAnnotations();
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal menghapus pin catatan.';
+  }
+}
+
+function compileAnnotationsToReedit() {
+  if (openAnnotations.value.length === 0) return;
+  const lines = openAnnotations.value.map(
+    (a, idx) => `${idx + 1}. [Detik ${a.timestampSec.toFixed(1)}s | Titik ${a.xPct}%,${a.yPct}% | ${a.category}] ${a.noteText}`
+  );
+  regenPrompt.value = `Terapkan revisi berdasarkan catatan pin frame berikut:\n${lines.join('\n')}`;
+  activeTab.value = 'reedit';
+  noticeMsg.value = `${openAnnotations.value.length} catatan pin frame dikompilasi ke Tab Edit Prompt. Klik Regenerate untuk menerapkan!`;
+}
+
 onMounted(async () => {
-  await Promise.all([fetchClip(), fetchPromptPresets()]);
+  await Promise.all([fetchClip(), fetchPromptPresets(), fetchAnnotations()]);
 });
 </script>
 
@@ -605,7 +720,100 @@ onMounted(async () => {
                   @timeupdate="onVideoTimeUpdate"
                 />
                 <SafeZoneOverlay :mode="safeZoneMode" />
+                <FrameAnnotationOverlay
+                  :pin-mode="pinMode"
+                  :current-time-sec="currentTimeSec"
+                  :annotations="annotations"
+                  :draft-pin="draftPin"
+                  @pin-click="handleVideoPinClick"
+                  @select-pin="jumpToAnnotation"
+                />
               </div>
+            </div>
+
+            <!-- Bar Langkah Frame (-1/+1 Frame) & Mode Pin Catatan (M15) -->
+            <div
+              class="px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs"
+              :style="{
+                background: 'var(--bg-elevated)',
+                borderTop: themeStore.current === 'creator-tactile' ? '2px solid #0f172a' : '1px solid var(--border-color)'
+              }"
+            >
+              <div class="inline-flex items-center gap-1">
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded text-[11px] font-semibold min-h-[32px] inline-flex items-center gap-0.5"
+                  style="background: var(--bg-surface); border: 1px solid var(--border-color);"
+                  title="Mundur 1 frame (1/30 detik)"
+                  @click="stepFrame(-1 / 30)"
+                >
+                  <ChevronLeft class="w-3.5 h-3.5" />
+                  <span>-1f</span>
+                </button>
+                <span class="px-2 font-mono text-[11px] font-bold">{{ currentTimeSec.toFixed(2) }}s</span>
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded text-[11px] font-semibold min-h-[32px] inline-flex items-center gap-0.5"
+                  style="background: var(--bg-surface); border: 1px solid var(--border-color);"
+                  title="Maju 1 frame (1/30 detik)"
+                  @click="stepFrame(1 / 30)"
+                >
+                  <span>+1f</span>
+                  <ChevronRight class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="px-2.5 py-1 rounded text-[11px] font-bold min-h-[34px] inline-flex items-center gap-1 transition"
+                :aria-pressed="pinMode"
+                :style="
+                  pinMode
+                    ? { background: '#f59e0b', color: '#0f172a' }
+                    : { background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }
+                "
+                @click="pinMode = !pinMode; if (!pinMode) draftPin = null"
+              >
+                <MapPin class="w-3.5 h-3.5" />
+                <span>{{ pinMode ? 'Mode Pin AKTIF' : 'Pin Catatan Frame' }}</span>
+              </button>
+            </div>
+
+            <!-- Form Mini Simpan Pin Catatan Saat Titik Frame Diklik -->
+            <div
+              v-if="draftPin"
+              class="px-3.5 py-3 space-y-2 text-xs"
+              style="background: var(--accent-soft-bg); border-top: 1px solid var(--accent-bg);"
+            >
+              <div class="flex items-center justify-between gap-2 font-mono text-[11px] font-bold">
+                <span>Pin Baru @ {{ draftPin.timestampSec.toFixed(2) }}s (X:{{ draftPin.xPct }}%, Y:{{ draftPin.yPct }}%)</span>
+                <button type="button" class="underline" @click="draftPin = null">Batal</button>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <select v-model="draftPinCategory" class="studio-input !min-h-[36px] text-xs py-1">
+                  <option value="visual">Visual</option>
+                  <option value="subtitle">Subtitle</option>
+                  <option value="audio">Audio</option>
+                  <option value="hook">Hook</option>
+                </select>
+                <input
+                  id="ann-note"
+                  v-model="draftPinNote"
+                  type="text"
+                  maxlength="380"
+                  placeholder="Tulis catatan perbaikan di titik ini..."
+                  class="col-span-2 studio-input !min-h-[36px] text-xs"
+                />
+              </div>
+              <button
+                type="button"
+                class="studio-btn-primary w-full text-xs !min-h-[38px]"
+                :disabled="savingPin"
+                @click="handleSaveAnnotation"
+              >
+                <MapPin class="w-3.5 h-3.5" />
+                <span>{{ savingPin ? 'Menyimpan Pin...' : 'Simpan Pin Catatan' }}</span>
+              </button>
             </div>
 
             <!-- Strip Info Teknis Audio & Framing -->
@@ -742,6 +950,79 @@ onMounted(async () => {
                   <span class="font-bold">{{ cand.score }}pt</span>
                 </div>
               </button>
+            </div>
+          </section>
+
+          <!-- Panel Catatan Pin Frame Interaktif (M15) -->
+          <section class="studio-card p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="studio-heading text-sm font-bold inline-flex items-center gap-1.5">
+                <MapPin class="w-4 h-4" style="color: var(--accent-bg);" />
+                <span>Catatan Pin Frame ({{ openAnnotations.length }} Aktif)</span>
+              </h2>
+              <button
+                v-if="openAnnotations.length > 0"
+                type="button"
+                class="studio-btn-primary !min-h-[34px] !px-2.5 text-[11px]"
+                @click="compileAnnotationsToReedit"
+              >
+                <Sparkles class="w-3.5 h-3.5" />
+                <span>Terapkan ke Edit Prompt</span>
+              </button>
+            </div>
+
+            <p v-if="annotations.length === 0" class="text-[11px] studio-muted leading-relaxed">
+              Aktifkan <strong>Pin Catatan Frame</strong> di bawah pemutar video, lalu klik langsung titik pada frame untuk menandai revisi presisi (seperti teks tertutup tombol atau perbaikan hook).
+            </p>
+
+            <div v-else class="space-y-2">
+              <div
+                v-for="(ann, idx) in annotations"
+                :key="ann.id"
+                class="p-2.5 rounded space-y-1.5 text-xs"
+                style="background: var(--bg-elevated); border: 1px solid var(--border-color);"
+              >
+                <div class="flex flex-wrap items-center justify-between gap-1.5">
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold hover:underline"
+                    @click="jumpToAnnotation(ann)"
+                  >
+                    <span
+                      class="w-4 h-4 rounded-full text-[9px] text-white inline-flex items-center justify-center"
+                      :style="{ backgroundColor: ann.status === 'resolved' ? '#10b981' : '#f43f5e' }"
+                    >
+                      {{ idx + 1 }}
+                    </span>
+                    <span>{{ ann.timestampSec.toFixed(1) }}s ({{ ann.xPct }}%, {{ ann.yPct }}%)</span>
+                  </button>
+
+                  <div class="inline-flex items-center gap-1">
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background: var(--bg-surface);">
+                      {{ ann.category }}
+                    </span>
+                    <button
+                      type="button"
+                      class="px-2 py-0.5 rounded text-[10px] font-bold"
+                      :class="ann.status === 'resolved' ? 'studio-badge-ok' : 'studio-badge-warn'"
+                      @click="handleToggleAnnotationStatus(ann)"
+                    >
+                      {{ ann.status === 'resolved' ? 'Selesai' : 'Tandai Selesai' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="p-1 rounded studio-muted hover:text-rose-500"
+                      aria-label="Hapus catatan pin"
+                      @click="handleDeleteAnnotation(ann)"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <p class="text-xs leading-snug break-words" :class="ann.status === 'resolved' ? 'line-through studio-muted' : ''">
+                  {{ ann.noteText }}
+                </p>
+              </div>
             </div>
           </section>
 

@@ -108,6 +108,20 @@ export function buildTimedCuesFromEdl(
   return cues;
 }
 
+export function hexToAssColor(hex: string | null | undefined, alphaHex = '00'): string | null {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return null;
+  const r = hex.slice(1, 3).toUpperCase();
+  const g = hex.slice(3, 5).toUpperCase();
+  const b = hex.slice(5, 7).toUpperCase();
+  const a = /^[0-9A-Fa-f]{2}$/.test(alphaHex) ? alphaHex.toUpperCase() : '00';
+  return `&H${a}${b}${g}${r}`;
+}
+
+function sanitizeAssFontName(fontFamily: string | null | undefined): string {
+  const cleaned = (fontFamily ?? '').replace(/[\r\n,{}]/g, '').trim();
+  return cleaned.length >= 2 ? cleaned.slice(0, 50) : 'Segoe UI';
+}
+
 export function writeAssAndSrtFiles(params: {
   outputDir: string;
   edl: EdlDocument;
@@ -130,9 +144,19 @@ export function writeAssAndSrtFiles(params: {
   const marginR = isVertical ? (edl.captions.safeZonePreset === 'tiktok_9_16' ? 180 : 160) : 90;
   const marginL = isVertical ? 70 : 90;
 
-  const fontName = 'Segoe UI';
+  const fontName = sanitizeAssFontName(edl.captions.fontFamily);
   const captionFontSize = edl.captions.style === 'hormozi_bold' ? (isVertical ? 64 : 52) : (isVertical ? 52 : 42);
-  const captionPrimary = edl.captions.style === 'hormozi_bold' ? '&H0000F2FF' : '&H00FFFFFF';
+  const brandAccentAss = hexToAssColor(edl.supportingOverlays.brandAccentColorHex, '00');
+  const brandPrimaryAss = hexToAssColor(edl.supportingOverlays.brandPrimaryColorHex, '00');
+  const brandPrimaryBgAss = hexToAssColor(edl.supportingOverlays.brandPrimaryColorHex, '24');
+
+  const captionPrimary =
+    edl.captions.style === 'hormozi_bold'
+      ? (brandAccentAss ?? '&H0000F2FF')
+      : '&H00FFFFFF';
+  const hookOutline = brandPrimaryAss ?? '&H000F172A';
+  const hookBack = brandPrimaryBgAss ?? '&HD80F172A';
+  const ctaBg = brandPrimaryAss ?? '&H0081B910';
 
   const assLines: string[] = [
     '[Script Info]',
@@ -145,8 +169,8 @@ export function writeAssAndSrtFiles(params: {
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
     `Style: Caption,${fontName},${captionFontSize},${captionPrimary},&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,4,2,2,${marginL},${marginR},${computedMarginV},1`,
-    `Style: HookBanner,${fontName},${isVertical ? 44 : 42},&H00FFFFFF,&H00FFFFFF,&H000F172A,&HD80F172A,-1,0,0,0,100,100,0,0,3,14,0,8,${marginL},${marginR},${isVertical ? 300 : 80},1`,
-    `Style: CtaOverlay,${fontName},${isVertical ? 40 : 34},&H00192404,&H00FFFFFF,&H0081B910,&H0081B910,-1,0,0,0,100,100,0,0,3,12,0,2,${marginL},${marginR},${Math.max(computedMarginV + 110, 480)},1`,
+    `Style: HookBanner,${fontName},${isVertical ? 44 : 42},&H00FFFFFF,&H00FFFFFF,${hookOutline},${hookBack},-1,0,0,0,100,100,0,0,3,14,0,8,${marginL},${marginR},${isVertical ? 300 : 80},1`,
+    `Style: CtaOverlay,${fontName},${isVertical ? 40 : 34},&H00FFFFFF,&H00FFFFFF,${ctaBg},${ctaBg},-1,0,0,0,100,100,0,0,3,12,0,2,${marginL},${marginR},${Math.max(computedMarginV + 110, 480)},1`,
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'

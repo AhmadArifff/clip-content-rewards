@@ -9,12 +9,15 @@ export interface ThemeCopyDeck {
   navCampaigns: string;
   navPacing: string;
   navCalendar: string;
+  navBrandKits: string;
   navApiKeys: string;
   navPresets: string;
   pacingTitle: string;
   pacingSubtitle: string;
   calendarTitle: string;
   calendarSubtitle: string;
+  brandKitsTitle: string;
+  brandKitsSubtitle: string;
   apiKeysTitle: string;
   apiKeysSubtitle: string;
   doctorTitle: string;
@@ -40,12 +43,15 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     navCampaigns: 'Antrean Campaign',
     navPacing: 'Ritme Referensi',
     navCalendar: 'Kalender & Excel',
+    navBrandKits: 'Brand Kit',
     navApiKeys: 'Brankas API & Mesin',
     navPresets: 'Preset Parameter',
     pacingTitle: 'Telemetri & Kloning Ritme Referensi',
     pacingSubtitle: 'Ekstrak pola panjang shot, frekuensi cut per menit, dan tempo BPM dari video viral referensi tanpa menyalin cuplikan aslinya.',
     calendarTitle: 'Kalender Publikasi & Laporan Excel',
     calendarSubtitle: 'Atur jadwal tayang anti-bentrok lintas campaign berdasarkan jam optimal Playbook dan ekspor buku kerja Excel 3-sheet siap presentasi.',
+    brandKitsTitle: 'Pustaka Brand Asset Kit',
+    brandKitsSubtitle: 'Kunci logo transparan, palet warna Hook/Subtitle ASS, font, posisi watermark, dan CTA sekali saja agar seluruh video campaign seragam.',
     apiKeysTitle: 'Brankas Kunci AI & Telemetri Mesin',
     apiKeysSubtitle: 'Konfigurasikan penyedia analisis brief, transkripsi kata, serta pantau status FFmpeg lokal.',
     doctorTitle: 'Telemetri Mesin Lokal',
@@ -69,12 +75,15 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     navCampaigns: 'Daftar Campaign',
     navPacing: 'Pola Ritme',
     navCalendar: 'Jadwal & Laporan',
+    navBrandKits: 'Kit Identitas',
     navApiKeys: 'Koneksi AI & Studio',
     navPresets: 'Pustaka Preset',
     pacingTitle: 'Arsip Pola Ritme & Tempo Video Referensi',
     pacingSubtitle: 'Pelajari struktur potongan dan kurva energi tayangan referensi untuk diterapkan ulang secara etis pada materi campaign Anda.',
     calendarTitle: 'Kalender Redaksi & Rekap Laporan Excel',
     calendarSubtitle: 'Susun jadwal publikasi harian TikTok dan YouTube dengan rapi, pantau status tayang, dan unduh laporan spreadsheet lengkap.',
+    brandKitsTitle: 'Kit Identitas Visual & Aset Merek',
+    brandKitsSubtitle: 'Himpun logo resmi, warna utama dan aksen, tipografi subtitle, serta kalimat penutup CTA yang konsisten di setiap tayangan.',
     apiKeysTitle: 'Koneksi Kecerdasan Buatan & Kesiapan Studio',
     apiKeysSubtitle: 'Tautkan layanan AI pilihan Anda dan pastikan perangkat lokal siap memproduksi tayangan sesuai brief.',
     doctorTitle: 'Ringkasan Kesiapan Perangkat',
@@ -98,12 +107,15 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     navCampaigns: 'Campaign Aktif',
     navPacing: 'Kloning Ritme',
     navCalendar: 'Kalender Upload',
+    navBrandKits: 'Kit Brand',
     navApiKeys: 'Otak AI & Mesin',
     navPresets: 'Chip Preset Cepat',
     pacingTitle: 'Kloning Ritme Video Viral (Style-Only)',
     pacingSubtitle: 'Unggah 1 video viral referensi, ekstrak ketukan cut & BPM-nya dalam hitungan detik, lalu tempelkan ke video campaign kamu!',
     calendarTitle: 'Kalender Upload & Ekspor Excel 1-Klik',
     calendarSubtitle: 'Jadwalkan otomatis semua variasi skor tertinggi biar gak bentrok, centang yang sudah tayang, dan cetak laporan .xlsx kapan saja!',
+    brandKitsTitle: 'Kit Aset Brand Reusable (1-Klik Pasang)',
+    brandKitsSubtitle: 'Simpan logo, warna Hook/Subtitle, font, dan CTA andalan biar video ke-10 tampil sekece video pertama tanpa setting ulang!',
     apiKeysTitle: 'Sambungkan Otak AI & Cek Mesin Render',
     apiKeysSubtitle: 'Tempel kunci API milikmu sekali dengan aman, uji koneksi 1 klik, lalu gas produksi banyak variasi!',
     doctorTitle: 'Cek Kesehatan Mesin Render',

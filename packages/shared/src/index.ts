@@ -89,6 +89,7 @@ export const TargetConfigSchema = z.object({
   batchDiversityMode: z.enum(['distinct_moments', 'ab_hook_test']).default('distinct_moments'),
   batchCount: z.number().int().min(1).max(10),
   referencePacingId: z.string().nullable().optional(),
+  brandKitId: z.string().nullable().optional(),
   supportingAssets: z.object({
     watermarkAssetId: z.string().nullable().optional(),
     outroAssetId: z.string().nullable().optional()
@@ -139,11 +140,16 @@ export const EdlSegmentSchema = z.object({
   message: 'endSec harus lebih besar dari startSec'
 });
 
+export const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Format warna harus #RRGGBB');
+
 export const SupportingOverlaysSchema = z.object({
   watermarkAssetId: z.string().nullable().default(null),
   watermarkPosition: z.enum(['top_left_safe', 'top_right_safe', 'bottom_left_safe']).default('top_left_safe'),
   watermarkOpacity: z.number().min(0.1).max(1).default(0.85),
-  outroAssetId: z.string().nullable().default(null)
+  outroAssetId: z.string().nullable().default(null),
+  brandKitId: z.string().nullable().optional().default(null),
+  brandPrimaryColorHex: HexColorSchema.nullable().optional(),
+  brandAccentColorHex: HexColorSchema.nullable().optional()
 });
 
 export const ComplianceOverlaysSchema = z.object({
@@ -415,6 +421,45 @@ export const AutoScheduleInputSchema = z.object({
   onlyApproved: z.boolean().default(false)
 });
 export type AutoScheduleInput = z.infer<typeof AutoScheduleInputSchema>;
+
+export const AnnotationCategorySchema = z.enum(['visual', 'subtitle', 'audio', 'hook']);
+export type AnnotationCategory = z.infer<typeof AnnotationCategorySchema>;
+
+export const AnnotationStatusSchema = z.enum(['open', 'resolved']);
+export type AnnotationStatus = z.infer<typeof AnnotationStatusSchema>;
+
+export const CreateClipAnnotationInputSchema = z.object({
+  versionId: z.string().min(1).optional(),
+  timestampSec: z.number().min(0).max(36000),
+  xPct: z.number().min(0).max(100),
+  yPct: z.number().min(0).max(100),
+  category: AnnotationCategorySchema.default('visual'),
+  noteText: z.string().trim().min(2).max(400)
+});
+export type CreateClipAnnotationInput = z.infer<typeof CreateClipAnnotationInputSchema>;
+
+export const UpdateClipAnnotationInputSchema = z.object({
+  status: AnnotationStatusSchema.optional(),
+  noteText: z.string().trim().min(2).max(400).optional(),
+  category: AnnotationCategorySchema.optional()
+});
+export type UpdateClipAnnotationInput = z.infer<typeof UpdateClipAnnotationInputSchema>;
+
+export const CreateBrandKitInputSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  brandTagline: z.string().trim().max(140).optional().default(''),
+  primaryColorHex: HexColorSchema.default('#10B981'),
+  accentColorHex: HexColorSchema.default('#F59E0B'),
+  captionFontFamily: z.string().trim().min(2).max(60).default('Segoe UI'),
+  defaultCaptionStyle: z.enum(['hormozi_bold', 'clean_minimal', 'bilingual', 'off']).default('hormozi_bold'),
+  defaultWatermarkPos: z.enum(['top_left_safe', 'top_right_safe', 'bottom_left_safe']).default('top_left_safe'),
+  defaultWatermarkOpacity: z.number().min(0.1).max(1).default(0.85),
+  defaultCtaTemplate: z.string().trim().max(120).optional().default('')
+});
+export type CreateBrandKitInput = z.infer<typeof CreateBrandKitInputSchema>;
+
+export const UpdateBrandKitInputSchema = CreateBrandKitInputSchema.partial();
+export type UpdateBrandKitInput = z.infer<typeof UpdateBrandKitInputSchema>;
 
 export type ServiceResult<T> =
   | { ok: true; data: T; meta?: Record<string, unknown> }

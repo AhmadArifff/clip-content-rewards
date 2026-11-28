@@ -28,6 +28,16 @@ interface ReferencePacingRow {
   estimatedBpm: number;
 }
 
+interface BrandKitOption {
+  id: string;
+  name: string;
+  primaryColorHex: string;
+  accentColorHex: string;
+  captionFontFamily: string;
+  defaultCaptionStyle: 'hormozi_bold' | 'clean_minimal' | 'bilingual' | 'off';
+  hasLogo: boolean;
+}
+
 interface EstimateResult {
   estimatedInputTokens: number;
   estimatedOutputTokens: number;
@@ -48,6 +58,7 @@ const router = useRouter();
 const presets = ref<MasterPresetRow[]>([]);
 const profiles = ref<TargetProfileRow[]>([]);
 const pacingProfiles = ref<ReferencePacingRow[]>([]);
+const brandKits = ref<BrandKitOption[]>([]);
 const selectedProfileId = ref('');
 const newProfileName = ref('');
 const savingProfile = ref(false);
@@ -76,6 +87,7 @@ const config = ref<TargetConfig>({
   batchDiversityMode: 'distinct_moments',
   batchCount: 3,
   referencePacingId: null,
+  brandKitId: null,
   supportingAssets: {
     watermarkAssetId: null,
     outroAssetId: null
@@ -107,16 +119,29 @@ const referencePacingId = computed({
   }
 });
 
+const brandKitId = computed({
+  get: () => config.value.brandKitId ?? '',
+  set: (val: string) => {
+    config.value.brandKitId = val || null;
+    const found = brandKits.value.find((k) => k.id === val);
+    if (found) {
+      config.value.captionStyle = found.defaultCaptionStyle;
+    }
+  }
+});
+
 async function loadPresetsAndProfiles() {
   try {
-    const [pRes, profRes, pacingRes] = await Promise.all([
+    const [pRes, profRes, pacingRes, kitsRes] = await Promise.all([
       apiRequest<MasterPresetRow[]>('/api/presets?active=true'),
       apiRequest<TargetProfileRow[]>('/api/target-profiles'),
-      apiRequest<ReferencePacingRow[]>('/api/pacing-profiles')
+      apiRequest<ReferencePacingRow[]>('/api/pacing-profiles'),
+      apiRequest<BrandKitOption[]>('/api/brand-kits')
     ]);
     presets.value = pRes.data ?? [];
     profiles.value = profRes.data ?? [];
     pacingProfiles.value = pacingRes.data ?? [];
+    brandKits.value = kitsRes.data ?? [];
   } catch {
     // Tetap gunakan default aman
   }
@@ -364,19 +389,36 @@ onMounted(loadPresetsAndProfiles);
         </select>
       </div>
 
-      <div class="space-y-1 sm:col-span-2 lg:col-span-4">
+      <div class="space-y-1 sm:col-span-2 lg:col-span-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <label for="tg-pacing" class="block text-xs font-semibold">
-            Kloning Ritme Video Referensi (Style-Only, Opsional)
+            Kloning Ritme Video Referensi (Opsional)
           </label>
           <NuxtLink to="/pacing" class="text-[11px] font-semibold hover:underline" style="color: var(--accent-bg);">
-            Kelola / Upload Video Referensi ->
+            Kelola Ritme ->
           </NuxtLink>
         </div>
         <select id="tg-pacing" v-model="referencePacingId" class="studio-input text-xs">
           <option value="">Default (Ikuti Gaya Editing Standar)</option>
           <option v-for="pp in pacingProfiles" :key="pp.id" :value="pp.id">
-            {{ pp.name }} ({{ pp.shotCount }} shot | {{ pp.avgShotDurationSec.toFixed(1) }}s/shot | ~{{ pp.estimatedBpm }} BPM)
+            {{ pp.name }} ({{ pp.shotCount }} shot | ~{{ pp.estimatedBpm }} BPM)
+          </option>
+        </select>
+      </div>
+
+      <div class="space-y-1 sm:col-span-2 lg:col-span-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="tg-brand-kit" class="block text-xs font-semibold">
+            Brand Asset Kit (Warna, Logo, Font &amp; CTA)
+          </label>
+          <NuxtLink to="/brand-kits" class="text-[11px] font-semibold hover:underline" style="color: var(--accent-bg);">
+            Kelola Brand Kit ->
+          </NuxtLink>
+        </div>
+        <select id="tg-brand-kit" v-model="brandKitId" class="studio-input text-xs">
+          <option value="">Default (Tanpa Brand Asset Kit)</option>
+          <option v-for="bk in brandKits" :key="bk.id" :value="bk.id">
+            {{ bk.name }} ({{ bk.primaryColorHex }} | {{ bk.captionFontFamily }}{{ bk.hasLogo ? ' + Logo' : '' }})
           </option>
         </select>
       </div>

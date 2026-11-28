@@ -13,6 +13,7 @@ import { resolveSafeStoragePath } from '../config/storage.js';
 import { batchRepository } from '../repositories/batch.repository.js';
 import { planEdlPatchWithPrompt, type SubtitleOverrideInput } from './ai/edl-patcher.service.js';
 import { evaluateClipVersion } from './ai/viral-evaluator.service.js';
+import { brandKitService } from './brand-kit.service.js';
 import { buildTimedCuesFromEdl } from './media/ass-subtitle.builder.js';
 import { renderEdlToMp4, type RenderMediaSource } from './media/edl-renderer.service.js';
 import {
@@ -182,7 +183,11 @@ export const clipService = {
     }
 
     const wmId = patchedEdl.supportingOverlays.watermarkAssetId;
-    const watermarkRelPath = wmId ? watermarkPathById.get(wmId) ?? null : null;
+    let watermarkRelPath = wmId ? watermarkPathById.get(wmId) ?? null : null;
+    if (!watermarkRelPath && patchedEdl.supportingOverlays.brandKitId) {
+      const kit = await brandKitService.findRawForUser(userId, patchedEdl.supportingOverlays.brandKitId);
+      watermarkRelPath = kit?.logoFilePath ?? null;
+    }
 
     const rendered = await renderEdlToMp4({
       batchId: clip.batchId,
@@ -292,7 +297,11 @@ export const clipService = {
     }
 
     const wmId = validatedEdl.supportingOverlays.watermarkAssetId;
-    const watermarkRelPath = wmId ? watermarkPathById.get(wmId) ?? null : null;
+    let watermarkRelPath = wmId ? watermarkPathById.get(wmId) ?? null : null;
+    if (!watermarkRelPath && validatedEdl.supportingOverlays.brandKitId) {
+      const kit = await brandKitService.findRawForUser(userId, validatedEdl.supportingOverlays.brandKitId);
+      watermarkRelPath = kit?.logoFilePath ?? null;
+    }
 
     const rendered = await renderEdlToMp4({
       batchId: clip.batchId,

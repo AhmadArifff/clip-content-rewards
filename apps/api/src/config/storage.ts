@@ -5,7 +5,7 @@ import { ROOT_DIR } from './env.js';
 export const STORAGE_ROOT = path.resolve(ROOT_DIR, 'storage');
 export const FONTS_DIR = path.resolve(ROOT_DIR, 'apps', 'api', 'assets', 'fonts');
 
-const STORAGE_SUBDIRS = ['uploads', 'renders', 'transcripts', 'exports', 'temp'];
+const STORAGE_SUBDIRS = ['uploads', 'renders', 'transcripts', 'exports', 'brand-kits', 'temp'];
 
 export function ensureStorageDirectories(): void {
   if (!fs.existsSync(STORAGE_ROOT)) {

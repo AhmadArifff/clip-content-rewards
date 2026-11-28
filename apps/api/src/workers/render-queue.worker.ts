@@ -13,6 +13,7 @@ import { batchRepository } from '../repositories/batch.repository.js';
 import { pacingRepository } from '../repositories/pacing.repository.js';
 import { planMultiVariantEdls } from '../services/ai/edl-director.service.js';
 import { evaluateClipVersion } from '../services/ai/viral-evaluator.service.js';
+import { brandKitService } from '../services/brand-kit.service.js';
 import { renderEdlToMp4, type RenderMediaSource } from '../services/media/edl-renderer.service.js';
 import { analyzeSubjectFocusTrack } from '../services/media/vision-tracker.service.js';
 
@@ -185,6 +186,27 @@ class LocalRenderQueueWorker {
 
       await batchRepository.updateBatch(batchId, { actualTokens: planned.tokensUsed });
 
+      // Terapkan identitas visual Brand Asset Kit (warna ASS, font, posisi watermark, CTA) jika dipilih
+      if (targetConfig.brandKitId) {
+        const kit = await brandKitService.findRawForUser(userId, targetConfig.brandKitId);
+        if (kit) {
+          for (const draft of planned.drafts) {
+            draft.edl.supportingOverlays = {
+              ...draft.edl.supportingOverlays,
+              brandKitId: kit.id,
+              brandPrimaryColorHex: kit.primaryColorHex,
+              brandAccentColorHex: kit.accentColorHex,
+              watermarkPosition: kit.defaultWatermarkPos as 'top_left_safe' | 'top_right_safe' | 'bottom_left_safe',
+              watermarkOpacity: kit.defaultWatermarkOpacity
+            };
+            draft.edl.captions.fontFamily = kit.captionFontFamily;
+            if (kit.defaultCtaTemplate?.trim()) {
+              draft.edl.complianceOverlays.ctaText = kit.defaultCtaTemplate.trim().slice(0, 110);
+            }
+          }
+        }
+      }
+
       // Jika mode Smart Auto-Track 9:16 aktif, analisis koordinat fokus subjek/wajah pada video sumber
       if (targetConfig.framingMode === 'auto_face_track') {
         try {
@@ -336,7 +358,11 @@ class LocalRenderQueueWorker {
       const mediaBundle = this.buildMediaSources(batch);
       const edl = EdlSchema.parse(JSON.parse(activeVer.edlJson));
       const wmId = edl.supportingOverlays.watermarkAssetId;
-      const watermarkRelPath = wmId ? mediaBundle.watermarkPathById.get(wmId) ?? null : null;
+      let watermarkRelPath = wmId ? mediaBundle.watermarkPathById.get(wmId) ?? null : null;
+      if (!watermarkRelPath && edl.supportingOverlays.brandKitId) {
+        const kit = await brandKitService.findRawForUser(batch.campaign.userId, edl.supportingOverlays.brandKitId);
+        watermarkRelPath = kit?.logoFilePath ?? null;
+      }
 
       const rendered = await renderEdlToMp4({
         batchId,

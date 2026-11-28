@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M14",
-  "current_sprint": "M14 Completed (Campaign Content Calendar & Export Laporan Excel .xlsx 3-Sheet V2)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11 Pacing Cloner + V2 M12 Visual Timeline + V2 M13 Smart Auto-Track & Cover Selector + V2 M14 Content Calendar & Excel .xlsx) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M15",
+  "current_sprint": "M15 Completed (Frame-by-Frame Visual Annotation & Brand Asset Kit V2)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11-M15 Lengkap: Pacing Cloner, Visual Timeline, Smart Auto-Track & Cover, Content Calendar & Excel .xlsx, Frame Annotation & Brand Asset Kit) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -112,15 +112,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Menambahkan 5 kolom jadwal & publikasi pada model Prisma Clip + kontrak Zod (@clip/shared), builder OpenXML 3-sheet streaming xlsx-report.builder.ts (Ringkasan Campaign, Kalender Upload, Perbandingan Variasi dengan SUM/AVERAGE, freeze pane, & proteksi Excel Formula Injection), API kalender (/api/calendar, /api/calendar/auto-schedule, PATCH /api/clips/:clipId/schedule, GET /api/export/calendar.xlsx), halaman /calendar (4 KPI, filter, Auto-Jadwalkan Cerdas, mode Kalender & Tabel Matriks pada 3 tema + mobile 390px), tombol Excel Pill di Detail Batch, 13/13 Vitest PASS, 4/4 Playwright E2E M14 PASS, dan menu-docs V2 kalender-dan-excel.md."
+    },
+    {
+      "id": "M15_FRAME_ANNOTATION_AND_BRAND_ASSET_KIT_V2",
+      "title": "V2: Frame-by-Frame Visual Annotation & Brand Asset Kit Reusable (motlab + motlab-assets)",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan model Prisma ClipAnnotation & BrandAssetKit, kontrak Zod (@clip/shared), konversi warna hexToAssColor (#RRGGBB -> &H00BBGGRR) di ass-subtitle.builder.ts, integrasi logo watermark/font/CTA Brand Kit di render-queue.worker.ts & clip.service.ts, API anotasi & Brand Kit (m15.routes.ts), FrameAnnotationOverlay.vue + kontrol -1f/+1f & 1-klik kompilasi ke Tab Edit Prompt di /clips/:clipId, halaman /brand-kits (pratinjau live 9:16 + upload logo PNG pada 3 tema + mobile 390px), dropdown Brand Kit di TargetGeneratorPanel.vue, 14/14 Vitest PASS, 4/4 Playwright E2E M15 PASS, dan menu-docs V2 anotasi-frame-dan-brand-kit.md."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M13 (edfa917) Smart Face-Tracking Auto-Crop 9:16 & Cover Frame Selector ke main & dev",
-    "Menambahkan 5 kolom jadwal & status publikasi pada model Prisma Clip (db:push non-destruktif) serta PublishStatus/UpdateClipSchedule/AutoSchedule Zod schemas",
-    "Membangun xlsx-report.builder.ts (OpenXML 3-sheet streaming berbasis ZipArchive, rumus SUM/AVERAGE, freeze pane, proteksi Formula Injection)",
-    "Membangun API kalender & Auto-Schedule anti-bentrok (calendar.service/controller/routes) + halaman /calendar 3 tema + tombol Excel Pill di Detail Batch",
-    "Memverifikasi 13/13 Vitest PASS (termasuk inspeksi OpenXML sheet1..3.xml via tar), 4/4 Playwright E2E M14 PASS (3 tema + mobile 390px), dan menu-docs V2 kalender-dan-excel.md (12 menu docs)"
+    "Push M14 (7fdd88c) + Tag rilis v2.0.0 ke main & dev",
+    "Menambahkan model Prisma ClipAnnotation & BrandAssetKit (db:push non-destruktif) serta Zod schemas M15",
+    "Mengimplementasikan hexToAssColor (#RRGGBB -> &H00BBGGRR) di ass-subtitle.builder.ts dan integrasi logo/warna/font/CTA Brand Kit ke FFmpeg worker",
+    "Membangun FrameAnnotationOverlay.vue (-1f/+1f, klik titik koordinat X%/Y%, 1-klik kompilasi ke Edit Prompt) dan halaman /brand-kits 3 tema + dropdown di Studio Campaign",
+    "Memverifikasi 14/14 Vitest PASS, 4/4 Playwright E2E M15 PASS (3 tema + mobile 390px), dan menu-docs V2 anotasi-frame-dan-brand-kit.md (13 menu docs)"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -135,7 +142,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M14 (Campaign Content Calendar & Export Laporan Excel .xlsx) ke GitHub (main & dev)",
-    "Tawarkan opsi penggunaan studio lokal (http://localhost:3000) atau release tag v2.0.0 untuk seluruh rangkaian ekspansi V2 (M11-M14)"
+    "Minta izin user untuk commit & push checkpoint M15 (Frame-by-Frame Visual Annotation & Brand Asset Kit) + tag v2.1.0 ke GitHub (main & dev)",
+    "Studio lokal 100% lengkap (M0-M15) siap digunakan langsung di http://localhost:3000"
   ]
 }
