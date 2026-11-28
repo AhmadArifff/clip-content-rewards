@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import type { NextFunction, Request, Response } from 'express';
-import { EdlSchema } from '@clip/shared';
+import {
+  CoverDownloadFormatSchema,
+  CriticReviewRequestSchema,
+  EdlSchema
+} from '@clip/shared';
 import { z } from 'zod';
 import { clipService } from '../services/clip.service.js';
 import { sendServiceResult } from '../utils/http.js';
@@ -70,6 +74,35 @@ export const clipController = {
     }
   },
 
+  async previewPatch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = RegenerateBodySchema.parse(req.body ?? {});
+      if (!parsed.userPrompt.trim() && parsed.presetCodes.length === 0 && !parsed.subtitleOverrides?.length) {
+        sendServiceResult(res, {
+          ok: false,
+          code: 'EMPTY_REGENERATE_INSTRUCTION',
+          message: 'Tuliskan prompt penyesuaian atau pilih minimal 1 preset perbaikan.',
+          statusCode: 400
+        });
+        return;
+      }
+      const result = await clipService.previewRegeneratePatch(req.user!.sub, String(req.params.clipId), parsed);
+      sendServiceResult(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async criticReview(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = CriticReviewRequestSchema.parse(req.body ?? {});
+      const result = await clipService.runCriticReview(req.user!.sub, String(req.params.clipId), parsed);
+      sendServiceResult(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async renderEdl(req: Request, res: Response, next: NextFunction) {
     try {
       const parsed = RenderEdlBodySchema.parse(req.body);
@@ -124,11 +157,19 @@ export const clipController = {
     try {
       const idx = Number.parseInt(String(req.params.idx), 10);
       const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
+      const isDownload = req.query.download === '1' || req.query.download === 'true';
+      const rawFormat = typeof req.query.format === 'string' ? req.query.format : undefined;
+      const downloadFormat = isDownload
+        ? CoverDownloadFormatSchema.catch('hd').parse(rawFormat ?? 'hd')
+        : undefined;
+      const rawTs = typeof req.query.ts === 'string' ? Number(req.query.ts) : undefined;
+      const timestampSec = typeof rawTs === 'number' && Number.isFinite(rawTs) && rawTs >= 0 ? rawTs : undefined;
+
       const resolved = await clipService.resolveCoverCandidateFile(
         req.user!.sub,
         String(req.params.clipId),
         idx,
-        versionId
+        { versionId, downloadFormat, timestampSec }
       );
       if (!resolved.ok) {
         sendServiceResult(res, resolved);
@@ -137,6 +178,9 @@ export const clipController = {
       res.setHeader('Content-Type', resolved.data.contentType);
       res.setHeader('Content-Length', String(resolved.data.sizeBytes));
       res.setHeader('Cache-Control', 'no-store');
+      if (resolved.data.downloadFilename) {
+        res.setHeader('Content-Disposition', `attachment; filename="${resolved.data.downloadFilename}"`);
+      }
       fs.createReadStream(resolved.data.absPath).pipe(res);
     } catch (err) {
       next(err);

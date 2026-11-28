@@ -266,6 +266,7 @@ export type EdlDocument = z.infer<typeof EdlSchema>;
 export const EdlPatchSchema = z.object({
   humanSummary: z.string().min(3),
   framingMode: FramingModeSchema.optional(),
+  colorGrade: CinemaColorGradeSchema.optional(),
   audioPatch: EdlSchema.shape.audio.partial().optional(),
   segmentsPatch: z.array(EdlSegmentSchema).min(1).optional(),
   hookBannerPatch: EdlSchema.shape.hookBanner.partial().optional(),
@@ -274,6 +275,190 @@ export const EdlPatchSchema = z.object({
   complianceOverlaysPatch: ComplianceOverlaysSchema.partial().optional()
 });
 export type EdlPatch = z.infer<typeof EdlPatchSchema>;
+
+export const CoverDownloadFormatSchema = z.enum(['hd', 'yt16x9']);
+export type CoverDownloadFormat = z.infer<typeof CoverDownloadFormatSchema>;
+
+export const CriticRoleIdSchema = z.enum([
+  'general_audience',
+  'target_matrix',
+  'roger_ebert',
+  'cinema_poetica',
+  'pauline_kael',
+  'shandy_gasella',
+  'cine_crib',
+  'tony_zhou',
+  'mark_kermode'
+]);
+export type CriticRoleId = z.infer<typeof CriticRoleIdSchema>;
+
+export const CriticClusterSchema = z.enum([
+  'strategy',
+  'emotion_story',
+  'artistic_subtext',
+  'pacing_market',
+  'visual_genre'
+]);
+export type CriticCluster = z.infer<typeof CriticClusterSchema>;
+
+export interface CriticRoleDefinition {
+  id: CriticRoleId;
+  name: string;
+  shortName: string;
+  cluster: CriticCluster;
+  clusterLabel: string;
+  styleTag: string;
+  pole: 'constructive' | 'sharp' | 'technical' | 'market';
+  focusSummary: string;
+}
+
+export const CRITIC_ROLE_CATALOG: readonly CriticRoleDefinition[] = [
+  {
+    id: 'general_audience',
+    name: 'Perspektif Umum (Penonton Awam)',
+    shortName: 'Umum',
+    cluster: 'strategy',
+    clusterLabel: 'Dasar & Matriks Target',
+    styleTag: 'Daya Pikat Universal',
+    pole: 'market',
+    focusSummary: 'Menguji kejernihan pesan 3 detik pertama, daya henti scroll, dan keterbacaan instan bagi penonton umum tanpa konteks sebelumnya.'
+  },
+  {
+    id: 'target_matrix',
+    name: 'Matriks Target Audiens & Brief',
+    shortName: 'Matriks Target',
+    cluster: 'strategy',
+    clusterLabel: 'Dasar & Matriks Target',
+    styleTag: 'Parameter Generator & Brief',
+    pole: 'market',
+    focusSummary: 'Mengaudit keselarasan klip terhadap setting Country, Usia, Bahasa, Persona, Kontroversi, Hook, KPI, Gaya Editing, Color Grade, Mode Audio, dan Brief Rulebook.'
+  },
+  {
+    id: 'roger_ebert',
+    name: 'Roger Ebert',
+    shortName: 'Roger Ebert',
+    cluster: 'emotion_story',
+    clusterLabel: 'Emosi, Karakter & Niat Cerita',
+    styleTag: 'Humanis & Konstruktif',
+    pole: 'constructive',
+    focusSummary: 'Menilai seberapa berhasil klip mencapai tujuannya sendiri: motivasi karakter, resonansi emosi, empati, dan jiwa cerita sampai ke penonton.'
+  },
+  {
+    id: 'cinema_poetica',
+    name: 'Eric Sasono / Adrian J. Pasaribu (Cinema Poetica)',
+    shortName: 'Cinema Poetica',
+    cluster: 'artistic_subtext',
+    clusterLabel: 'Artistik, Subteks & Estetika',
+    styleTag: 'Analitis-Kritis',
+    pole: 'sharp',
+    focusSummary: 'Membedah lapisan makna/subteks, struktur naratif, estetika sinema, koherensi tema, dan kepekaan konteks sosial-budaya.'
+  },
+  {
+    id: 'pauline_kael',
+    name: 'Pauline Kael',
+    shortName: 'Pauline Kael',
+    cluster: 'artistic_subtext',
+    clusterLabel: 'Artistik, Subteks & Estetika',
+    styleTag: 'Tajam & Anti-Bosan',
+    pole: 'sharp',
+    focusSummary: 'Berani, tajam, dan anti-pretensius: mengetes energi, keberanian hook, dan memotong bagian yang terasa lesu atau sok dalam.'
+  },
+  {
+    id: 'shandy_gasella',
+    name: 'Shandy Gasella',
+    shortName: 'Shandy Gasella',
+    cluster: 'pacing_market',
+    clusterLabel: 'Naskah, Pacing & Selera Pasar',
+    styleTag: 'Blak-blakan & Lugas',
+    pole: 'sharp',
+    focusSummary: 'To-the-point menilai efektivitas premis/hook, ritme pacing antar potongan, dan apakah klip bekerja solid sebagai tontonan bernilai.'
+  },
+  {
+    id: 'cine_crib',
+    name: 'Cine Crib (Rasyid & Aria)',
+    shortName: 'Cine Crib',
+    cluster: 'pacing_market',
+    clusterLabel: 'Naskah, Pacing & Selera Pasar',
+    styleTag: 'Penonton Modern & Logika',
+    pole: 'market',
+    focusSummary: 'Cepat menangkap lompatan cerita/plot hole, dialog atau teks kaku, inkonsistensi logika edit, namun tetap adil menghargai nilai hiburannya.'
+  },
+  {
+    id: 'tony_zhou',
+    name: 'Tony Zhou (Every Frame a Painting)',
+    shortName: 'Tony Zhou',
+    cluster: 'visual_genre',
+    clusterLabel: 'Visual Storytelling & Genre',
+    styleTag: 'Teknis Kamera & Editing',
+    pole: 'technical',
+    focusSummary: 'Fokus blocking/framing 9:16, gerak kamera (zoom/push-in), ritme cut & transisi xfade, serta bercerita lewat visual tanpa bergantung teks semata.'
+  },
+  {
+    id: 'mark_kermode',
+    name: 'Mark Kermode',
+    shortName: 'Mark Kermode',
+    cluster: 'visual_genre',
+    clusterLabel: 'Visual Storytelling & Genre',
+    styleTag: 'Atmosfer, Tensi & Genre',
+    pole: 'technical',
+    focusSummary: 'Detail menguji konsistensi atmosfer, color grading, eskalasi tensi menuju payoff, dan keseimbangan audio terhadap nuansa genre.'
+  }
+] as const;
+
+export const CRITIC_COMBO_PRESETS: ReadonlyArray<{
+  id: string;
+  label: string;
+  roleIds: CriticRoleId[];
+}> = [
+  { id: 'balanced_poles', label: 'Seimbang: Ebert + Pauline Kael', roleIds: ['roger_ebert', 'pauline_kael'] },
+  { id: 'emotion_pacing', label: 'Emosi vs Pacing: Ebert + Shandy Gasella', roleIds: ['roger_ebert', 'shandy_gasella'] },
+  { id: 'target_visual', label: 'Matriks Target + Tony Zhou', roleIds: ['target_matrix', 'tony_zhou'] },
+  { id: 'market_logic', label: 'Matriks Target + Cine Crib', roleIds: ['target_matrix', 'cine_crib'] }
+];
+
+export const CriticReviewRequestSchema = z.object({
+  versionId: z.string().min(1).optional(),
+  roleIds: z.array(CriticRoleIdSchema).min(1).max(3),
+  focusNote: z.string().trim().max(400).optional().default('')
+});
+export type CriticReviewRequest = z.infer<typeof CriticReviewRequestSchema>;
+
+export const CriticWeaknessItemSchema = z.object({
+  timestampSec: z.number().min(0).optional(),
+  segmentRef: z.string().max(40).optional(),
+  issue: z.string().min(4).max(300),
+  executableFix: z.string().min(4).max(260)
+});
+
+export const CriticRolePerspectiveSchema = z.object({
+  roleId: CriticRoleIdSchema,
+  roleName: z.string().min(2).max(120),
+  verdictHeadline: z.string().min(4).max(180),
+  whatWorks: z.string().min(4).max(340),
+  weaknesses: z.array(CriticWeaknessItemSchema).min(1).max(4)
+});
+export type CriticRolePerspective = z.infer<typeof CriticRolePerspectiveSchema>;
+
+export const CriticReviewResultSchema = z.object({
+  mode: z.enum(['ai_vision', 'ai_text', 'local_deterministic']),
+  usedModel: z.string().optional(),
+  rolesUsed: z.array(CriticRoleIdSchema).min(1),
+  perspectives: z.array(CriticRolePerspectiveSchema).min(1),
+  combinedSynthesis: z.string().min(8).max(700),
+  executableSolutions: z.array(z.string().min(4).max(260)).min(1).max(6),
+  recommendedPresetCodes: z.array(z.string()).default([]),
+  suggestedPrompt: z.string().min(6).max(1450),
+  groundingNote: z.string().max(260)
+});
+export type CriticReviewResult = z.infer<typeof CriticReviewResultSchema>;
+
+export const PatchChangeItemSchema = z.object({
+  field: z.string(),
+  label: z.string(),
+  before: z.string(),
+  after: z.string()
+});
+export type PatchChangeItem = z.infer<typeof PatchChangeItemSchema>;
 
 export const ViralScoreCritiqueSchema = z.object({
   totalScore: z.number().int().min(0).max(100),

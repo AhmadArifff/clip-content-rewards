@@ -108,6 +108,7 @@ graph TD
 | Tanggal | Commit Hash | Pengembang | Milestone | Ringkasan Perubahan & Dampak |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-28 | `HEAD` | AhmadArifff | **M13 (V2)** | Implementasi `vision-tracker.service.ts` (YCbCr Skin + Motion/Edge Auto-Track & 6-Candidate Cover Ranker), integrasi worker & dynamic crop FFmpeg, endpoint `/auto-track-crop`, `/cover-candidates`, `/cover-candidate/:idx`, `PATCH /cover`, kontrol Fokus X di `VisualTimelineEditor.vue`, dan panel Cover Frame Selector di `/clips/:clipId`. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M21 (V2)** | Tambah tombol unduh langsung `HD` (Full HD asli) dan `YT 16:9` (Thumbnail YouTube `1280x720` fit-blur-bg) pada masing-masing 6 kartu kandidat cover melalui `extractCoverVariantAtTimestamp()` & `?download=1&format=hd\|yt16x9`, serta tombol cepat *Unduh Aktif* di header panel Cover Selector. |
 
 ---
 

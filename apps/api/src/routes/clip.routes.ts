@@ -7,6 +7,8 @@ export const clipRouter = Router();
 clipRouter.use(requireAuth);
 clipRouter.get('/:clipId', clipController.detail);
 clipRouter.post('/:clipId/regenerate', clipController.regenerate);
+clipRouter.post('/:clipId/preview-patch', clipController.previewPatch);
+clipRouter.post('/:clipId/critic-review', clipController.criticReview);
 clipRouter.post('/:clipId/render-edl', clipController.renderEdl);
 clipRouter.post('/:clipId/auto-track-crop', clipController.autoTrackCrop);
 clipRouter.get('/:clipId/cover-candidates', clipController.coverCandidates);

@@ -4,8 +4,8 @@
 **Author:** Product Management & Architecture Team
 **Owner:** AhmadArifff
 **Date:** 2026-11-28
-**Version:** v1.5
-**Status:** Production V2 Active (M0-M20 Verified | M21 Optional Generative B-Roll Logged)
+**Version:** v1.6
+**Status:** Production V2 Active (M0-M21 Verified | M22 Optional Generative B-Roll Logged)
 **Repository:** `https://github.com/AhmadArifff/clip-content-rewards.git`
 **Technical Blueprint:** [technical-blueprint-m3.md](./.agents/knowledge/technical-blueprint-m3.md)
 
@@ -355,7 +355,7 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 
 ---
 
-### Epic 8: AI Multimodal Cinema Director, Precision Subtitle Sync & Generative B-Roll Roadmap (`M19`, `M20` & `M21`)
+### Epic 8: AI Multimodal Cinema Director, Precision Subtitle Sync, Multi-Persona Critic Council & Generative B-Roll Roadmap (`M19`-`M22`)
 
 #### Story 8.1: Multi-Video Cinema Remix 100% Gratis (Gemini Vision + FFmpeg 8.1.2 Cinema VFX + Edit Model BYOK) (`M19`)
 **As a** kreator konten,
@@ -381,12 +381,24 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 - [ ] **Given** salah satu video mentah sudah memiliki trek subtitle lunak (`ffprobe` stream `subtitle`) atau burned-in subtitle pada piksel video, **When** pemeriksaan otomatis berjalan (1x per video via Gemini Vision di atas contact-sheet `3x2` yang sama, di-cache permanen di `audioDiagnosticJson`) atau user mengaktifkan saklar manual *"Sudah ada subtitle bawaan (jangan timpa)"* di kartu video Studio, **Then** mode default `captionOverlapMode = 'auto_skip_embedded'` otomatis melewati burn-in subtitle hanya untuk segmen video tersebut (sementara segmen video lain yang polos tetap mendapat subtitle sinkron).
 - [ ] **Given** Hook Banner dirender di atas video, **Then** teks hook layar bebas dari tag demografi/negara dalam kurung seperti `(Young Creators & Professionals)` atau `(US)`.
 
-#### Story 8.3: Opsional BYOK Generative Video B-Roll Bridge (Seedance / Veo / fal.ai) (`M21` - Backlog Opsional)
+#### Story 8.3: HD & YouTube 16:9 Cover Candidate Downloader + Multi-Persona Film Critic Council & Anti-Hallucination Re-Editor (`M21` - 100% Gratis)
+**As a** kreator yang ingin mengunduh kandidat cover tajam untuk thumbnail YouTube sekaligus mengasah hasil editan lewat masukan kritikus film legendaris tanpa terjebak AI slop atau halusinasi edit,
+**I want to** mengunduh langsung setiap kandidat cover dalam resolusi HD asli maupun format Thumbnail YouTube `1280x720` (16:9), meminta bedah gabungan dari 1-3 lensa kritikus (Perspektif Umum, Matriks Target Audiens, Roger Ebert, Eric Sasono/Adrian J. Pasaribu Cinema Poetica, Pauline Kael, Shandy Gasella, Cine Crib, Tony Zhou, Mark Kermode) di Tab Edit Prompt, serta melihat verifikasi diff perubahan nyata (*Before vs After*) sebelum dan sesudah render ulang,
+**So that** setiap thumbnail siap upload ke YouTube Studio dan setiap revisi prompt benar-benar mengeksekusi perubahan nyata di FFmpeg tanpa halusinasi ID media maupun render kloningan sia-sia.
+
+**Priority:** `P0 (V2 Quality & Creator Craft)` | **Milestone:** `M21`
+
+**Acceptance Criteria:**
+- [ ] **Given** user memindai 6 kandidat cover di panel *Pemilih Sampul / Cover Terbaik*, **When** user klik tombol **`HD`** atau **`YT 16:9`** pada salah satu kartu kandidat, **Then** backend mengekstrak langsung dari `video.mp4` (`-q:v 2`) dalam resolusi Full HD asli atau Thumbnail YouTube `1280x720` (`fit-blur-bg` 16:9) dengan header `Content-Disposition: attachment`.
+- [ ] **Given** user berada di Tab **Edit Prompt** (`/clips/:clipId`), **When** user memilih 1-3 peran kritikus (termasuk kombinasi dua kutub seperti *Roger Ebert + Pauline Kael* atau *Matriks Target + Tony Zhou*) dan menekan **`Minta Kritik & Solusi AI`**, **Then** `critic-council.service.ts` membedah klip berdasarkan fakta EDL aktual (beserta contact-sheet visual saat Gemini Vision aktif) dengan *Engine Capability Manifest* dan aturan anti-slop ketat, menghasilkan kritik per peran, sintesis gabungan, dan 1-klik tombol **`Terapkan Solusi ke Kotak Prompt`**.
+- [ ] **Given** user memeriksa atau mengirimkan prompt revisi, **When** `POST /preview-patch` atau `POST /regenerate` berjalan, **Then** `verifyAndDiffEdlPatch()` memvalidasi seluruh `mediaAssetId` & batas durasi terhadap `availableSources[]`, mendukung patch `colorGrade`, `speed`, `transition`, `motion`, & `audio`, menampilkan tabel **Before vs After Diff**, serta memblokir *silent no-op* dengan HTTP `422 PATCH_NO_EFFECTIVE_CHANGE`.
+
+#### Story 8.4: Opsional BYOK Generative Video B-Roll Bridge (Seedance / Veo / fal.ai) (`M22` - Backlog Opsional)
 **As a** kreator yang ingin menyisipkan adegan B-Roll generatif baru dari nol (di luar rekaman kamera mentah),
 **I want to** menyambungkan kunci BYOK penyedia video generatif opsional (seperti Seedance via fal.ai / Atlas Cloud atau Google Veo) di `/settings/api-keys`,
 **So that** AI Director dapat menghasilkan klip B-Roll 5 detik berbayar per penggunaan hanya saat diaktifkan eksplisit oleh saya dan menggabungkannya ke timeline `M19`.
 
-**Priority:** `P2 (Optional Paid BYOK Expansion)` | **Milestone:** `M21 (Planned)`
+**Priority:** `P2 (Optional Paid BYOK Expansion)` | **Milestone:** `M22 (Planned)`
 
 ---
 
@@ -545,3 +557,4 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
 | `v1.3` | 2026-11-28 | AhmadArifff & AI Architect | M18 Storage Maintenance & Content Lifecycle Retention (Epic 7): Menambahkan 9 skenario lapangan pemeliharaan disk lokal, tracking interaksi (`lastInspectedAt`/`downloadCount`), alert retensi 14/30 hari + badge sidebar, Arsip Ringan (hapus MP4 pertahankan Playbook/Kalender/Excel), pembersih versi non-aktif/orphan/raw lama, kebijakan Zero Silent Auto-Delete, dan `StorageCleanupLog`. |
 | `v1.4` | 2026-11-28 | AhmadArifff & AI Architect | M19 AI Multimodal Cinema Director & Multi-Video Remix Engine 100% Gratis (Epic 8): Menambahkan Edit Nama Model BYOK (`gemini-3.5-flash` dll.), Auto-Transcribe sebelum generate, FFmpeg Contact-Sheet Storyboard Indexer untuk Gemini Vision, True Cross-Video Cinema Remix (5 struktur film berbeda), FFmpeg Cinema VFX (`xfade`, `acrossfade`, 5 Color Grading, Speed Ramp, Motion), serta pencatatan roadmap opsional M21 (BYOK Generative Video B-Roll Seedance/Veo/fal.ai). |
 | `v1.5` | 2026-11-28 | AhmadArifff & AI Architect | M20 Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector (Epic 8 Story 8.2, 100% Gratis): Filter halusinasi tanda baca Whisper, isolasi pengelompokan kata per segmen & jeda hening `>= 0.65s`, kompensasi presisi `speed` + `xfade` melalui `computeEdlSegmentTimeline()`, deteksi 3 lapis subtitle bawaan (FFprobe soft stream + Gemini Vision 1x cached pada contact-sheet + saklar manual UI), skip subtitle per segmen (`auto_skip_embedded`), serta pembersihan tag demografi pada Hook Banner. |
+| `v1.6` | 2026-11-28 | AhmadArifff & AI Architect | M21 HD & YouTube 16:9 Cover Candidate Downloader + Multi-Persona Film Critic Council & Anti-Hallucination Prompt Re-Editor (Epic 8 Story 8.3, 100% Gratis): Unduh kandidat cover Full HD & Thumbnail YouTube `1280x720`, Dewan Kritikus 9 lensa (Umum, Matriks Target, Roger Ebert, Cinema Poetica, Pauline Kael, Shandy Gasella, Cine Crib, Tony Zhou, Mark Kermode) dengan kombinasi 1-3 peran & Engine Capability Manifest anti-slop, plus `EdlPatchSchema.colorGrade`, `verifyAndDiffEdlPatch()`, Dry-Run Preview Patch, dan Zero Silent No-Op Guard (`422`). |

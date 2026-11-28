@@ -7,8 +7,8 @@ route: "/clips/:clipId"
 lead_developer: "AhmadArifff"
 status: "Done"
 last_commit: "HEAD"
-last_updated: "2026-11-26"
-tags: ["prompt-reeditor", "edl-patch", "versioning", "rollback", "mute-audio", "inline-subtitle"]
+last_updated: "2026-11-28"
+tags: ["prompt-reeditor", "edl-patch", "versioning", "rollback", "mute-audio", "inline-subtitle", "critic-council", "anti-hallucination"]
 database_tables:
   - "clips"
   - "clip_versions"
@@ -83,6 +83,8 @@ graph TD
 | 1 | **Suara asli video belum sesuai brief karena akan diganti sound TikTok/YouTube** | User harus membuka software editing manual dari awal. | 1-klik preset *"Mute Audio Asli (0%) - Ganti Sound TikTok/YT"* atau *"Kecilkan Audio Asli ke 15%"* langsung merender `v2` dan mengubah instruksi mixing di Upload Playbook. |
 | 2 | **Typo nama brand pada subtitle hasil transkrip STT** | Meminta AI memperbaiki typo lewat prompt sering tidak tepat sasaran. | Tersedia **Editor Teks Subtitle Inline** yang memetakan perubahan langsung ke `edl.captions.overrides` dan `subtitles.ass`/`subtitles.srt`. |
 | 3 | **Hasil revisi `v2` ternyata tidak lebih bagus dari `v1`** | Hasil lama hilang jika file ditimpa. | Klik `v1` di panel Riwayat Versi lalu klik **Jadikan Versi Aktif (Rollback)** tanpa perlu merender ulang. |
+| 4 | **LLM mengklaim revisi sukses tapi mengembalikan patch kosong (*silent no-op*) atau ID media palsu** | CPU membuang waktu merender kloningan `v1` atau FFmpeg gagal karena ID fiktif. | `verifyAndDiffEdlPatch()` memvalidasi `mediaAssetId` & batas durasi terhadap `availableSources[]`, menampilkan tabel diff nyata *Before vs After*, menyediakan Dry-Run `POST /preview-patch`, dan menolak no-op dengan HTTP `422 PATCH_NO_EFFECTIVE_CHANGE` (`M21`). |
+| 5 | **Kritik AI generik (*AI slop*) menyarankan hal mustahil bagi FFmpeg (CGI/aktor baru)** | Prompt saran kritikus gagal dieksekusi atau tidak relevan dengan video nyata. | `critic-council.service.ts` menginjeksi *Engine Capability Manifest*, fakta EDL/segmen/transkrip nyata, dan 9 peran kritikus terkurasi (1-3 peran dapat digabung) dengan 1-klik terapkan solusi terverifikasi ke kotak prompt (`M21`). |
 
 ---
 
@@ -107,6 +109,7 @@ graph TD
 | Tanggal | Commit Hash | Pengembang | Milestone | Ringkasan Perubahan & Dampak |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-26 | `HEAD` | AhmadArifff | **M8** | Implementasi Iterative Prompt Re-Editor (`edl-patcher.service.ts`), 9 Preset Cepat dinamis, Inline Subtitle Editor, Non-Destructive Versioning (`v1..vN`), Rollback, dan Approval Final. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M21** | Tambah Panel **Dewan Kritikus AI** (`CriticCouncilPanel.vue` + `critic-council.service.ts`, 9 lensa termasuk Roger Ebert, Cinema Poetica, Pauline Kael, Shandy Gasella, Cine Crib, Tony Zhou, Mark Kermode, Umum & Matriks Target Audiens, kombinasi 1-3 peran), dukungan patch `colorGrade`/speed/transition/motion, `POST /critic-review`, Dry-Run `POST /preview-patch`, `verifyAndDiffEdlPatch()`, dan Zero Silent No-Op Guard (`422`). |
 
 ---
 

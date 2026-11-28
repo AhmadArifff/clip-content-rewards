@@ -3,6 +3,8 @@ import path from 'node:path';
 import {
   EdlSchema,
   type BriefRulebook,
+  type CoverDownloadFormat,
+  type CriticRoleId,
   type EdlDocument,
   type ServiceResult,
   type TargetConfig,
@@ -12,6 +14,7 @@ import {
 import { resolveSafeStoragePath } from '../config/storage.js';
 import { prisma } from '../config/prisma.js';
 import { batchRepository } from '../repositories/batch.repository.js';
+import { generateCriticCouncilReview } from './ai/critic-council.service.js';
 import { planEdlPatchWithPrompt, type SubtitleOverrideInput } from './ai/edl-patcher.service.js';
 import { evaluateClipVersion } from './ai/viral-evaluator.service.js';
 import { brandKitService } from './brand-kit.service.js';
@@ -22,6 +25,7 @@ import {
   analyzeSubjectFocusTrack,
   extractAndRankCoverCandidates,
   extractCoverAtTimestamp,
+  extractCoverVariantAtTimestamp,
   type SegmentFocusResult
 } from './media/vision-tracker.service.js';
 
@@ -184,19 +188,8 @@ export const clipService = {
       ? (JSON.parse(clip.batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
       : null;
 
-    const { patch, patchedEdl } = await planEdlPatchWithPrompt({
-      userId,
-      currentEdl,
-      userPrompt: input.userPrompt,
-      presetCodes: input.presetCodes,
-      subtitleOverrides: input.subtitleOverrides,
-      targetConfig,
-      rulebook
-    });
-
-    const nextVersionNumber = Math.max(...clip.versions.map((v) => v.versionNumber), 0) + 1;
-
     const sources: RenderMediaSource[] = [];
+    const availableSources: Array<{ id: string; originalFilename: string; durationSec: number }> = [];
     const watermarkPathById = new Map<string, string>();
     for (const m of clip.batch.campaign.mediaAssets) {
       if (m.assetType === 'watermark') {
@@ -212,8 +205,41 @@ export const clipService = {
           words: tr?.words ?? [],
           hasEmbeddedSubtitles: Boolean(diag.hasEmbeddedSubtitles)
         });
+        availableSources.push({
+          id: m.id,
+          originalFilename: m.originalFilename,
+          durationSec: m.durationSec ?? 5
+        });
       }
     }
+
+    const planned = await planEdlPatchWithPrompt({
+      userId,
+      currentEdl,
+      userPrompt: input.userPrompt,
+      presetCodes: input.presetCodes,
+      subtitleOverrides: input.subtitleOverrides,
+      targetConfig,
+      rulebook,
+      availableSources
+    });
+
+    if (!planned.hasEffectiveChange) {
+      return {
+        ok: false,
+        code: 'PATCH_NO_EFFECTIVE_CHANGE',
+        message:
+          'Prompt belum menghasilkan perubahan nyata pada video (audio, segmen, warna, framing, hook, atau subtitle masih identik). Perjelas instruksi atau gunakan saran Dewan Kritikus / Preset Cepat.',
+        statusCode: 422,
+        details: {
+          patchSummary: planned.patch.humanSummary,
+          hallucinationWarnings: planned.hallucinationWarnings
+        }
+      };
+    }
+
+    const { patch, patchedEdl } = planned;
+    const nextVersionNumber = Math.max(...clip.versions.map((v) => v.versionNumber), 0) + 1;
 
     const wmId = patchedEdl.supportingOverlays.watermarkAssetId;
     let watermarkRelPath = wmId ? watermarkPathById.get(wmId) ?? null : null;
@@ -274,11 +300,161 @@ export const clipService = {
       ok: true,
       data: {
         patchSummary: patch.humanSummary,
+        patchMode: planned.mode,
+        appliedChanges: planned.appliedChanges,
+        hallucinationWarnings: planned.hallucinationWarnings,
         newVersionId: newVer.id,
         newVersionNumber: nextVersionNumber,
         clip: detail.data
       }
     };
+  },
+
+  async previewRegeneratePatch(
+    userId: string,
+    clipId: string,
+    input: {
+      userPrompt: string;
+      presetCodes: string[];
+      subtitleOverrides?: SubtitleOverrideInput[];
+    }
+  ): Promise<ServiceResult<unknown>> {
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const baseVer = clip.versions.find((v) => v.id === clip.activeVersionId) ?? clip.versions[0];
+    if (!baseVer) {
+      return {
+        ok: false,
+        code: 'BASE_VERSION_MISSING',
+        message: 'Versi dasar klip belum tersedia untuk diperiksa.',
+        statusCode: 400
+      };
+    }
+
+    const currentEdl = EdlSchema.parse(JSON.parse(baseVer.edlJson));
+    const targetConfig = JSON.parse(clip.batch.targetConfigJson) as TargetConfig;
+    const rulebook = clip.batch.campaign.brief?.parsedRulebookJson
+      ? (JSON.parse(clip.batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
+      : null;
+
+    const availableSources = clip.batch.campaign.mediaAssets
+      .filter((m) => m.assetType === 'raw_video')
+      .map((m) => ({
+        id: m.id,
+        originalFilename: m.originalFilename,
+        durationSec: m.durationSec ?? 5
+      }));
+
+    const planned = await planEdlPatchWithPrompt({
+      userId,
+      currentEdl,
+      userPrompt: input.userPrompt,
+      presetCodes: input.presetCodes,
+      subtitleOverrides: input.subtitleOverrides,
+      targetConfig,
+      rulebook,
+      availableSources
+    });
+
+    return {
+      ok: true,
+      data: {
+        patchSummary: planned.patch.humanSummary,
+        patchMode: planned.mode,
+        hasEffectiveChange: planned.hasEffectiveChange,
+        appliedChanges: planned.appliedChanges,
+        hallucinationWarnings: planned.hallucinationWarnings
+      }
+    };
+  },
+
+  async runCriticReview(
+    userId: string,
+    clipId: string,
+    input: {
+      versionId?: string;
+      roleIds: CriticRoleId[];
+      focusNote?: string;
+    }
+  ): Promise<ServiceResult<unknown>> {
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const ver =
+      (input.versionId ? clip.versions.find((v) => v.id === input.versionId) : null) ??
+      clip.versions.find((v) => v.id === clip.activeVersionId) ??
+      clip.versions[0];
+
+    if (!ver) {
+      return {
+        ok: false,
+        code: 'VERSION_NOT_FOUND',
+        message: 'Versi klip tidak ditemukan untuk dibedah kritikus.',
+        statusCode: 404
+      };
+    }
+
+    const edl = EdlSchema.parse(JSON.parse(ver.edlJson));
+    const targetConfig = JSON.parse(clip.batch.targetConfigJson) as TargetConfig;
+    const rulebook = clip.batch.campaign.brief?.parsedRulebookJson
+      ? (JSON.parse(clip.batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
+      : null;
+
+    const wordsByMediaId: Record<string, WordTimestamp[]> = {};
+    const sourceFilenamesById: Record<string, string> = {};
+    const skipCaptionMediaIds = new Set<string>();
+    const shouldSkipEmbedded = (targetConfig.captionOverlapMode ?? 'auto_skip_embedded') !== 'force_show';
+
+    for (const m of clip.batch.campaign.mediaAssets) {
+      if (m.assetType === 'raw_video') {
+        sourceFilenamesById[m.id] = m.originalFilename;
+        if (m.transcriptJson) {
+          const t = safeJson<TranscriptPayload | null>(m.transcriptJson, null);
+          wordsByMediaId[m.id] = t?.words ?? [];
+        }
+        const diag = parseAudioDiagnosticSafe(m.audioDiagnosticJson, m.hasAudio);
+        if (shouldSkipEmbedded && diag.hasEmbeddedSubtitles) {
+          skipCaptionMediaIds.add(m.id);
+        }
+      }
+    }
+
+    const actualDurationSec = ver.actualDurationSec ?? 15;
+    const cues = buildTimedCuesFromEdl(edl, wordsByMediaId, actualDurationSec, { skipCaptionMediaIds });
+
+    const review = await generateCriticCouncilReview({
+      userId,
+      clipId: clip.id,
+      angleTitle: clip.angleTitle,
+      hookSummary: clip.hookSummary ?? '',
+      edl,
+      actualDurationSec,
+      outputVideoRelPath: ver.outputVideoPath,
+      cues,
+      targetConfig,
+      rulebook,
+      sourceFilenamesById,
+      viralScoreTotal: ver.viralScoreTotal,
+      roleIds: input.roleIds,
+      focusNote: input.focusNote
+    });
+
+    return { ok: true, data: review };
   },
 
   async renderCustomEdl(
@@ -596,7 +772,9 @@ export const clipService = {
         versionNumber: ver.versionNumber,
         candidates: candidates.map((c) => ({
           ...c,
-          imageUrl: `/api/clips/${clip.id}/cover-candidate/${c.index}?versionId=${ver.id}&cb=${cacheBust}`
+          imageUrl: `/api/clips/${clip.id}/cover-candidate/${c.index}?versionId=${ver.id}&cb=${cacheBust}`,
+          downloadHdUrl: `/api/clips/${clip.id}/cover-candidate/${c.index}?versionId=${ver.id}&download=1&format=hd&ts=${c.timestampSec.toFixed(2)}`,
+          downloadYtUrl: `/api/clips/${clip.id}/cover-candidate/${c.index}?versionId=${ver.id}&download=1&format=yt16x9&ts=${c.timestampSec.toFixed(2)}`
         }))
       }
     };
@@ -606,8 +784,12 @@ export const clipService = {
     userId: string,
     clipId: string,
     candidateIdx: number,
-    versionId?: string
-  ): Promise<ServiceResult<{ absPath: string; sizeBytes: number; contentType: string }>> {
+    options?: {
+      versionId?: string;
+      downloadFormat?: CoverDownloadFormat;
+      timestampSec?: number;
+    }
+  ): Promise<ServiceResult<{ absPath: string; sizeBytes: number; contentType: string; downloadFilename?: string }>> {
     if (!Number.isInteger(candidateIdx) || candidateIdx < 0 || candidateIdx > 5) {
       return {
         ok: false,
@@ -628,7 +810,7 @@ export const clipService = {
     }
 
     const ver =
-      (versionId ? clip.versions.find((v) => v.id === versionId) : null) ??
+      (options?.versionId ? clip.versions.find((v) => v.id === options.versionId) : null) ??
       clip.versions.find((v) => v.id === clip.activeVersionId) ??
       clip.versions[0];
 
@@ -642,6 +824,74 @@ export const clipService = {
     }
 
     const relDir = path.posix.dirname(ver.outputVideoPath.replace(/\\/g, '/'));
+
+    // Mode unduh Full HD atau Thumbnail YouTube 16:9 (1280x720) langsung diekstrak tajam dari video.mp4
+    if (options?.downloadFormat) {
+      const absVideoPath = resolveSafeStoragePath(ver.outputVideoPath);
+      if (!fs.existsSync(absVideoPath)) {
+        return {
+          ok: false,
+          code: 'RENDERED_VIDEO_FILE_MISSING',
+          message: 'Berkas video hasil render tidak ditemukan untuk mengekstrak cover HD.',
+          statusCode: 404
+        };
+      }
+
+      let targetTs = typeof options.timestampSec === 'number' && Number.isFinite(options.timestampSec)
+        ? options.timestampSec
+        : null;
+
+      if (targetTs === null) {
+        const metaPath = resolveSafeStoragePath(`${relDir}/cover-candidates.json`);
+        if (fs.existsSync(metaPath)) {
+          try {
+            const list = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as Array<{ index: number; timestampSec: number }>;
+            const found = list.find((item) => item.index === candidateIdx);
+            if (found && Number.isFinite(found.timestampSec)) {
+              targetTs = found.timestampSec;
+            }
+          } catch {
+            // Fallback ke rasio durasi
+          }
+        }
+      }
+
+      const dur = Math.max(0.6, ver.actualDurationSec ?? 5);
+      if (targetTs === null) {
+        const startT = Math.min(0.25, dur * 0.08);
+        const endT = Math.max(startT + 0.1, dur - 0.15);
+        targetTs = startT + ((endT - startT) * candidateIdx) / 5;
+      }
+      const clampedTs = Math.round(Math.min(Math.max(0.05, dur - 0.05), Math.max(0.05, targetTs)) * 100) / 100;
+
+      const format = options.downloadFormat;
+      const relOut = `${relDir}/cover-cand-${candidateIdx}-${format}.jpg`;
+      const absOut = resolveSafeStoragePath(relOut);
+      await extractCoverVariantAtTimestamp({
+        absVideoPath,
+        absCoverOutPath: absOut,
+        timestampSec: clampedTs,
+        format
+      });
+
+      const stat = fs.statSync(absOut);
+      const tsTag = `${clampedTs.toFixed(1).replace('.', '_')}s`;
+      const downloadFilename =
+        format === 'yt16x9'
+          ? `yt-thumbnail-klip${clip.sequenceIndex}-v${ver.versionNumber}-${tsTag}-1280x720.jpg`
+          : `cover-klip${clip.sequenceIndex}-v${ver.versionNumber}-${tsTag}-hd.jpg`;
+
+      return {
+        ok: true,
+        data: {
+          absPath: absOut,
+          sizeBytes: stat.size,
+          contentType: 'image/jpeg',
+          downloadFilename
+        }
+      };
+    }
+
     const relThumb = `${relDir}/cover-cand-${candidateIdx}.jpg`;
     const absPath = resolveSafeStoragePath(relThumb);
     if (!fs.existsSync(absPath)) {

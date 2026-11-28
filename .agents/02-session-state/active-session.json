@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M20",
-  "current_sprint": "M20 Completed (Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector - 100% Gratis)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M20: Precision Subtitle Sync, Smart Anti-Double-Caption Detector, AI Multimodal Cinema Multi-Video Remix + FFmpeg VFX, Edit Model BYOK, & Storage Maintenance) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M21",
+  "current_sprint": "M21 Completed (HD/YT 16:9 Cover Downloader, Multi-Persona Critic Council & Anti-Hallucination Re-Editor - 100% Gratis)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M21: HD/YT 16:9 Cover Download, Multi-Persona Film Critic Council + Anti-Hallucination Re-Editor, Precision Subtitle Sync, Cinema Multi-Video Remix, & Storage Maintenance) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -154,16 +154,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Menyelesaikan bug subtitle muncul prematur sejak 0:00 dan double subtitle: menambahkan isSpokenWordToken() anti-halusinasi Whisper (stt.adapter.ts & ass-subtitle.builder.ts), menyatukan rumus timeline speed + xfade via computeEdlSegmentTimeline() antara ass-subtitle.builder.ts & edl-renderer.service.ts, mengisolasi cue pada batas segmen & jeda hening >= 0.65s, membangun deteksi 3 lapis subtitle bawaan (ffprobe soft stream + embedded-caption-detector.service.ts Gemini Vision cached 1x di atas storyboard 3x2 + saklar manual PATCH /api/media/:mediaId/embedded-subtitle & POST /detect-subtitle), menambahkan proteksi auto_skip_embedded per segmen di worker/renderer/clip.service/TargetGeneratorPanel/studio.vue, membersihkan tag demografi pada Hook Banner, serta memperbarui PRD.md v1.5, MILESTONE.md, bug-cases.md Kasus #08, & uji integrasi m20.subtitle-sync-and-embedded-detect.test.ts."
+    },
+    {
+      "id": "M21_HD_COVER_DOWNLOAD_CRITIC_COUNCIL_AND_ANTI_HALLUCINATION_PATCHER",
+      "title": "V2: HD/YT 16:9 Cover Downloader, Multi-Persona Film Critic Council & Anti-Hallucination Prompt Re-Editor (100% Gratis)",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan unduh langsung kandidat cover HD asli & Thumbnail YouTube 16:9 (1280x720 fit-blur-bg) di vision-tracker.service.ts, clip.service.ts, clip.controller.ts, & clips/[clipId].vue; membangun Dewan Kritikus AI 9 peran (general_audience, target_matrix, roger_ebert, cinema_poetica, pauline_kael, shandy_gasella, cine_crib, tony_zhou, mark_kermode) dengan kombinasi 1-3 peran & 4 preset dua kutub di packages/shared, critic-council.service.ts, & CriticCouncilPanel.vue berbasis Engine Capability Manifest anti-slop; meng-upgrade edl-patcher.service.ts (dukungan colorGrade, speed, transition, motion, grounding availableSources[], verifyAndDiffEdlPatch() anti-halusinasi, Dry-Run POST /preview-patch, & Zero Silent No-Op Guard HTTP 422); serta memperbarui PRD.md v1.6, MILESTONE.md, .agents rules/menu-docs V2, & uji integrasi m21.cover-download-and-critic-council.test.ts."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M19 (fe60cf9) ke main & dev",
-    "Fix sinkronisasi subtitle di ass-subtitle.builder.ts & stt.adapter.ts: filter token halusinasi Whisper, isolasi batas segmen & jeda >= 0.65s, kompensasi presisi speed & xfade via computeEdlSegmentTimeline()",
-    "Bangun Detektor 3 Lapis Subtitle Bawaan (100% gratis): ffprobe soft stream + embedded-caption-detector.service.ts (Gemini Vision cached 1x) + manual override API & UI Studio",
-    "Tambahkan proteksi per-segmen captionOverlapMode (auto_skip_embedded) di renderer, worker, clip.service, & TargetGeneratorPanel.vue agar bebas double subtitle",
-    "Bersihkan tag demografi seperti (Young Creators & Professionals) dan (US) dari Hook Banner",
-    "Update PRD.md v1.5 (M20 + M21 Seedance/Veo), MILESTONE.md, .agents docs, bug-cases.md Kasus #08, & uji integrasi m20.subtitle-sync-and-embedded-detect.test.ts"
+    "Push M20 (d0cdc4d) ke main & dev",
+    "Tambahkan unduhan langsung kandidat cover HD (1080x1920) & Thumbnail YouTube 16:9 (1280x720) pada Pemilih Sampul / Cover Terbaik",
+    "Bangun Dewan Kritikus AI 9 peran (Umum, Matriks Target, Roger Ebert, Cinema Poetica, Pauline Kael, Shandy Gasella, Cine Crib, Tony Zhou, Mark Kermode) dengan kombinasi 1-3 peran & Engine Capability Manifest anti-slop",
+    "Upgrade edl-patcher.service.ts: dukungan colorGrade/speed/transition/motion, grounding availableSources[], verifyAndDiffEdlPatch() Before vs After Diff, Dry-Run Preview Patch, & Zero Silent No-Op Guard (422)",
+    "Update PRD.md v1.6 (M21 + M22 Seedance/Veo), MILESTONE.md, .agents rules/menu-docs V2, & uji integrasi m21.cover-download-and-critic-council.test.ts"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -178,7 +184,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push M20 (Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector) ke main & dev",
-    "User langsung menguji deteksi subtitle bawaan di Studio dan generate ulang Cinema AI Remix di http://localhost:3000"
+    "Minta izin user untuk commit & push M21 (HD/YT Cover Download, Multi-Persona Critic Council & Anti-Hallucination Re-Editor) ke main & dev",
+    "User langsung menguji unduh Cover HD / YT 16:9, bedah Dewan Kritikus AI 1-3 role, & Cek Rencana Patch di http://localhost:3000"
   ]
 }

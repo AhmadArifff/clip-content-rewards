@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import type {
   EdlDocument,
+  PatchChangeItem,
   TargetConfig,
   UploadPlaybook,
   ViralScoreCritique
@@ -37,6 +38,7 @@ import StudioShell from '~/components/layout/StudioShell.vue';
 import SafeZoneOverlay from '~/components/studio/SafeZoneOverlay.vue';
 import FrameAnnotationOverlay, { type FrameAnnotationPin } from '~/components/studio/FrameAnnotationOverlay.vue';
 import VisualTimelineEditor, { type SourceMediaInfo } from '~/components/studio/VisualTimelineEditor.vue';
+import CriticCouncilPanel from '~/components/studio/CriticCouncilPanel.vue';
 import { apiRequest } from '~/composables/useApi';
 import { useThemeStore } from '~/stores/theme';
 
@@ -105,6 +107,8 @@ interface CoverCandidateRow {
   brightnessScore: number;
   subjectScore: number;
   imageUrl: string;
+  downloadHdUrl: string;
+  downloadYtUrl: string;
 }
 
 const route = useRoute();
@@ -131,6 +135,15 @@ const regenPrompt = ref('');
 const selectedPresetCodes = ref<string[]>([]);
 const showSubtitleEditor = ref(false);
 const editedCues = ref<Record<number, string>>({});
+const previewingPatch = ref(false);
+const patchVerification = ref<{
+  status: 'preview' | 'applied';
+  patchSummary: string;
+  patchMode: string;
+  hasEffectiveChange: boolean;
+  appliedChanges: PatchChangeItem[];
+  hallucinationWarnings: string[];
+} | null>(null);
 
 const coverCacheKey = ref(Date.now());
 const coverCandidates = ref<CoverCandidateRow[]>([]);
@@ -312,7 +325,62 @@ function buildFullPlaybookText(pb: UploadPlaybook): string {
 function applyCritiqueToReedit(promptSuggestion: string) {
   regenPrompt.value = promptSuggestion;
   activeTab.value = 'reedit';
-  noticeMsg.value = 'Saran perbaikan dari kritik sudah diisi ke kotak prompt. Klik "Regenerate" untuk membuat versi baru.';
+  noticeMsg.value = 'Saran perbaikan dari kritik sudah diisi ke kotak prompt. Klik "Cek Rencana Patch" atau "Regenerate" untuk membuat versi baru.';
+}
+
+function handleApplyCriticCouncilPrompt(payload: { prompt: string; presetCodes: string[] }) {
+  regenPrompt.value = payload.prompt;
+  selectedPresetCodes.value = Array.from(new Set([...selectedPresetCodes.value, ...payload.presetCodes]));
+  patchVerification.value = null;
+  noticeMsg.value = 'Solusi Dewan Kritikus sudah dimasukkan ke kotak prompt. Klik "Cek Rencana Patch" untuk memverifikasi perubahan nyata sebelum render.';
+}
+
+function collectSubtitleOverrides(): Array<{ index: number; text: string }> {
+  const subtitleOverrides: Array<{ index: number; text: string }> = [];
+  for (const cue of selectedVersion.value?.cues ?? []) {
+    const edited = editedCues.value[cue.index];
+    if (typeof edited === 'string' && edited.trim() !== cue.text.trim()) {
+      subtitleOverrides.push({ index: cue.index, text: edited.trim() });
+    }
+  }
+  return subtitleOverrides;
+}
+
+async function handlePreviewPatch() {
+  errorMsg.value = '';
+  const subtitleOverrides = collectSubtitleOverrides();
+  if (!regenPrompt.value.trim() && selectedPresetCodes.value.length === 0 && subtitleOverrides.length === 0) {
+    errorMsg.value = 'Tulis prompt penyesuaian atau pilih minimal 1 preset sebelum memeriksa rencana patch.';
+    return;
+  }
+
+  previewingPatch.value = true;
+  try {
+    const res = await apiRequest<{
+      patchSummary: string;
+      patchMode: string;
+      hasEffectiveChange: boolean;
+      appliedChanges: PatchChangeItem[];
+      hallucinationWarnings: string[];
+    }>(`/api/clips/${clipId.value}/preview-patch`, {
+      method: 'POST',
+      body: JSON.stringify({
+        userPrompt: regenPrompt.value.trim(),
+        presetCodes: selectedPresetCodes.value,
+        subtitleOverrides: subtitleOverrides.length > 0 ? subtitleOverrides : undefined
+      })
+    });
+    if (res.data) {
+      patchVerification.value = {
+        status: 'preview',
+        ...res.data
+      };
+    }
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal memeriksa rencana patch.';
+  } finally {
+    previewingPatch.value = false;
+  }
 }
 
 function togglePreset(preset: PromptPresetItem) {
@@ -361,13 +429,7 @@ async function handleRegenerate() {
   errorMsg.value = '';
   noticeMsg.value = '';
 
-  const subtitleOverrides: Array<{ index: number; text: string }> = [];
-  for (const cue of selectedVersion.value?.cues ?? []) {
-    const edited = editedCues.value[cue.index];
-    if (typeof edited === 'string' && edited.trim() !== cue.text.trim()) {
-      subtitleOverrides.push({ index: cue.index, text: edited.trim() });
-    }
-  }
+  const subtitleOverrides = collectSubtitleOverrides();
 
   if (!regenPrompt.value.trim() && selectedPresetCodes.value.length === 0 && subtitleOverrides.length === 0) {
     errorMsg.value = 'Tulis prompt penyesuaian, pilih minimal 1 preset cepat, atau ubah teks subtitle terlebih dahulu.';
@@ -378,6 +440,9 @@ async function handleRegenerate() {
   try {
     const res = await apiRequest<{
       patchSummary: string;
+      patchMode: string;
+      appliedChanges: PatchChangeItem[];
+      hallucinationWarnings: string[];
       newVersionId: string;
       newVersionNumber: number;
       clip: ClipDetailResponse;
@@ -395,8 +460,15 @@ async function handleRegenerate() {
       selectedVersionId.value = res.data.newVersionId;
       regenPrompt.value = '';
       selectedPresetCodes.value = [];
-      noticeMsg.value = `Versi v${res.data.newVersionNumber} selesai dirender: ${res.data.patchSummary}`;
-      activeTab.value = 'score';
+      patchVerification.value = {
+        status: 'applied',
+        patchSummary: res.data.patchSummary,
+        patchMode: res.data.patchMode,
+        hasEffectiveChange: true,
+        appliedChanges: res.data.appliedChanges ?? [],
+        hallucinationWarnings: res.data.hallucinationWarnings ?? []
+      };
+      noticeMsg.value = `Versi v${res.data.newVersionNumber} selesai dirender (${res.data.appliedChanges?.length ?? 0} perubahan terverifikasi): ${res.data.patchSummary}`;
     }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : 'Gagal merender ulang versi baru.';
@@ -897,12 +969,24 @@ onMounted(async () => {
                 <Camera class="w-4 h-4" style="color: var(--accent-bg);" />
                 <span>Pemilih Sampul / Cover Terbaik</span>
               </h2>
-              <span
-                v-if="activeCoverTs !== null"
-                class="px-2 py-0.5 rounded font-mono text-[11px] font-bold studio-badge-ok"
-              >
-                Aktif: {{ activeCoverTs.toFixed(1) }}s
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span
+                  v-if="activeCoverTs !== null"
+                  class="px-2 py-0.5 rounded font-mono text-[11px] font-bold studio-badge-ok"
+                >
+                  Aktif: {{ activeCoverTs.toFixed(1) }}s
+                </span>
+                <a
+                  v-if="selectedVersion.hasCover"
+                  :href="`/api/clips/${clip.id}/download?type=cover&versionId=${selectedVersion.id}`"
+                  class="px-2 py-1 rounded text-[11px] font-bold inline-flex items-center gap-1"
+                  style="background: var(--bg-elevated); border: 1px solid var(--border-color);"
+                  title="Unduh cover aktif saat ini (.jpg)"
+                >
+                  <Download class="w-3 h-3" />
+                  <span>Unduh Aktif</span>
+                </a>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -932,39 +1016,64 @@ onMounted(async () => {
             </p>
 
             <div v-else class="grid grid-cols-3 gap-2">
-              <button
+              <div
                 v-for="cand in coverCandidates"
                 :key="cand.index"
-                type="button"
-                class="group relative rounded overflow-hidden text-left transition focus:outline-none"
-                :class="selectedVersion.edl?.aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16]'"
-                :disabled="savingCover"
+                class="rounded overflow-hidden flex flex-col"
                 :style="{
+                  background: 'var(--bg-elevated)',
                   border: activeCoverTs === cand.timestampSec
                     ? '2.5px solid var(--accent-bg)'
                     : '1.5px solid var(--border-color)'
                 }"
-                :title="`Pilih frame detik ${cand.timestampSec.toFixed(1)}s (Skor ${cand.score})`"
-                @click="handleApplyCover(cand.timestampSec)"
               >
-                <img
-                  :src="cand.imageUrl"
-                  :alt="`Kandidat cover detik ${cand.timestampSec.toFixed(1)}s`"
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <span
-                  v-if="cand.isRecommended"
-                  class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase inline-flex items-center gap-0.5 bg-amber-400 text-slate-950"
+                <button
+                  type="button"
+                  class="group relative w-full overflow-hidden text-left transition focus:outline-none"
+                  :class="selectedVersion.edl?.aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16]'"
+                  :disabled="savingCover"
+                  :title="`Jadikan frame detik ${cand.timestampSec.toFixed(1)}s sebagai cover aktif (Skor ${cand.score})`"
+                  @click="handleApplyCover(cand.timestampSec)"
                 >
-                  <Star class="w-2.5 h-2.5 fill-current" />
-                  <span>TOP</span>
-                </span>
-                <div class="absolute inset-x-0 bottom-0 px-1.5 py-1 bg-black/75 text-white flex items-center justify-between text-[10px] font-mono">
-                  <span>{{ cand.timestampSec.toFixed(1) }}s</span>
-                  <span class="font-bold">{{ cand.score }}pt</span>
+                  <img
+                    :src="cand.imageUrl"
+                    :alt="`Kandidat cover detik ${cand.timestampSec.toFixed(1)}s`"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <span
+                    v-if="cand.isRecommended"
+                    class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase inline-flex items-center gap-0.5 bg-amber-400 text-slate-950"
+                  >
+                    <Star class="w-2.5 h-2.5 fill-current" />
+                    <span>TOP</span>
+                  </span>
+                  <div class="absolute inset-x-0 bottom-0 px-1.5 py-1 bg-black/75 text-white flex items-center justify-between text-[10px] font-mono">
+                    <span>{{ cand.timestampSec.toFixed(1) }}s</span>
+                    <span class="font-bold">{{ cand.score }}pt</span>
+                  </div>
+                </button>
+                <div class="grid grid-cols-2 divide-x text-[10px] font-bold" style="border-top: 1px solid var(--border-color);">
+                  <a
+                    :href="cand.downloadHdUrl"
+                    download
+                    class="py-1.5 px-1 inline-flex items-center justify-center gap-0.5 hover:underline"
+                    title="Unduh frame kandidat ini resolusi penuh (HD JPG)"
+                  >
+                    <Download class="w-2.5 h-2.5 shrink-0" />
+                    <span>HD</span>
+                  </a>
+                  <a
+                    :href="cand.downloadYtUrl"
+                    download
+                    class="py-1.5 px-1 inline-flex items-center justify-center gap-0.5 hover:underline"
+                    title="Unduh sebagai Thumbnail YouTube 16:9 (1280x720 JPG)"
+                  >
+                    <Download class="w-2.5 h-2.5 shrink-0" />
+                    <span>YT 16:9</span>
+                  </a>
                 </div>
-              </button>
+              </div>
             </div>
           </section>
 
@@ -1506,6 +1615,13 @@ onMounted(async () => {
 
           <!-- ==================== TAB 3: EDIT ULANG / REGENERATE PROMPT ==================== -->
           <div v-else-if="activeTab === 'reedit'" class="space-y-4">
+            <CriticCouncilPanel
+              :clip-id="clip.id"
+              :version-id="selectedVersion.id"
+              @apply-prompt="handleApplyCriticCouncilPrompt"
+              @seek="seekTo"
+            />
+
             <section class="studio-card p-5 space-y-4">
               <div class="space-y-1">
                 <h2 class="studio-heading text-base font-bold">
@@ -1597,15 +1713,85 @@ onMounted(async () => {
                 <span class="text-xs studio-muted">
                   Versi dasar: v{{ selectedVersion.versionNumber }} | Output baru: v{{ nextVersionNumber }}
                 </span>
-                <button
-                  type="button"
-                  class="studio-btn-primary text-sm"
-                  :disabled="regenerating"
-                  @click="handleRegenerate"
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    class="studio-btn-secondary text-xs"
+                    :disabled="previewingPatch || regenerating"
+                    @click="handlePreviewPatch"
+                  >
+                    <ShieldCheck class="w-4 h-4" />
+                    <span>{{ previewingPatch ? 'Memverifikasi...' : 'Cek Rencana Patch (Anti-Halusinasi)' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="studio-btn-primary text-sm"
+                    :disabled="regenerating"
+                    @click="handleRegenerate"
+                  >
+                    <Sparkles class="w-4 h-4" />
+                    <span>{{ regenerating ? `Merender Versi v${nextVersionNumber}...` : `Regenerate Versi v${nextVersionNumber}` }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Verifikasi Perubahan Nyata (Before vs After Diff - Anti-Halusinasi M21) -->
+              <div
+                v-if="patchVerification"
+                class="p-3.5 rounded space-y-2.5 text-xs"
+                :style="{
+                  background: 'var(--bg-elevated)',
+                  border: patchVerification.hasEffectiveChange
+                    ? '1.5px solid var(--status-ok-fg)'
+                    : '1.5px solid var(--status-warn-fg)'
+                }"
+              >
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="font-extrabold inline-flex items-center gap-1.5">
+                    <ShieldCheck class="w-4 h-4" />
+                    <span>
+                      {{
+                        patchVerification.status === 'applied'
+                          ? 'Verifikasi Perubahan Nyata (Sudah Dirender)'
+                          : 'Pratinjau Rencana Patch (Dry-Run Anti-Halusinasi)'
+                      }}
+                    </span>
+                  </span>
+                  <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold studio-badge-ok">
+                    {{ patchVerification.patchMode === 'ai' ? 'AI Grounded Patch' : 'Patch Deterministik' }}
+                  </span>
+                </div>
+
+                <p class="studio-muted">{{ patchVerification.patchSummary }}</p>
+
+                <div
+                  v-if="patchVerification.hallucinationWarnings.length > 0"
+                  class="p-2.5 rounded space-y-1 text-[11px] studio-badge-warn"
                 >
-                  <Sparkles class="w-4 h-4" />
-                  <span>{{ regenerating ? `Merender Versi v${nextVersionNumber}...` : `Regenerate Versi v${nextVersionNumber}` }}</span>
-                </button>
+                  <div class="font-bold">Catatan Penjaga Anti-Halusinasi:</div>
+                  <ul class="list-disc pl-4 space-y-0.5">
+                    <li v-for="(warn, wIdx) in patchVerification.hallucinationWarnings" :key="wIdx">{{ warn }}</li>
+                  </ul>
+                </div>
+
+                <div v-if="patchVerification.appliedChanges.length > 0" class="space-y-1.5">
+                  <div
+                    v-for="(chg, cIdx) in patchVerification.appliedChanges"
+                    :key="cIdx"
+                    class="p-2 rounded text-[11px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"
+                    style="background: var(--bg-surface); border: 1px solid var(--border-color);"
+                  >
+                    <span class="font-bold">{{ chg.label }}</span>
+                    <span class="font-mono break-words">
+                      <span class="studio-muted">{{ chg.before }}</span>
+                      <span class="mx-1.5 font-extrabold">-&gt;</span>
+                      <span>{{ chg.after }}</span>
+                    </span>
+                  </div>
+                </div>
+                <p v-else class="text-[11px] font-semibold studio-badge-warn p-2 rounded">
+                  Belum ada perubahan nyata yang terdeteksi pada parameter EDL. Perjelas instruksi (contoh: "ubah colorGrade moody_cinema", "potong 1.5 detik awal", "percepat 1.15x", atau "mute 0%") sebelum klik Regenerate.
+                </p>
               </div>
             </section>
           </div>

@@ -295,6 +295,34 @@ export async function extractCoverAtTimestamp(
   ]);
 }
 
+// Ekstrak cover Full HD asli atau Thumbnail YouTube 16:9 (1280x720) dengan latar blur proporsional untuk video 9:16
+export async function extractCoverVariantAtTimestamp(params: {
+  absVideoPath: string;
+  absCoverOutPath: string;
+  timestampSec: number;
+  format: 'hd' | 'yt16x9';
+}): Promise<void> {
+  const { absVideoPath, absCoverOutPath, timestampSec, format } = params;
+  const safeT = Math.max(0.05, timestampSec);
+
+  if (format === 'hd') {
+    await extractCoverAtTimestamp(absVideoPath, absCoverOutPath, safeT);
+    return;
+  }
+
+  await runFfmpegFile([
+    '-y',
+    '-ss', safeT.toFixed(2),
+    '-i', absVideoPath,
+    '-filter_complex',
+    '[0:v]split=2[bg][fg];[bg]scale=320:180:force_original_aspect_ratio=increase,crop=320:180,boxblur=8:2,scale=1280:720:flags=bilinear[bg16];[fg]scale=1280:720:force_original_aspect_ratio=decrease[fg16];[bg16][fg16]overlay=(W-w)/2:(H-h)/2,format=yuvj420p[out]',
+    '-map', '[out]',
+    '-frames:v', '1',
+    '-q:v', '2',
+    absCoverOutPath
+  ]);
+}
+
 export async function extractAndRankCoverCandidates(
   absVideoPath: string,
   absOutputDir: string,
@@ -372,6 +400,21 @@ export async function extractAndRankCoverCandidates(
   }
   if (candidates[bestIdx]) {
     candidates[bestIdx].isRecommended = true;
+  }
+
+  // Simpan indeks timestamp kandidat agar endpoint unduh HD / YT 16:9 presisi mengambil detik yang sama
+  try {
+    fs.writeFileSync(
+      path.join(absOutputDir, 'cover-candidates.json'),
+      JSON.stringify(
+        candidates.map((c) => ({ index: c.index, timestampSec: c.timestampSec, score: c.score })),
+        null,
+        2
+      ),
+      'utf8'
+    );
+  } catch {
+    // Abaikan jika gagal menulis metadata opsional
   }
 
   return candidates;
