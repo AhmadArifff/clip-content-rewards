@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M15",
-  "current_sprint": "M15 Completed (Frame-by-Frame Visual Annotation & Brand Asset Kit V2)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11-M15 Lengkap: Pacing Cloner, Visual Timeline, Smart Auto-Track & Cover, Content Calendar & Excel .xlsx, Frame Annotation & Brand Asset Kit) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M16",
+  "current_sprint": "M16 Completed (Free-Tier AI Quota Manager, Gemini Model Waterfall & Gemini Native Audio STT)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M16: BYOK Free-Tier Guard + Gemini Audio STT + seluruh fitur V2) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -119,15 +119,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Menambahkan model Prisma ClipAnnotation & BrandAssetKit, kontrak Zod (@clip/shared), konversi warna hexToAssColor (#RRGGBB -> &H00BBGGRR) di ass-subtitle.builder.ts, integrasi logo watermark/font/CTA Brand Kit di render-queue.worker.ts & clip.service.ts, API anotasi & Brand Kit (m15.routes.ts), FrameAnnotationOverlay.vue + kontrol -1f/+1f & 1-klik kompilasi ke Tab Edit Prompt di /clips/:clipId, halaman /brand-kits (pratinjau live 9:16 + upload logo PNG pada 3 tema + mobile 390px), dropdown Brand Kit di TargetGeneratorPanel.vue, 14/14 Vitest PASS, 4/4 Playwright E2E M15 PASS, dan menu-docs V2 anotasi-frame-dan-brand-kit.md."
+    },
+    {
+      "id": "M16_FREE_TIER_QUOTA_MANAGER_AND_GEMINI_AUDIO_STT",
+      "title": "V2: Free-Tier AI Quota Manager, Gemini Model Waterfall & Gemini Native Audio STT",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan pacer RPM anti-429, retry 429/503, maxOutputTokens, dan Gemini Model Waterfall (pro -> flash -> flash-lite) pada llm-json.adapter.ts; kompresi token prompt ~65% di brief-parser, edl-director, & viral-evaluator; Gemini Native Audio STT (chunk 3 menit 32kbps mono + interpolatePhraseToWords) pada stt.adapter.ts; fallback otomatis 1 kunci Gemini Brain -> STT pada media.service.ts; katalog gemini-2.5-flash-lite & panduan Mode 100% Gratis di /settings/api-keys; serta 3 uji baru m16.free-tier-ai.test.ts PASS."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M14 (7fdd88c) + Tag rilis v2.0.0 ke main & dev",
-    "Menambahkan model Prisma ClipAnnotation & BrandAssetKit (db:push non-destruktif) serta Zod schemas M15",
-    "Mengimplementasikan hexToAssColor (#RRGGBB -> &H00BBGGRR) di ass-subtitle.builder.ts dan integrasi logo/warna/font/CTA Brand Kit ke FFmpeg worker",
-    "Membangun FrameAnnotationOverlay.vue (-1f/+1f, klik titik koordinat X%/Y%, 1-klik kompilasi ke Edit Prompt) dan halaman /brand-kits 3 tema + dropdown di Studio Campaign",
-    "Memverifikasi 14/14 Vitest PASS, 4/4 Playwright E2E M15 PASS (3 tema + mobile 390px), dan menu-docs V2 anotasi-frame-dan-brand-kit.md (13 menu docs)"
+    "Push M15 (c1ebcf7) + Tag rilis v2.1.0 ke main & dev",
+    "Implementasi Free-Tier RPM Pacer, retry 429/503, dan Gemini Model Waterfall (pro -> flash -> flash-lite) pada llm-json.adapter.ts",
+    "Kompresi token payload prompt hemat ~65% di brief-parser.service.ts, edl-director.service.ts, & viral-evaluator.service.ts",
+    "Implementasi Gemini Native Audio STT (chunk 3 menit 32kbps mono + interpolasi word-level) di stt.adapter.ts + fallback otomatis kunci Gemini Brain -> STT di media.service.ts",
+    "Penambahan gemini-2.5-flash-lite & kartu panduan Mode 100% Gratis di /settings/api-keys + m16.free-tier-ai.test.ts PASS"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -142,7 +149,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M15 (Frame-by-Frame Visual Annotation & Brand Asset Kit) + tag v2.1.0 ke GitHub (main & dev)",
-    "Studio lokal 100% lengkap (M0-M15) siap digunakan langsung di http://localhost:3000"
+    "Minta izin user untuk commit & push M16 (Free-Tier AI Quota Manager & Gemini Native Audio STT) ke main & dev",
+    "User langsung melanjutkan testing manual di http://localhost:3000 dengan 1 kunci Gemini (atau plus Groq Whisper gratis)"
   ]
 }

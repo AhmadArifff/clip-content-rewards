@@ -3,7 +3,11 @@ import path from 'node:path';
 import mammoth from 'mammoth';
 import { extractText } from 'unpdf';
 import { BriefRulebookSchema, type BriefRulebook, type PlatformTarget } from '@clip/shared';
-import { generateStructuredJsonWithByok, getActiveKeyForRole } from './ai/llm-json.adapter.js';
+import {
+  compactTextForTokenBudget,
+  generateStructuredJsonWithByok,
+  getActiveKeyForRole
+} from './ai/llm-json.adapter.js';
 
 export interface ExtractedBriefText {
   sourceType: 'pdf' | 'docx' | 'doc' | 'text';
@@ -157,16 +161,18 @@ export async function parseBriefTextToRulebook(params: {
     '"requiredMentions": string[], "brandTone": string }. Gunakan Bahasa Indonesia ringkas untuk penjelasan.';
 
   try {
+    const compactBrief = compactTextForTokenBudget(rawText, 7500);
     const aiResult = await generateStructuredJsonWithByok({
       key: brainKey,
       systemPrompt,
-      userPrompt: `Teks Brief Campaign:\n\n${rawText.slice(0, 20000)}`
+      userPrompt: `Teks Brief Campaign:\n\n${compactBrief}`,
+      maxOutputTokens: 1200
     });
     const validated = BriefRulebookSchema.parse(aiResult.json);
     return {
       rulebook: validated,
       extractionMode: 'ai',
-      note: `Diekstrak otomatis oleh ${brainKey.provider.toUpperCase()} (${brainKey.defaultModel}). Silakan verifikasi sebelum konfirmasi.`
+      note: `Diekstrak otomatis oleh ${brainKey.provider.toUpperCase()} (${aiResult.usedModel}). Silakan verifikasi sebelum konfirmasi.`
     };
   } catch {
     return {

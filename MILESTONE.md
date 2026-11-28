@@ -116,6 +116,7 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M13** | **V2: Smart Face-Tracking Auto-Crop & Cover Selector** | Vision engine lokal RGB24 pipe (YCbCr skin + motion/edge) untuk `auto_face_track` 9:16 per segmen + pemindai 6 kandidat cover berperingkat & pilih frame playhead | `DONE` | 12/12 Vitest PASS + 4/4 Playwright E2E M13 PASS |
 | **M14** | **V2: Campaign Content Calendar & Export Excel `.xlsx`** | Kalender publikasi `/calendar` (Auto-Jadwalkan anti-bentrok, status tayang, mode Kalender & Tabel Matriks) + streaming OpenXML `.xlsx` 3-sheet (`SUM`/`AVERAGE` + formula guard) | `DONE` | 13/13 Vitest PASS + 4/4 Playwright E2E M14 PASS |
 | **M15** | **V2: Frame Annotation & Brand Asset Kit** | Overlay pin frame-by-frame (`-1f/+1f`, klik koordinat `(X%, Y%)`, 1-klik kompilasi prompt) + Pustaka Brand Asset Kit `/brand-kits` (logo PNG, warna ASS `&H00BBGGRR`, font, CTA) | `DONE` | 14/14 Vitest PASS + 4/4 Playwright E2E M15 PASS |
+| **M16** | **V2: Free-Tier Quota Guard & Gemini Audio STT** | Pelindung limit RPM/429 + Gemini Waterfall (`pro -> flash -> flash-lite`), kompresi token prompt ~65%, & Gemini Native Audio STT (1 kunci Google AI Studio merangkap Brain + STT) | `DONE` | 17/17 Vitest PASS + Build & Sync Docs PASS |
 
 ---
 

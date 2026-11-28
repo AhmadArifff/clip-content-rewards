@@ -355,6 +355,20 @@ export async function evaluateClipVersion(params: {
     'Panduan audio/musik pada playbook WAJIB 100% sesuai dengan edl.audio.muteOriginal dan edl.audio.originalVolume aktual.';
 
   try {
+    // Kirim payload ringkas hemat token (~65% lebih kecil untuk Free Tier Gemini)
+    const compactEdl = {
+      aspectRatio: params.edl.aspectRatio,
+      framingMode: params.edl.framingMode,
+      segmentCount: params.edl.segments.length,
+      audio: params.edl.audio,
+      hookBanner: params.edl.hookBanner,
+      captions: {
+        enabled: params.edl.captions.enabled,
+        style: params.edl.captions.style,
+        verticalOffsetPct: params.edl.captions.verticalOffsetPct
+      },
+      ctaText: params.edl.complianceOverlays.ctaText
+    };
     const res = await generateStructuredJsonWithByok({
       key: brainKey,
       systemPrompt,
@@ -362,12 +376,21 @@ export async function evaluateClipVersion(params: {
         angleTitle: params.angleTitle,
         hookSummary: params.hookSummary,
         actualDurationSec: params.actualDurationSec,
-        edl: params.edl,
+        edl: compactEdl,
         rulebook: params.rulebook,
-        targetConfig: params.targetConfig,
-        baselineReference: deterministic
+        target: {
+          platform: params.targetConfig.platform,
+          countryCode: params.targetConfig.countryCode,
+          ageGroup: params.targetConfig.ageGroup,
+          personaNiche: params.targetConfig.personaNiche,
+          controversyLevel: params.targetConfig.controversyLevel,
+          primaryKpi: params.targetConfig.primaryKpi
+        },
+        audioStateHint: deterministic.playbook.audioMusicGuide.renderedAudioState,
+        scheduleHint: deterministic.playbook.optimalSchedule
       }),
-      temperature: 0.35
+      temperature: 0.35,
+      maxOutputTokens: 2048
     });
     const parsed = CombinedEvalSchema.parse(res.json);
     // Pastikan instruksi mixing audio selalu akurat terhadap kondisi fisik audio di EDL

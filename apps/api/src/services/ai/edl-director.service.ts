@@ -329,7 +329,7 @@ export async function planMultiVariantEdls(params: {
     'Patuhi framingMode, mode audio, aturan brief, dan jika referencePacingBlueprint tersedia maka ikuti pola panjang shot, ritme potongan multi-segmen, dan aksen zoom-nya pada video sumber campaign tanpa meniru materi video lain.';
 
   const compactWords = (params.transcript?.words ?? [])
-    .slice(0, 450)
+    .slice(0, 240)
     .map((w) => `[${w.startSec.toFixed(1)}]${w.word}`)
     .join(' ');
 
@@ -339,7 +339,14 @@ export async function planMultiVariantEdls(params: {
     requestedCount: params.targetConfig.batchCount,
     targetConfig: params.targetConfig,
     briefRulebook: params.rulebook,
-    referencePacingBlueprint: params.pacingBlueprint ?? null,
+    referencePacingBlueprint: params.pacingBlueprint
+      ? {
+          shotCount: params.pacingBlueprint.shotCount,
+          avgShotDurationSec: params.pacingBlueprint.avgShotDurationSec,
+          estimatedBpm: params.pacingBlueprint.estimatedBpm,
+          shots: params.pacingBlueprint.shots.slice(0, 8)
+        }
+      : null,
     transcriptSample: compactWords || '(visual only / belum ditranskrip)'
   });
 
@@ -348,7 +355,8 @@ export async function planMultiVariantEdls(params: {
       key: brainKey,
       systemPrompt,
       userPrompt,
-      temperature: 0.45
+      temperature: 0.45,
+      maxOutputTokens: Math.min(4096, Math.max(1500, params.targetConfig.batchCount * 750))
     });
     const parsed = AiDirectorResponseSchema.parse(res.json);
     const normalized = parsed.clips.slice(0, params.targetConfig.batchCount).map((clip, idx) => ({

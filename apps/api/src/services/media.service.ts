@@ -259,12 +259,19 @@ export const mediaService = {
       return { ok: true, data: serializeMedia(updated) };
     }
 
-    const sttKey = await getActiveKeyForRole(userId, 'stt');
+    let sttKey = await getActiveKeyForRole(userId, 'stt');
+    if (!sttKey) {
+      // Fallback hemat gratis: gunakan kunci Gemini Brain aktif untuk transkrip audio langsung (multimodal STT)
+      const brainKey = await getActiveKeyForRole(userId, 'brain');
+      if (brainKey?.provider === 'gemini') {
+        sttKey = brainKey;
+      }
+    }
     if (!sttKey) {
       return {
         ok: false,
         code: 'STT_KEY_MISSING',
-        message: 'Belum ada kunci API Transkrip Video (Groq Whisper / OpenAI Whisper / Deepgram) aktif di menu Brankas API.',
+        message: 'Belum ada kunci API Transkrip Video (Groq Whisper gratis / Google Gemini / OpenAI Whisper / Deepgram) aktif di menu Brankas API.',
         statusCode: 400
       };
     }

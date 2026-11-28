@@ -4,7 +4,7 @@ import { decryptSecret, encryptSecret, maskApiKey } from '../utils/crypto.js';
 import { pingAiProvider } from './ai/provider-ping.adapter.js';
 
 export const PROVIDER_DEFAULT_MODELS: Record<AiProvider, { role: AiKeyRole; models: string[] }> = {
-  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-2.5-pro'] },
+  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] },
   openai: { role: 'brain', models: ['gpt-4o-mini', 'gpt-4o', 'whisper-1'] },
   anthropic: { role: 'brain', models: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'] },
   openrouter: { role: 'brain', models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet'] },

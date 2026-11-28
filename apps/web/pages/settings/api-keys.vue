@@ -30,7 +30,7 @@ const doctorLoading = ref(false);
 
 const keys = ref<MaskedApiKeyItem[]>([]);
 const catalog = ref<ProviderCatalog>({
-  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-2.5-pro'] },
+  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] },
   openai: { role: 'brain', models: ['gpt-4o-mini', 'gpt-4o', 'whisper-1'] },
   anthropic: { role: 'brain', models: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'] },
   openrouter: { role: 'brain', models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini'] },
@@ -267,7 +267,18 @@ onMounted(() => {
         >
           <div class="flex items-center justify-between gap-2">
             <h2 class="studio-heading text-lg font-bold">Kunci Terpasang ({{ keys.length }})</h2>
-            <span class="text-xs studio-muted">Disarankan pasang 1 Brain + 1 Transkrip</span>
+            <span class="text-xs studio-muted">Mode Hemat Gratis Aktif</span>
+          </div>
+
+          <!-- Panduan Ringkas Mode 100% Gratis (M16) -->
+          <div
+            class="p-3.5 rounded text-xs space-y-1.5"
+            style="background: var(--accent-soft-bg); color: var(--accent-soft-fg); border: 1px solid var(--accent-bg);"
+          >
+            <p class="font-bold">Mode 100% Gratis Aktif (Google AI Studio + Opsional Groq Whisper)</p>
+            <p class="leading-relaxed opacity-95">
+              1 kunci <strong>Google Gemini</strong> (<code>gemini-2.5-flash</code>) kini otomatis melayani <strong>Otak AI + Transkrip Video (STT)</strong> sekaligus dilengkapi pelindung kuota Free Tier (kompresi token, jeda anti-429, &amp; waterfall otomatis ke <code>gemini-2.5-flash-lite</code>). Untuk transkrip kata super cepat dengan kuota terpisah, Anda juga bisa menambah <strong>Groq Whisper</strong> gratis di <code>console.groq.com/keys</code>.
+            </p>
           </div>
 
           <div v-if="loadingKeys && keys.length === 0" class="text-sm studio-muted py-6">

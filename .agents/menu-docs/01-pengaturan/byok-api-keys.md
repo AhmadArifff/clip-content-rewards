@@ -99,8 +99,8 @@ graph TD
 
 - **Pertanyaan:** *Apakah API Key saya ikut ter-upload ke GitHub?*
   - **Jawaban:** Tidak. Kunci disimpan terenkripsi di `storage/clip_content_rewards.db` dan kunci master berada di `.env`; keduanya diblokir oleh `.gitignore`.
-- **Pertanyaan:** *Kombinasi kunci apa yang paling hemat untuk mulai?*
-  - **Jawaban:** Pasang Google Gemini (`gemini-2.5-flash`) untuk peran *Otak Analisis* dan Groq (`whisper-large-v3-turbo`) untuk peran *Transkrip Kata Video*.
+- **Pertanyaan:** *Kombinasi kunci apa yang paling hemat (100% gratis) untuk mulai?*
+  - **Jawaban:** Cukup 1 kunci **Google Gemini** (`gemini-2.5-flash`) dari Google AI Studio gratisan sudah otomatis melayani *Otak Analisis* sekaligus *Transkrip Video (Gemini Native Audio STT)* dengan kompresi token, jeda anti-429, dan waterfall otomatis ke `gemini-2.5-flash-lite`. Untuk transkrip kata super cepat dengan kuota terpisah, Anda bisa menambahkan **Groq Whisper** (`whisper-large-v3-turbo`) gratis tanpa kartu kredit di `console.groq.com/keys`.
 
 ---
 
@@ -108,7 +108,8 @@ graph TD
 
 | Tanggal | Commit Hash | Pengembang | Milestone | Ringkasan Perubahan & Dampak |
 | :--- | :--- | :--- | :--- | :--- |
-| 2026-11-26 | `HEAD` | AhmadArifff | **M4** | Implementasi awal Auth lokal, Brankas BYOK AES-256-GCM, Test Connection 6 provider, dan 3 Tema Switchable UI. |
+| 2026-11-26 | `59d5d90` | AhmadArifff | **M4** | Implementasi awal Auth lokal, Brankas BYOK AES-256-GCM, Test Connection 6 provider, dan 3 Tema Switchable UI. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M16** | Optimasi Free-Tier Quota Manager (pacer anti-429, retry, Gemini model waterfall `pro -> flash -> flash-lite`), kompresi prompt hemat 65% token, Gemini Native Audio STT (chunk 3 menit `32kbps mono`, 1 kunci Gemini otomatis merangkap STT), serta katalog `gemini-2.5-flash-lite` & panduan Mode 100% Gratis di UI. |
 
 ---
 
