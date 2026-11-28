@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Clapperboard, KeyRound, SlidersHorizontal, LogOut, Cpu } from 'lucide-vue-next';
+import { Clapperboard, Activity, KeyRound, SlidersHorizontal, LogOut, Cpu } from 'lucide-vue-next';
 import { useAuthStore } from '~/stores/auth';
 import { useThemeStore } from '~/stores/theme';
 import { useThemeCopy } from '~/composables/useThemeCopy';
@@ -14,6 +14,7 @@ const copy = useThemeCopy();
 
 const navItems = computed(() => [
   { to: '/campaigns', label: copy.value.navCampaigns, icon: Clapperboard },
+  { to: '/pacing', label: copy.value.navPacing, icon: Activity },
   { to: '/settings/api-keys', label: copy.value.navApiKeys, icon: KeyRound },
   { to: '/settings/presets', label: copy.value.navPresets, icon: SlidersHorizontal }
 ]);

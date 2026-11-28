@@ -16,6 +16,7 @@
 | **06** | **03-studio** | Viral Score, Projected Impact, Critique & Upload Playbook | `/clips/:clipId` | `M7` | `Done` | [`03-studio/viral-score-dan-playbook.md`](./03-studio/viral-score-dan-playbook.md) |
 | **07** | **03-studio** | Iterative Prompt Re-Editor, Inline Subtitle & Versioning | `/clips/:clipId` | `M8` | `Done` | [`03-studio/prompt-reeditor-versioning.md`](./03-studio/prompt-reeditor-versioning.md) |
 | **08** | **04-export** | Single Download & Bulk Streaming ZIP Bundle + Storage Hygiene | `/campaigns/:id/batches/:batchId` | `M9` | `Done` | [`04-export/download-dan-bundle.md`](./04-export/download-dan-bundle.md) |
+| **09** | **03-studio** | Reference Video Pacing Cloner (Style-Only Rhythm & Tempo) | `/pacing` | `M11 (V2)` | `Done` | [`03-studio/reference-pacing-cloner.md`](./03-studio/reference-pacing-cloner.md) |
 
 ---
 

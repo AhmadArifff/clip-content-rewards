@@ -2,12 +2,14 @@ import { EventEmitter } from 'node:events';
 import {
   EdlSchema,
   type BriefRulebook,
+  type PacingBlueprint,
   type SilenceInterval,
   type TargetConfig,
   type TranscriptPayload
 } from '@clip/shared';
 import { env } from '../config/env.js';
 import { batchRepository } from '../repositories/batch.repository.js';
+import { pacingRepository } from '../repositories/pacing.repository.js';
 import { planMultiVariantEdls } from '../services/ai/edl-director.service.js';
 import { evaluateClipVersion } from '../services/ai/viral-evaluator.service.js';
 import { renderEdlToMp4, type RenderMediaSource } from '../services/media/edl-renderer.service.js';
@@ -156,6 +158,18 @@ class LocalRenderQueueWorker {
 
       const mediaBundle = this.buildMediaSources(batch);
 
+      let pacingBlueprint: PacingBlueprint | null = null;
+      if (targetConfig.referencePacingId) {
+        const refRow = await pacingRepository.findByIdForUser(targetConfig.referencePacingId, userId);
+        if (refRow?.pacingBlueprintJson) {
+          try {
+            pacingBlueprint = JSON.parse(refRow.pacingBlueprintJson) as PacingBlueprint;
+          } catch {
+            pacingBlueprint = null;
+          }
+        }
+      }
+
       const planned = await planMultiVariantEdls({
         userId,
         mediaAssetId: mediaBundle.primaryRaw.id,
@@ -163,7 +177,8 @@ class LocalRenderQueueWorker {
         rulebook,
         targetConfig,
         transcript: mediaBundle.primaryTranscript,
-        silences: mediaBundle.primarySilences
+        silences: mediaBundle.primarySilences,
+        pacingBlueprint
       });
 
       await batchRepository.updateBatch(batchId, { actualTokens: planned.tokensUsed });
@@ -304,6 +319,18 @@ class LocalRenderQueueWorker {
         ? (JSON.parse(batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
         : null;
 
+      let pacingBlueprint: PacingBlueprint | null = null;
+      if (targetConfig.referencePacingId) {
+        const refRow = await pacingRepository.findByIdForUser(targetConfig.referencePacingId, batch.campaign.userId);
+        if (refRow?.pacingBlueprintJson) {
+          try {
+            pacingBlueprint = JSON.parse(refRow.pacingBlueprintJson) as PacingBlueprint;
+          } catch {
+            pacingBlueprint = null;
+          }
+        }
+      }
+
       const { evaluation, playbook } = await evaluateClipVersion({
         userId: batch.campaign.userId,
         edl: rendered.clampedEdl,
@@ -311,7 +338,8 @@ class LocalRenderQueueWorker {
         rulebook,
         targetConfig,
         angleTitle: clip.angleTitle,
-        hookSummary: clip.hookSummary ?? ''
+        hookSummary: clip.hookSummary ?? '',
+        pacingBlueprint
       });
 
       await batchRepository.updateClipVersion(activeVer.id, {

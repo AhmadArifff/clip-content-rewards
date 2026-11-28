@@ -4,6 +4,7 @@ import {
   ViralScoreCritiqueSchema,
   type BriefRulebook,
   type EdlDocument,
+  type PacingBlueprint,
   type TargetConfig,
   type UploadPlaybook,
   type ViralScoreCritique
@@ -43,7 +44,11 @@ const COUNTRY_SCHEDULE_MAP: Record<string, { timezone: string; bestDays: string[
   }
 };
 
-function buildAudioPlaybookSection(edl: EdlDocument, targetConfig: TargetConfig): UploadPlaybook['audioMusicGuide'] {
+function buildAudioPlaybookSection(
+  edl: EdlDocument,
+  targetConfig: TargetConfig,
+  pacingBlueprint?: PacingBlueprint | null
+): UploadPlaybook['audioMusicGuide'] {
   const isTiktok = targetConfig.platform === 'tiktok';
   const platformName = isTiktok ? 'TikTok' : targetConfig.platform === 'youtube_shorts' ? 'YouTube Shorts' : 'YouTube';
   const musicVibe =
@@ -52,7 +57,11 @@ function buildAudioPlaybookSection(edl: EdlDocument, targetConfig: TargetConfig)
       : targetConfig.editingStyle === 'cinematic_story'
         ? 'Ambient Emotional Piano / Cinematic Build-up'
         : 'Upbeat Viral Pop / Clean Tech Groove';
-  const bpmRange = targetConfig.editingStyle === 'fast_cut_retention' ? '120-132 BPM' : '95-115 BPM';
+  const bpmRange = pacingBlueprint
+    ? `${Math.max(70, pacingBlueprint.estimatedBpm - 6)}-${Math.min(180, pacingBlueprint.estimatedBpm + 6)} BPM (Kloning Ritme Referensi)`
+    : targetConfig.editingStyle === 'fast_cut_retention'
+      ? '120-132 BPM'
+      : '95-115 BPM';
 
   if (edl.audio.muteOriginal || edl.audio.originalVolume <= 0) {
     return {
@@ -89,8 +98,9 @@ export function buildDeterministicEvaluation(params: {
   targetConfig: TargetConfig;
   angleTitle: string;
   hookSummary: string;
+  pacingBlueprint?: PacingBlueprint | null;
 }): { evaluation: ViralScoreCritique; playbook: UploadPlaybook } {
-  const { edl, actualDurationSec, rulebook, targetConfig, angleTitle, hookSummary } = params;
+  const { edl, actualDurationSec, rulebook, targetConfig, angleTitle, hookSummary, pacingBlueprint } = params;
 
   const briefChecklist: ViralScoreCritique['briefChecklist'] = [];
   const critiques: ViralScoreCritique['critiques'] = [];
@@ -236,7 +246,12 @@ export function buildDeterministicEvaluation(params: {
     briefComplianceStatus,
     dimensions: {
       hookStrength: { score: hookScore, note: hasHook ? 'Hook 0-3 detik langsung tampil kontras di zona aman atas.' : 'Hook visual awal perlu diperkuat.' },
-      retentionPacing: { score: retentionScore, note: `Ritme selaras gaya ${targetConfig.editingStyle} dengan framing ${edl.framingMode}.` },
+      retentionPacing: {
+        score: pacingBlueprint ? Math.min(96, retentionScore + 4) : retentionScore,
+        note: pacingBlueprint
+          ? `Kloning ritme referensi aktif (${edl.segments.length} segmen potong, ${pacingBlueprint.cutsPerMinute} cut/mnt, tempo ~${pacingBlueprint.estimatedBpm} BPM).`
+          : `Ritme selaras gaya ${targetConfig.editingStyle} dengan framing ${edl.framingMode}.`
+      },
       briefCompliance: { score: briefScore, note: `Memeriksa durasi ${minDur}-${maxDur}s, CTA, dan ketentuan wajib campaign.` },
       audienceFit: { score: audienceFitScore, note: `Disesuaikan untuk audiens ${targetConfig.countryCode} usia ${targetConfig.ageGroup} (${targetConfig.personaNiche}).` },
       engagementTrigger: { score: engagementScore, note: `Fokus KPI ${targetConfig.primaryKpi} dengan sudut ${targetConfig.controversyLevel}.` },
@@ -277,7 +292,7 @@ export function buildDeterministicEvaluation(params: {
       : rawGoalSnippet;
 
   const playbook = UploadPlaybookSchema.parse({
-    audioMusicGuide: buildAudioPlaybookSection(edl, targetConfig),
+    audioMusicGuide: buildAudioPlaybookSection(edl, targetConfig, pacingBlueprint),
     titleOptions: [
       hookSummary || angleTitle,
       `Jangan lewatkan hal ini kalau kamu ${targetConfig.personaNiche}`,
@@ -325,6 +340,7 @@ export async function evaluateClipVersion(params: {
   targetConfig: TargetConfig;
   angleTitle: string;
   hookSummary: string;
+  pacingBlueprint?: PacingBlueprint | null;
 }): Promise<{ evaluation: ViralScoreCritique; playbook: UploadPlaybook; mode: 'ai' | 'local_heuristic' }> {
   const deterministic = buildDeterministicEvaluation(params);
   const brainKey = await getActiveKeyForRole(params.userId, 'brain');

@@ -80,12 +80,45 @@ export const TargetConfigSchema = z.object({
   ]),
   batchDiversityMode: z.enum(['distinct_moments', 'ab_hook_test']).default('distinct_moments'),
   batchCount: z.number().int().min(1).max(10),
+  referencePacingId: z.string().nullable().optional(),
   supportingAssets: z.object({
     watermarkAssetId: z.string().nullable().optional(),
     outroAssetId: z.string().nullable().optional()
   }).optional()
 });
 export type TargetConfig = z.infer<typeof TargetConfigSchema>;
+
+export const PacingEnergyCurveSchema = z.enum([
+  'hook_burst_build',
+  'steady_fast',
+  'climax_drop',
+  'calm_story'
+]);
+export type PacingEnergyCurve = z.infer<typeof PacingEnergyCurveSchema>;
+
+export const PacingShotSchema = z.object({
+  index: z.number().int().min(1),
+  startSec: z.number().min(0),
+  endSec: z.number().positive(),
+  durationSec: z.number().positive(),
+  role: z.enum(['hook', 'body', 'climax', 'outro']),
+  suggestedZoom: z.number().min(1).max(1.5).default(1)
+});
+export type PacingShot = z.infer<typeof PacingShotSchema>;
+
+export const PacingBlueprintSchema = z.object({
+  schemaVersion: z.literal('1.0').default('1.0'),
+  sourceDurationSec: z.number().positive(),
+  shotCount: z.number().int().min(1),
+  avgShotDurationSec: z.number().positive(),
+  cutsPerMinute: z.number().min(0),
+  estimatedBpm: z.number().int().min(70).max(180),
+  energyCurve: PacingEnergyCurveSchema,
+  hookWindowAvgShotSec: z.number().positive(),
+  styleSummary: z.string().min(4),
+  shots: z.array(PacingShotSchema).min(1)
+});
+export type PacingBlueprint = z.infer<typeof PacingBlueprintSchema>;
 
 export const EdlSegmentSchema = z.object({
   mediaAssetId: z.string().min(1),

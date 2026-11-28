@@ -3,10 +3,10 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V1",
-  "current_sprint": "v1.0.0 RELEASE READY (M0-M10 100% Verified PASS | Full E2E Regression M4-M9 + Delivery Gate 4-Blok)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10) dalam arsitektur Monorepo dengan 3 tema switchable untuk mengubah brief (.doc/.docx/.pdf) dan raw video Content Rewards menjadi banyak variasi konten siap upload TikTok & YouTube lengkap dengan viral score, kritik, upload playbook, prompt re-editor, dan download satuan/ZIP.",
-  "last_updated": "2026-11-27",
+  "status": "COMPLETED_V2_M11",
+  "current_sprint": "M11 Completed (Reference Video Pacing Cloner V2 | Style-Only FFmpeg Scene-Cut & Multi-Cut EDL Cloning)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11 Reference Pacing Cloner) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "last_updated": "2026-11-28",
   "completed_milestones": [
     {
       "id": "M0_ROADMAP_AND_SKILL_AUDIT",
@@ -84,15 +84,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-27",
       "details": "Menyelesaikan panduan operasional README.md v1.0.0 (termasuk akses Wi-Fi LAN HP), mempromosikan pola terverifikasi ke Case-Bank YAML, menambahkan skrip npm run test:e2e:all, mengeksekusi full regression (typecheck, build, 9/9 Vitest, 5/5 suite Playwright E2E M4-M9), lulus Mandatory Delivery Gate 4-Blok (EM_DASH_COUNT=0, UNIGNORED_SECRETS=0), dan sinkronisasi final 8/8 menu docs + 5 foundation docs ke portal documentasi-projects."
+    },
+    {
+      "id": "M11_REFERENCE_VIDEO_PACING_CLONER_V2",
+      "title": "V2: Reference Video Pacing Cloner (Style-Only FFmpeg Scene-Cut & BPM Extractor + Multi-Cut EDL Cloning)",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan model Prisma ReferencePacingProfile, PacingBlueprintSchema (@clip/shared), pacing-analyzer.service.ts (FFmpeg scene-cut + fallback one-take + auto-delete file referensi), CRUD /api/pacing-profiles, integrasi multi-cut EDL & Playbook BPM sync, halaman /pacing 3 tema + visualisasi pola shot, dropdown TargetGeneratorPanel, 10/10 Vitest PASS, 4/4 Playwright E2E M11 PASS, dan menu-docs V2 reference-pacing-cloner.md."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Commit & push checkpoint M9 ke GitHub (commit 708d9ab pada main & dev)",
-    "Memperbarui README.md lengkap v1.0.0 (Quick Start, akses Wi-Fi LAN HP, struktur monorepo & perintah QA)",
-    "Mempromosikan pola produksi ke .agents/04-case-bank/cases/case-20261127-local-byok-video-auto-editor-studio.yaml",
-    "Menjalankan full regression M4-M9 (9/9 Vitest + 5/5 suite Playwright E2E) & Mandatory Delivery Gate 4-Blok PASS",
-    "Sinkronisasi final 8/8 menu-docs Standar V2 & 5 dokumen fondasi ke portal documentasi-projects"
+    "Release v1.0.0 ter-push ke GitHub (commit 8136b51 & tag v1.0.0 pada main & dev)",
+    "Membangun Reference Video Pacing Cloner (M11): model ReferencePacingProfile, FFmpeg scene-cut/BPM analyzer dengan guardrail style-only auto-delete",
+    "Mengintegrasikan kloning ritme multi-cut & zoom punch ke edl-director.service.ts, render-queue.worker.ts, dan sinkronisasi BPM di viral-evaluator.service.ts",
+    "Membangun halaman /pacing (3 tema + visualisasi bar shot) dan dropdown pemilih ritme di TargetGeneratorPanel.vue",
+    "Memverifikasi 10/10 Vitest PASS, 4/4 Playwright E2E M11 PASS, serta menambah menu-docs V2 reference-pacing-cloner.md (total 9 menu docs)"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -107,8 +114,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta konfirmasi final user untuk commit M10, merge main/dev, dan push tag rilis v1.0.0 ke GitHub",
-    "Aplikasi siap digunakan langsung secara lokal lewat `npm run dev` (http://localhost:3000)",
-    "Opsional fase berikutnya: pilih fitur Backlog V2 (reelmimic pacing cloner, openmotion timeline editor, atau ml-vision face-tracking auto-crop)"
+    "Minta izin user untuk commit & push checkpoint M11 (Reference Video Pacing Cloner) ke GitHub (main & dev)",
+    "Tawarkan langkah berikutnya: mulai pakai studio lokal (`npm run dev`) atau lanjut ke fitur V2 berikutnya (M12 Visual Timeline Editor / M13 Face-Tracking Crop / M14 Excel Calendar)"
   ]
 }

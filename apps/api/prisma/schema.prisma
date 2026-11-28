@@ -19,6 +19,7 @@ model User {
   apiKeys        ApiKey[]
   targetProfiles TargetProfile[]
   campaigns      Campaign[]
+  pacingProfiles ReferencePacingProfile[]
 
   @@map("users")
 }
@@ -232,4 +233,28 @@ model RenderJob {
   @@index([status, createdAt])
   @@index([entityId])
   @@map("render_jobs")
+}
+
+model ReferencePacingProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @map("user_id")
+  name                String
+  sourceFilename      String   @map("source_filename")
+  durationSec         Float    @map("duration_sec")
+  width               Int?
+  height              Int?
+  fps                 Float?
+  shotCount           Int      @map("shot_count")
+  avgShotDurationSec  Float    @map("avg_shot_duration_sec")
+  cutsPerMinute       Float    @map("cuts_per_minute")
+  estimatedBpm        Int      @map("estimated_bpm")
+  energyCurve         String   @map("energy_curve")
+  pacingBlueprintJson String   @map("pacing_blueprint_json")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("reference_pacing_profiles")
 }

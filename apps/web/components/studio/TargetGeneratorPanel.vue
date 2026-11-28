@@ -19,6 +19,15 @@ interface TargetProfileRow {
   targetConfig: TargetConfig;
 }
 
+interface ReferencePacingRow {
+  id: string;
+  name: string;
+  shotCount: number;
+  avgShotDurationSec: number;
+  cutsPerMinute: number;
+  estimatedBpm: number;
+}
+
 interface EstimateResult {
   estimatedInputTokens: number;
   estimatedOutputTokens: number;
@@ -38,6 +47,7 @@ const router = useRouter();
 
 const presets = ref<MasterPresetRow[]>([]);
 const profiles = ref<TargetProfileRow[]>([]);
+const pacingProfiles = ref<ReferencePacingRow[]>([]);
 const selectedProfileId = ref('');
 const newProfileName = ref('');
 const savingProfile = ref(false);
@@ -65,6 +75,7 @@ const config = ref<TargetConfig>({
   initialAudioMode: 'ducking_20',
   batchDiversityMode: 'distinct_moments',
   batchCount: 3,
+  referencePacingId: null,
   supportingAssets: {
     watermarkAssetId: null,
     outroAssetId: null
@@ -89,14 +100,23 @@ const watermarkAssetId = computed({
   }
 });
 
+const referencePacingId = computed({
+  get: () => config.value.referencePacingId ?? '',
+  set: (val: string) => {
+    config.value.referencePacingId = val || null;
+  }
+});
+
 async function loadPresetsAndProfiles() {
   try {
-    const [pRes, profRes] = await Promise.all([
+    const [pRes, profRes, pacingRes] = await Promise.all([
       apiRequest<MasterPresetRow[]>('/api/presets?active=true'),
-      apiRequest<TargetProfileRow[]>('/api/target-profiles')
+      apiRequest<TargetProfileRow[]>('/api/target-profiles'),
+      apiRequest<ReferencePacingRow[]>('/api/pacing-profiles')
     ]);
     presets.value = pRes.data ?? [];
     profiles.value = profRes.data ?? [];
+    pacingProfiles.value = pacingRes.data ?? [];
   } catch {
     // Tetap gunakan default aman
   }
@@ -341,6 +361,23 @@ onMounted(loadPresetsAndProfiles);
         <select id="tg-wm" v-model="watermarkAssetId" class="studio-input text-xs">
           <option value="">Tanpa Watermark</option>
           <option v-for="w in watermarks" :key="w.id" :value="w.id">{{ w.originalFilename }}</option>
+        </select>
+      </div>
+
+      <div class="space-y-1 sm:col-span-2 lg:col-span-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="tg-pacing" class="block text-xs font-semibold">
+            Kloning Ritme Video Referensi (Style-Only, Opsional)
+          </label>
+          <NuxtLink to="/pacing" class="text-[11px] font-semibold hover:underline" style="color: var(--accent-bg);">
+            Kelola / Upload Video Referensi ->
+          </NuxtLink>
+        </div>
+        <select id="tg-pacing" v-model="referencePacingId" class="studio-input text-xs">
+          <option value="">Default (Ikuti Gaya Editing Standar)</option>
+          <option v-for="pp in pacingProfiles" :key="pp.id" :value="pp.id">
+            {{ pp.name }} ({{ pp.shotCount }} shot | {{ pp.avgShotDurationSec.toFixed(1) }}s/shot | ~{{ pp.estimatedBpm }} BPM)
+          </option>
         </select>
       </div>
     </div>

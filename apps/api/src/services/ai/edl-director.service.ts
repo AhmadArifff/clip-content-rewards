@@ -3,6 +3,7 @@ import {
   EdlSchema,
   type BriefRulebook,
   type EdlDocument,
+  type PacingBlueprint,
   type SilenceInterval,
   type TargetConfig,
   type TranscriptPayload
@@ -91,14 +92,81 @@ function buildAudioConfig(mode: TargetConfig['initialAudioMode'], platform: Targ
   };
 }
 
+function buildPacedSegmentsFromBlueprint(params: {
+  mediaAssetId: string;
+  windowStartSec: number;
+  windowEndSec: number;
+  mediaDurationSec: number;
+  blueprint: PacingBlueprint;
+  variantIdx: number;
+}): EdlDocument['segments'] {
+  const { mediaAssetId, windowStartSec, windowEndSec, mediaDurationSec, blueprint, variantIdx } = params;
+  const availableDur = Math.max(0.8, windowEndSec - windowStartSec);
+  const maxCuts = Math.min(8, Math.max(2, Math.floor(availableDur / 0.6)));
+  const sourceShots = blueprint.shots.slice(0, maxCuts);
+
+  if (sourceShots.length <= 1 || availableDur < 1.5) {
+    return [
+      {
+        mediaAssetId,
+        startSec: Math.round(windowStartSec * 100) / 100,
+        endSec: Math.round(Math.min(mediaDurationSec, Math.max(windowStartSec + 0.6, windowEndSec)) * 100) / 100,
+        zoom: variantIdx % 2 === 1 ? 1.1 : 1.0,
+        cropX: 'center'
+      }
+    ];
+  }
+
+  const totalRefDur = sourceShots.reduce((sum, s) => sum + s.durationSec, 0) || 1;
+  const segments: EdlDocument['segments'] = [];
+  let cursor = windowStartSec;
+
+  for (let i = 0; i < sourceShots.length; i += 1) {
+    const shot = sourceShots[i];
+    const isLast = i === sourceShots.length - 1;
+    const scaledDur = isLast
+      ? Math.max(0.45, windowEndSec - cursor)
+      : Math.max(0.45, (shot.durationSec / totalRefDur) * availableDur);
+
+    const segStart = Math.min(Math.max(0, cursor), Math.max(0, mediaDurationSec - 0.5));
+    const segEnd = Math.min(mediaDurationSec, Math.max(segStart + 0.45, segStart + scaledDur));
+    const baseZoom = shot.suggestedZoom;
+    const zoom = variantIdx % 2 === 1 && baseZoom <= 1.01 ? 1.06 : baseZoom;
+
+    segments.push({
+      mediaAssetId,
+      startSec: Math.round(segStart * 100) / 100,
+      endSec: Math.round(segEnd * 100) / 100,
+      zoom: Math.round(Math.min(1.5, Math.max(1.0, zoom)) * 100) / 100,
+      cropX: 'center'
+    });
+
+    cursor = segEnd;
+    if (cursor >= Math.min(windowEndSec, mediaDurationSec) - 0.45) break;
+  }
+
+  return segments.length > 0
+    ? segments
+    : [
+        {
+          mediaAssetId,
+          startSec: Math.round(windowStartSec * 100) / 100,
+          endSec: Math.round(Math.min(mediaDurationSec, windowEndSec) * 100) / 100,
+          zoom: 1.0,
+          cropX: 'center'
+        }
+      ];
+}
+
 export function buildHeuristicMultiVariantEdls(params: {
   mediaAssetId: string;
   mediaDurationSec: number;
   rulebook: BriefRulebook | null;
   targetConfig: TargetConfig;
   silences: SilenceInterval[];
+  pacingBlueprint?: PacingBlueprint | null;
 }): PlannedClipDraft[] {
-  const { mediaAssetId, mediaDurationSec, rulebook, targetConfig } = params;
+  const { mediaAssetId, mediaDurationSec, rulebook, targetConfig, pacingBlueprint } = params;
   const count = targetConfig.batchCount;
   const totalDur = Math.max(1.5, mediaDurationSec);
   const isVertical = targetConfig.platform !== 'youtube_long';
@@ -151,20 +219,31 @@ export function buildHeuristicMultiVariantEdls(params: {
       endSec = Math.min(totalDur, startSec + sliceLen);
     }
 
+    const segments = pacingBlueprint
+      ? buildPacedSegmentsFromBlueprint({
+          mediaAssetId,
+          windowStartSec: startSec,
+          windowEndSec: endSec,
+          mediaDurationSec: totalDur,
+          blueprint: pacingBlueprint,
+          variantIdx: i
+        })
+      : [
+          {
+            mediaAssetId,
+            startSec: Math.round(startSec * 100) / 100,
+            endSec: Math.round(Math.max(startSec + 0.6, endSec) * 100) / 100,
+            zoom: i % 2 === 1 ? 1.08 : 1.0,
+            cropX: 'center' as const
+          }
+        ];
+
     const edl = EdlSchema.parse({
       schemaVersion: '1.1',
       aspectRatio: isVertical ? '9:16' : '16:9',
       framingMode: targetConfig.framingMode,
       resolution,
-      segments: [
-        {
-          mediaAssetId,
-          startSec: Math.round(startSec * 100) / 100,
-          endSec: Math.round(Math.max(startSec + 0.6, endSec) * 100) / 100,
-          zoom: i % 2 === 1 ? 1.08 : 1.0,
-          cropX: 'center'
-        }
-      ],
+      segments,
       audio: buildAudioConfig(targetConfig.initialAudioMode, targetConfig.platform),
       hookBanner: {
         enabled: true,
@@ -213,6 +292,7 @@ export async function planMultiVariantEdls(params: {
   targetConfig: TargetConfig;
   transcript: TranscriptPayload | null;
   silences: SilenceInterval[];
+  pacingBlueprint?: PacingBlueprint | null;
 }): Promise<{ drafts: PlannedClipDraft[]; tokensUsed: number; mode: 'ai' | 'local_heuristic' }> {
   const heuristicDrafts = buildHeuristicMultiVariantEdls(params);
   const brainKey = await getActiveKeyForRole(params.userId, 'brain');
@@ -224,7 +304,7 @@ export async function planMultiVariantEdls(params: {
     'Anda adalah AI Video Director untuk Content Rewards TikTok & YouTube. ' +
     'Buat tepat N variasi rencana edit (EDL JSON v1.1) dalam format {"clips":[{"angleTitle":string,"hookSummary":string,"edl":{...}}]}. ' +
     'Semua startSec dan endSec WAJIB berada di antara 0 dan durasi video sumber. ' +
-    'Patuhi framingMode, mode audio, aturan brief, dan jika batchDiversityMode=distinct_moments maka hindari overlap segmen >30%.';
+    'Patuhi framingMode, mode audio, aturan brief, dan jika referencePacingBlueprint tersedia maka ikuti pola panjang shot, ritme potongan multi-segmen, dan aksen zoom-nya pada video sumber campaign tanpa meniru materi video lain.';
 
   const compactWords = (params.transcript?.words ?? [])
     .slice(0, 450)
@@ -237,6 +317,7 @@ export async function planMultiVariantEdls(params: {
     requestedCount: params.targetConfig.batchCount,
     targetConfig: params.targetConfig,
     briefRulebook: params.rulebook,
+    referencePacingBlueprint: params.pacingBlueprint ?? null,
     transcriptSample: compactWords || '(visual only / belum ditranskrip)'
   });
 

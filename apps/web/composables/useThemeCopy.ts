@@ -7,8 +7,11 @@ export interface ThemeCopyDeck {
   shortTag: string;
   brandSubtitle: string;
   navCampaigns: string;
+  navPacing: string;
   navApiKeys: string;
   navPresets: string;
+  pacingTitle: string;
+  pacingSubtitle: string;
   apiKeysTitle: string;
   apiKeysSubtitle: string;
   doctorTitle: string;
@@ -32,8 +35,11 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     shortTag: 'PRO CONSOLE',
     brandSubtitle: 'Konsol Pasca-Produksi Lokal',
     navCampaigns: 'Antrean Campaign',
+    navPacing: 'Ritme Referensi',
     navApiKeys: 'Brankas API & Mesin',
     navPresets: 'Preset Parameter',
+    pacingTitle: 'Telemetri & Kloning Ritme Referensi',
+    pacingSubtitle: 'Ekstrak pola panjang shot, frekuensi cut per menit, dan tempo BPM dari video viral referensi tanpa menyalin cuplikan aslinya.',
     apiKeysTitle: 'Brankas Kunci AI & Telemetri Mesin',
     apiKeysSubtitle: 'Konfigurasikan penyedia analisis brief, transkripsi kata, serta pantau status FFmpeg lokal.',
     doctorTitle: 'Telemetri Mesin Lokal',
@@ -55,8 +61,11 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     shortTag: 'EDITORIAL DESK',
     brandSubtitle: 'Meja Redaksi Konten',
     navCampaigns: 'Daftar Campaign',
+    navPacing: 'Pola Ritme',
     navApiKeys: 'Koneksi AI & Studio',
     navPresets: 'Pustaka Preset',
+    pacingTitle: 'Arsip Pola Ritme & Tempo Video Referensi',
+    pacingSubtitle: 'Pelajari struktur potongan dan kurva energi tayangan referensi untuk diterapkan ulang secara etis pada materi campaign Anda.',
     apiKeysTitle: 'Koneksi Kecerdasan Buatan & Kesiapan Studio',
     apiKeysSubtitle: 'Tautkan layanan AI pilihan Anda dan pastikan perangkat lokal siap memproduksi tayangan sesuai brief.',
     doctorTitle: 'Ringkasan Kesiapan Perangkat',
@@ -78,8 +87,11 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     shortTag: 'CREATOR DESK',
     brandSubtitle: 'Workbench Konten Cepat',
     navCampaigns: 'Campaign Aktif',
+    navPacing: 'Kloning Ritme',
     navApiKeys: 'Otak AI & Mesin',
     navPresets: 'Chip Preset Cepat',
+    pacingTitle: 'Kloning Ritme Video Viral (Style-Only)',
+    pacingSubtitle: 'Unggah 1 video viral referensi, ekstrak ketukan cut & BPM-nya dalam hitungan detik, lalu tempelkan ke video campaign kamu!',
     apiKeysTitle: 'Sambungkan Otak AI & Cek Mesin Render',
     apiKeysSubtitle: 'Tempel kunci API milikmu sekali dengan aman, uji koneksi 1 klik, lalu gas produksi banyak variasi!',
     doctorTitle: 'Cek Kesehatan Mesin Render',
