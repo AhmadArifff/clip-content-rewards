@@ -18,13 +18,19 @@
 - **Original Ducking (`originalVolume: 0.15 - 0.30`):** Kecilkan volume asli secara mulus agar siap ditumpuk *Trending Sound* langsung di aplikasi TikTok/YouTube.
 - **Mute Original Total (`muteOriginal: true` / `originalVolume: 0`):** Hapus/bisukan audio asli (ganti track hening valid) dan otomatis perbarui instruksi audio di Upload Playbook agar kreator tahu video ini disiapkan 100% untuk sound platform.
 
-## 4. Safe-Zone Subtitle & Hook Banner
+## 4. Safe-Zone Subtitle & Hook Banner (Kalibrasi HP 2026)
 - Gunakan koordinat safe-zone terukur untuk frame `1080x1920`:
-  - **TikTok Safe-Zone:** Hindari 15% atas (search/following bar), 20% kanan (like/comment/share/sound icons), dan 25% bawah (caption/username/audio ticker). Area subtitle default berada di `MarginV` aman sekitar `360px-480px` dari bawah (sekitar 68%-76% tinggi layar) dengan `MarginR >= 160px`.
-  - **YouTube Shorts Safe-Zone:** Hindari 12% atas, 18% kanan, dan 22% bawah.
+  - **TikTok Safe-Zone:** Hindari `9%-10%` atas (tab `Teman | Mengikuti | Saran` + Search), `20%` kanan (avatar+, like, comment, bookmark, share, sound disc -> `MarginR >= 215px`), dan `29%-30%` bawah (efek, kreator, caption 2 baris, audio ticker -> `MarginV >= 560px`, default `verticalOffsetPct = 66%`).
+  - **YouTube Shorts Safe-Zone:** Hindari `9%` pojok kanan atas (`Search` + `...`), `18%-20%` kanan (`MarginR >= 195px`), dan `22%-23%` bawah (`Avatar + @Handle + Subscribe` + judul -> `MarginV >= 440px`, default `verticalOffsetPct = 72%`).
+  - **CTA Overlay (`CtaOverlay`):** Posisikan rapi tepat di tepi bawah zona aman (`565px` TikTok / `455px` YT Shorts) agar tidak menutupi wajah/mulut pembicara maupun bertabrakan dengan metadata platform.
 - Setiap kali user mengubah gaya atau memperbaiki typo subtitle lewat *Inline Subtitle Editor*, file `.ass` & `.srt` diperbarui lalu dirender ulang tanpa mengubah potongan video kecuali diminta.
 
 ## 5. Ketahanan Queue, Estimasi Token & Hygiene Storage
 - Sebelum mengeksekusi batch generate, tampilkan estimasi jumlah token input/output agar user dapat mengontrol biaya API BYOK.
-- Terapkan exponential backoff saat API AI mengembalikan `429 Rate Limit`, dan izinkan **Partial Batch Retry** (ulang 1 clip yang gagal saja).
+- Terapkan Free-Tier RPM Pacer, retry `429/503`, Gemini Model Waterfall (`pro -> flash -> flash-lite`), dan izinkan **Partial Batch Retry** (ulang 1 clip yang gagal saja).
 - Sediakan pembersihan aman untuk folder `storage/temp` setelah job selesai/gagal agar disk lokal tetap lega.
+
+## 6. Multi-Video Director, Anti-Cut Speech Boundary & Kunci Bahasa Target Negara
+- **Multi-Video Utilization:** Jika campaign memiliki >1 `raw_video`, `render-queue.worker.ts` wajib meneruskan SELURUH `rawVideos[]` (beserta transkrip, durasi, dan silence masing-masing) ke `planMultiVariantEdls()` agar variasi terdistribusi lintas semua video mentah (termasuk `auto_face_track` per `mediaAssetId`).
+- **Anti-Mid-Sentence Cutoff (`snapSegmentToSpeechBoundary`):** Setiap segmen (baik dari AI maupun heuristik) wajib diselaraskan ke batas akhir kalimat (tanda baca `.!?` atau jeda bicara `>= 0.38s`) dan mengikuti `clipEndingMode`: `complete_story` (tuntas sampai akhir kalimat / penuh bila muat batas brief), `full_source` (utuh 0 hingga durasi penuh), atau `part_series` (berurutan Part 1 -> Part 2 lengkap dengan CTA teaser).
+- **Target-Country Content Language Lock (`resolveContentLanguage`):** Seluruh teks yang terbaca audiens & algoritma platform (`angleTitle`, `hookBanner.text`, `ctaText`, `titleOptions`, `captionDescription`, `hashtags`, `pinnedComments`) WAJIB 100% mengikuti bahasa target negara (Bahasa Inggris untuk `US`/`UK`/`AU`/`CA`/`SG`/`GLOBAL`, bebas teks & hashtag Indonesia seperti `#tiktokindonesia`), sementara catatan evaluasi internal studio tetap berbahasa Indonesia human-friendly untuk kreator.

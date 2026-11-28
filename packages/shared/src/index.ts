@@ -62,6 +62,13 @@ export const FramingModeSchema = z.enum([
 ]);
 export type FramingMode = z.infer<typeof FramingModeSchema>;
 
+export const ClipEndingModeSchema = z.enum([
+  'complete_story',
+  'full_source',
+  'part_series'
+]);
+export type ClipEndingMode = z.infer<typeof ClipEndingModeSchema>;
+
 export const TargetConfigSchema = z.object({
   platform: PlatformTargetSchema,
   countryCode: z.string().min(2).max(10),
@@ -87,6 +94,7 @@ export const TargetConfigSchema = z.object({
     'mute_for_platform_sound'
   ]),
   batchDiversityMode: z.enum(['distinct_moments', 'ab_hook_test']).default('distinct_moments'),
+  clipEndingMode: ClipEndingModeSchema.default('complete_story'),
   batchCount: z.number().int().min(1).max(10),
   referencePacingId: z.string().nullable().optional(),
   brandKitId: z.string().nullable().optional(),

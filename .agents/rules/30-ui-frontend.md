@@ -6,7 +6,9 @@
 
 ## 2. Prinsip Desain Studio Video
 - **Hierarki Konten Utama:** Video preview, Viral Score, Upload Playbook, dan Prompt Re-Editor adalah fokus utama. Hindari bento grid dekoratif, efek glow berlebihan, atau kartu statistik hiasan tanpa aksi.
-- **Toggle Safe-Zone Overlay Wajib:** Pada Video Player di *Clip Inspector*, wajib tersedia sakelar overlay transparan untuk simulasi antarmuka **TikTok (9:16)** dan **YouTube Shorts (9:16)** agar kreator dapat melihat langsung apakah teks subtitle atau wajah tertutup tombol kanan/caption bawah.
+- **Toggle Safe-Zone Overlay Wajib (Presisi UI HP 2026):** Pada Video Player di *Clip Inspector* (`SafeZoneOverlay.vue`), wajib tersedia sakelar overlay transparan mengikuti proporsi antarmuka ponsel aktual:
+  - **TikTok (9:16):** Header atas tipis (`Teman | Mengikuti | Saran` + Search, `~9%`), rail aksi kanan (`Avatar +`, `Heart`, `Comment`, `Bookmark`, `Share`, `Sound Disc`, lebar `~17%-20%` dari bawah ke 38% atas), metadata bawah kiri (`Efek`, nama kreator, caption 2 baris + hashtag, ticker audio, `~29%`), sehingga zona aman konten berada di `top: 10%`, `right: 20%`, `bottom: 30%`.
+  - **YouTube Shorts (9:16):** Pojok kanan atas saja (`Search` + `...`, kiri & tengah atas bersih terbuka), rail aksi kanan (`Heart/Like`, `Comment`, `Simpan`, `Bagikan`, `Remix`, thumbnail audio kotak, lebar `~17%-20%`), metadata bawah kiri (`Avatar + @Handle + pil Subscribe putih` + judul 1 baris, `~22%`), sehingga zona aman konten berada di `top: 9%`, `right: 20%`, `bottom: 23%`.
 - **State Lengkap:** Setiap layar wajib menangani 5 kondisi secara bersih: `loading` (skeleton/progress SSE), `empty` (panduan langkah awal jelas), `error` (pesan human-friendly + tombol retry), `partial_success` (batch sebagian berhasil), dan `success`.
 
 ## 3. Komponen Portabel & Reusable (DRY)

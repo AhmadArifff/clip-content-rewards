@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M0-M10 (`v1.0.0`) + V2 M11-M15 (Pacing Cloner, Visual Timeline, Smart Auto-Track & Cover, Calendar & Excel `.xlsx`, Frame Annotation & Brand Asset Kit) Verified PASS**
+> Status Saat Ini: **M0-M10 (`v1.0.0`) + V2 M11-M17 (Pacing Cloner, Visual Timeline, Smart Auto-Track & Cover, Calendar & Excel `.xlsx`, Frame Annotation & Brand Asset Kit, Free-Tier AI Guard, Multi-Video Anti-Cut Director & Real Safe-Zone Overlay) Verified PASS**
 > Terakhir Diperbarui: **2026-11-28**
 
 ---
@@ -117,6 +117,7 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M14** | **V2: Campaign Content Calendar & Export Excel `.xlsx`** | Kalender publikasi `/calendar` (Auto-Jadwalkan anti-bentrok, status tayang, mode Kalender & Tabel Matriks) + streaming OpenXML `.xlsx` 3-sheet (`SUM`/`AVERAGE` + formula guard) | `DONE` | 13/13 Vitest PASS + 4/4 Playwright E2E M14 PASS |
 | **M15** | **V2: Frame Annotation & Brand Asset Kit** | Overlay pin frame-by-frame (`-1f/+1f`, klik koordinat `(X%, Y%)`, 1-klik kompilasi prompt) + Pustaka Brand Asset Kit `/brand-kits` (logo PNG, warna ASS `&H00BBGGRR`, font, CTA) | `DONE` | 14/14 Vitest PASS + 4/4 Playwright E2E M15 PASS |
 | **M16** | **V2: Free-Tier Quota Guard & Gemini Audio STT** | Pelindung limit RPM/429 + Gemini Waterfall (`pro -> flash -> flash-lite`), kompresi token prompt ~65%, & Gemini Native Audio STT (1 kunci Google AI Studio merangkap Brain + STT) | `DONE` | 17/17 Vitest PASS + Build & Sync Docs PASS |
+| **M17** | **V2: Multi-Video Anti-Cut Director, Geo-Language Lock & Real Safe-Zone** | Distribusi seluruh raw video lintas variasi, Speech Boundary Snapper + `clipEndingMode` (`complete_story`/`full_source`/`part_series`), skema ringkas Gemini Director, Kunci Bahasa Target Negara (anti-leak Indonesia di target US/Global), & Safe-Zone Overlay TikTok/YT Shorts presisi HP 2026 | `DONE` | Vitest M17 + Visual Screenshot Safe-Zone + Build & Sync Docs PASS |
 
 ---
 
@@ -316,7 +317,9 @@ Fitur lanjutan setelah `v1.0.0` stabil (memanfaatkan 19 Skill Tier 2):
 3. **[SELESAI - M13] Smart Face-Tracking Auto-Crop & Cover Selector (`ml-vision`)**: Pelacakan posisi wajah/subjek aktif lokal via FFmpeg RGB24 pipe (`vision-tracker.service.ts`) untuk crop dinamis 9:16 (`auto_face_track` + slider Fokus X di Visual Timeline) serta pemindai 6 kandidat cover berperingkat + tombol *Pakai Frame Playhead* (`PATCH /api/clips/:clipId/cover`).
 4. **[SELESAI - M15] Frame-by-Frame Visual Annotation & Brand Asset Kit (`motlab` + `motlab-assets`)**: Kontrol frame-step `-1f/+1f` & klik pin koordinat `(X%, Y%)` langsung di atas frame `<video>` (`FrameAnnotationOverlay.vue` + 1-klik kompilasi ke Tab Edit Prompt) serta pustaka `/brand-kits` (logo PNG watermark, warna hex `#RRGGBB -> &H00BBGGRR` ASS Hook/Subtitle, font, & template CTA) yang terintegrasi ke Studio Campaign dan worker FFmpeg.
 5. **[SELESAI - M14] Campaign Content Calendar & Excel Report (`excel-export`)**: Halaman kalender konten terpusat `/calendar` (KPI 4 kartu, Auto-Jadwalkan Cerdas anti-bentrok, status *Belum Dijadwalkan -> Terjadwal -> Sudah Tayang*, mode Kalender & Tabel Matriks) serta streaming OpenXML `.xlsx` 3-sheet (`xlsx-report.builder.ts`) di `/calendar` dan tombol Excel Pill di halaman detail batch.
-6. **Multi-Account / Team Collaboration & Direct Publish Assist (`webbrain`)**: Manajemen peran tim clipper (Manager -> Editor -> Uploader) serta sinkronisasi campaign otomatis.
+6. **[SELESAI - M16] Free-Tier AI Quota Manager & Gemini Native Audio STT**: Pacer RPM anti-429, retry 429/503, Gemini Waterfall (`pro -> flash -> flash-lite`), kompresi token prompt ~65%, serta fallback 1 kunci Gemini merangkap Brain + STT (chunk 3 menit 32kbps mono).
+7. **[SELESAI - M17] Multi-Video Anti-Cut Director, Target-Country Language Lock & Real Phone Safe-Zone 2026**: Distribusi otomatis seluruh video mentah yang diunggah, Speech Boundary Snapper agar pembicara tidak terpotong tengah kalimat (`complete_story`/`full_source`/`part_series`), kunci bahasa target negara (100% Inggris untuk US/Global bebas bocor teks Indonesia), serta pembaruan `SafeZoneOverlay.vue` & `ass-subtitle.builder.ts` sesuai tata letak nyata HP TikTok & YouTube Shorts.
+8. **Multi-Account / Team Collaboration & Direct Publish Assist (`webbrain`)**: Manajemen peran tim clipper (Manager -> Editor -> Uploader) serta sinkronisasi campaign otomatis.
 
 ---
 

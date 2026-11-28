@@ -10,6 +10,7 @@ import {
   type ViralScoreCritique
 } from '@clip/shared';
 import { generateStructuredJsonWithByok, getActiveKeyForRole } from './llm-json.adapter.js';
+import { resolveContentLanguage } from './content-language.helper.js';
 
 const COUNTRY_SCHEDULE_MAP: Record<string, { timezone: string; bestDays: string[]; bestTimeSlots: string[]; rationale: string }> = {
   ID: {
@@ -20,29 +21,57 @@ const COUNTRY_SCHEDULE_MAP: Record<string, { timezone: string; bestDays: string[
   },
   US: {
     timezone: 'America/New_York (EST)',
-    bestDays: ['Selasa', 'Rabu', 'Kamis', 'Sabtu'],
+    bestDays: ['Tuesday', 'Wednesday', 'Thursday', 'Saturday'],
     bestTimeSlots: ['11:30-13:00 EST', '19:00-22:00 EST'],
     rationale: 'Puncak tayangan TikTok/Shorts pasar US ada di jam makan siang East Coast dan prime time malam.'
   },
   UK: {
     timezone: 'Europe/London (GMT)',
-    bestDays: ['Selasa', 'Kamis', 'Minggu'],
+    bestDays: ['Tuesday', 'Thursday', 'Sunday'],
     bestTimeSlots: ['12:00-13:30 GMT', '18:00-21:00 GMT'],
     rationale: 'Waktu komuter pulang kerja dan istirahat sore di Inggris menghasilkan completion rate tertinggi.'
   },
+  AU: {
+    timezone: 'Australia/Sydney (AEST)',
+    bestDays: ['Tuesday', 'Thursday', 'Saturday'],
+    bestTimeSlots: ['12:00-13:30 AEST', '19:00-21:30 AEST'],
+    rationale: 'Jam istirahat siang dan malam hari di Australia mencatat interaksi awal paling cepat.'
+  },
+  CA: {
+    timezone: 'America/Toronto (EST)',
+    bestDays: ['Tuesday', 'Wednesday', 'Friday'],
+    bestTimeSlots: ['12:00-13:30 EST', '19:00-21:30 EST'],
+    rationale: 'Prime time audiens Kanada mengikuti pola komuter sore hingga malam hari.'
+  },
   MY: {
     timezone: 'Asia/Kuala_Lumpur (MYT)',
-    bestDays: ['Selasa', 'Kamis', 'Sabtu'],
+    bestDays: ['Tuesday', 'Thursday', 'Saturday'],
     bestTimeSlots: ['12:30-14:00 MYT', '19:30-22:00 MYT'],
     rationale: 'Audiens Malaysia aktif tinggi selepas makan siang dan malam hari.'
   },
   SG: {
     timezone: 'Asia/Singapore (SGT)',
-    bestDays: ['Rabu', 'Kamis', 'Sabtu'],
+    bestDays: ['Wednesday', 'Thursday', 'Saturday'],
     bestTimeSlots: ['12:00-13:30 SGT', '19:00-21:30 SGT'],
     rationale: 'Pekerja muda dan pelajar Singapura paling aktif pada jam makan siang dan komuter malam.'
+  },
+  GLOBAL: {
+    timezone: 'UTC / US-EU Overlap (EST)',
+    bestDays: ['Tuesday', 'Thursday', 'Saturday'],
+    bestTimeSlots: ['14:00-16:00 UTC', '22:00-01:00 UTC'],
+    rationale: 'Slot tumpang tindih jam aktif audiens US dan Eropa memaksimalkan jangkauan internasional.'
   }
 };
+
+const INDO_HASHTAG_BLOCKLIST = new Set([
+  '#tiktokindonesia',
+  '#belajarbareng',
+  '#tipskonten',
+  '#kontenkreator',
+  '#fypindonesia',
+  '#viralindonesia',
+  '#indonesia'
+]);
 
 function buildAudioPlaybookSection(
   edl: EdlDocument,
@@ -101,6 +130,8 @@ export function buildDeterministicEvaluation(params: {
   pacingBlueprint?: PacingBlueprint | null;
 }): { evaluation: ViralScoreCritique; playbook: UploadPlaybook } {
   const { edl, actualDurationSec, rulebook, targetConfig, angleTitle, hookSummary, pacingBlueprint } = params;
+  const contentLang = resolveContentLanguage(targetConfig);
+  const isEnglishTarget = contentLang.code === 'en';
 
   const briefChecklist: ViralScoreCritique['briefChecklist'] = [];
   const critiques: ViralScoreCritique['critiques'] = [];
@@ -175,8 +206,9 @@ export function buildDeterministicEvaluation(params: {
     });
   }
 
-  // 4. Cek Audio & Safe-Zone Health
-  const safeZoneOk = edl.aspectRatio === '16:9' || (edl.captions.verticalOffsetPct >= 58 && edl.captions.verticalOffsetPct <= 76);
+  // 4. Cek Audio & Safe-Zone Health (disesuaikan batas aman real HP TikTok 29% & YT Shorts 22%)
+  const maxSafeOffset = targetConfig.platform === 'tiktok' ? 72 : 78;
+  const safeZoneOk = edl.aspectRatio === '16:9' || (edl.captions.verticalOffsetPct >= 56 && edl.captions.verticalOffsetPct <= maxSafeOffset);
   const audioScore = edl.audio.muteOriginal
     ? 92
     : edl.audio.originalVolume <= 0.35
@@ -199,7 +231,7 @@ export function buildDeterministicEvaluation(params: {
       timestampSec: 2.0,
       severity: 'high',
       issue: `Posisi subtitle (${edl.captions.verticalOffsetPct}%) terlalu dekat dengan area caption/tombol bawah TikTok/Shorts.`,
-      suggestedRegeneratePrompt: 'Naikkan posisi subtitle ke area aman tengah (verticalOffsetPct 68%) agar tidak tertutup UI aplikasi.'
+      suggestedRegeneratePrompt: 'Naikkan posisi subtitle ke area aman tengah (verticalOffsetPct 66%) agar tidak tertutup UI aplikasi.'
     });
   }
 
@@ -253,7 +285,7 @@ export function buildDeterministicEvaluation(params: {
           : `Ritme selaras gaya ${targetConfig.editingStyle} dengan framing ${edl.framingMode}.`
       },
       briefCompliance: { score: briefScore, note: `Memeriksa durasi ${minDur}-${maxDur}s, CTA, dan ketentuan wajib campaign.` },
-      audienceFit: { score: audienceFitScore, note: `Disesuaikan untuk audiens ${targetConfig.countryCode} usia ${targetConfig.ageGroup} (${targetConfig.personaNiche}).` },
+      audienceFit: { score: audienceFitScore, note: `Disesuaikan untuk audiens ${targetConfig.countryCode} usia ${targetConfig.ageGroup} (${contentLang.label}).` },
       engagementTrigger: { score: engagementScore, note: `Fokus KPI ${targetConfig.primaryKpi} dengan sudut ${targetConfig.controversyLevel}.` },
       audioSafeZone: { score: audioSafeScore, note: safeZoneOk ? 'Subtitle dan banner berada dalam batas aman tombol platform.' : 'Posisi subtitle perlu dinaikkan.' }
     },
@@ -262,24 +294,31 @@ export function buildDeterministicEvaluation(params: {
       firstThreeSeconds: `Audiens ${targetConfig.countryCode} (${targetConfig.ageGroup}) cenderung berhenti scroll di 0-3 detik pertama berkat Hook Banner "${edl.hookBanner.text || hookSummary}".`,
       midRetention: `Framing ${edl.framingMode} menjaga konteks visual tetap terbaca penuh tanpa memotong detail penting di sisi layar.`,
       commentSharePotential: `Pendekatan ${targetConfig.controversyLevel} dengan pemicu ${targetConfig.emotionalTrigger} mendorong komentar pro-kontra sehat serta simpan/bagikan.`,
-      audienceReactionSummary: `Variasi "${angleTitle}" cocok untuk uji performa awal pada segmen ${targetConfig.personaNiche}. ${edl.audio.muteOriginal ? 'Karena audio asli sudah di-mute 0%, pemilihan Trending Sound di aplikasi akan sangat menentukan dorongan FYP.' : 'Keseimbangan vokal dan caption membuat video tetap dipahami meski ditonton tanpa suara.'}`
+      audienceReactionSummary: `Variasi "${angleTitle}" menggunakan bahasa publik ${contentLang.label} agar algoritma ${targetConfig.countryCode} tepat sasaran. ${edl.audio.muteOriginal ? 'Karena audio asli sudah di-mute 0%, pemilihan Trending Sound di aplikasi akan sangat menentukan dorongan FYP.' : 'Keseimbangan vokal dan caption membuat video tetap dipahami meski ditonton tanpa suara.'}`
     },
     critiques
   });
 
-  const sched = COUNTRY_SCHEDULE_MAP[targetConfig.countryCode] ?? {
+  const sched = COUNTRY_SCHEDULE_MAP[targetConfig.countryCode.toUpperCase()] ?? {
     timezone: 'UTC / Lokal Target',
-    bestDays: ['Selasa', 'Kamis', 'Sabtu'],
+    bestDays: isEnglishTarget ? ['Tuesday', 'Thursday', 'Saturday'] : ['Selasa', 'Kamis', 'Sabtu'],
     bestTimeSlots: ['12:00-13:30', '19:00-21:00'],
     rationale: 'Jam makan siang dan prime time malam memberi interaksi awal tercepat.'
   };
 
   const mandatoryTags = rulebook?.requiredHashtags ?? [];
   const mandatoryMentions = rulebook?.requiredMentions ?? [];
-  const nicheSlug = targetConfig.personaNiche.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'kontenkreator';
-  const nicheTags = [`#${nicheSlug}`, targetConfig.countryCode === 'ID' ? '#tipskonten' : '#contenttips', '#clipping'];
+  const rawSlug = targetConfig.personaNiche.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18);
+  const nicheSlug = isEnglishTarget
+    ? (!rawSlug || /kreator|pekerjamuda/.test(rawSlug) ? 'creators' : rawSlug)
+    : (rawSlug || 'kontenkreator');
+
+  const nicheTags = isEnglishTarget
+    ? [`#${nicheSlug}`, '#contenttips', '#viralclip']
+    : [`#${nicheSlug}`, '#tipskonten', '#clipping'];
+
   const broadTags = targetConfig.platform === 'tiktok'
-    ? ['#fyp', '#tiktokindonesia', '#belajarbareng']
+    ? (isEnglishTarget ? ['#fyp', '#viral', '#foryou'] : ['#fyp', '#tiktokindonesia', '#belajarbareng'])
     : ['#shorts', '#youtubeshorts', '#trending'];
 
   const allTagsText = Array.from(new Set([...mandatoryTags, ...nicheTags, ...broadTags])).join(' ');
@@ -291,14 +330,36 @@ export function buildDeterministicEvaluation(params: {
       ? rawGoalSnippet.slice(0, 44).replace(/\s+\S*$/, '').trim()
       : rawGoalSnippet;
 
+  const titleOptions = isEnglishTarget
+    ? [
+        hookSummary || angleTitle,
+        `Wait until the end: ${angleTitle}`,
+        `Why everyone is talking about this (${targetConfig.countryCode})`
+      ]
+    : [
+        hookSummary || angleTitle,
+        `Jangan lewatkan hal ini kalau kamu ${targetConfig.personaNiche}`,
+        `Bongkar fakta di balik ${cleanGoalSnippet || angleTitle}`
+      ];
+
+  const captionDescription = isEnglishTarget
+    ? `${hookSummary || angleTitle}. ${edl.complianceOverlays.ctaText || 'Drop your thoughts in the comments!'}${mentionsText}\n\n${allTagsText}`.trim()
+    : `${hookSummary || angleTitle}. ${edl.complianceOverlays.ctaText || 'Tulis pendapatmu di kolom komentar!'}${mentionsText}\n\n${allTagsText}`.trim();
+
+  const pinnedComments = isEnglishTarget
+    ? [
+        'Which moment stood out to you the most? Drop your take below!',
+        'Save this for later and follow for the next part!'
+      ]
+    : [
+        `Menurut kamu poin mana yang paling relate untuk ${targetConfig.personaNiche}? Tulis di bawah!`,
+        'Kalau ada yang butuh detail lengkapnya, cek link di bio ya.'
+      ];
+
   const playbook = UploadPlaybookSchema.parse({
     audioMusicGuide: buildAudioPlaybookSection(edl, targetConfig, pacingBlueprint),
-    titleOptions: [
-      hookSummary || angleTitle,
-      `Jangan lewatkan hal ini kalau kamu ${targetConfig.personaNiche}`,
-      `Bongkar fakta di balik ${cleanGoalSnippet || angleTitle}`
-    ],
-    captionDescription: `${hookSummary || angleTitle}. ${edl.complianceOverlays.ctaText || 'Tulis pendapatmu di kolom komentar!'}${mentionsText}\n\n${allTagsText}`.trim(),
+    titleOptions,
+    captionDescription,
     hashtags: {
       mandatory: mandatoryTags,
       niche: nicheTags,
@@ -311,10 +372,7 @@ export function buildDeterministicEvaluation(params: {
       rationale: `${sched.rationale} (Target usia ${targetConfig.ageGroup}, KPI ${targetConfig.primaryKpi}).`
     },
     engagementToolkit: {
-      pinnedComments: [
-        `Menurut kamu poin mana yang paling relate untuk ${targetConfig.personaNiche}? Tulis di bawah!`,
-        `Kalau ada yang butuh detail lengkapnya, cek link di bio ya.`
-      ],
+      pinnedComments,
       first15MinChecklist: [
         'Pastikan setting volume Original Sound vs Added Sound di aplikasi sesuai panduan audio di atas.',
         'Sematkan (pin) salah satu Pinned Comment dalam 2 menit pertama setelah tayang.',
@@ -348,14 +406,21 @@ export async function evaluateClipVersion(params: {
     return { ...deterministic, mode: 'local_heuristic' };
   }
 
+  const contentLang = resolveContentLanguage(params.targetConfig);
+  const isEnglishTarget = contentLang.code === 'en';
+
+  const publishLanguageDirective = isEnglishTarget
+    ? `STRICT ALGORITHM GEO-LANGUAGE LOCK: Because target country is ${params.targetConfig.countryCode}, 100% of publishable platform copy in playbook (titleOptions, captionDescription, hashtags.niche, hashtags.broad, engagementToolkit.pinnedComments) MUST be strictly in natural ${contentLang.label} with ZERO Indonesian words and ZERO Indonesian hashtags (#tiktokindonesia, #belajarbareng, etc.).`
+    : 'Seluruh copy publikasi (titleOptions, captionDescription, hashtags, pinnedComments) ditulis dalam Bahasa Indonesia santai tanpa em-dash.';
+
   const systemPrompt =
     'Anda adalah Viral Content Strategist untuk TikTok & YouTube Content Rewards. ' +
     'Evaluasi video berbasis EDL dan Brief menjadi JSON {"evaluation": ..., "playbook": ...}. ' +
-    'Semua penjelasan, kritik, caption, dan jadwal tayang wajib berbahasa Indonesia humanis tanpa em-dash. ' +
+    'Catatan internal studio (evaluation.*, audioMusicGuide, optimalSchedule.rationale, first15MinChecklist) ditulis dalam Bahasa Indonesia humanis tanpa em-dash agar mudah dibaca kreator. ' +
+    `${publishLanguageDirective} ` +
     'Panduan audio/musik pada playbook WAJIB 100% sesuai dengan edl.audio.muteOriginal dan edl.audio.originalVolume aktual.';
 
   try {
-    // Kirim payload ringkas hemat token (~65% lebih kecil untuk Free Tier Gemini)
     const compactEdl = {
       aspectRatio: params.edl.aspectRatio,
       framingMode: params.edl.framingMode,
@@ -376,11 +441,13 @@ export async function evaluateClipVersion(params: {
         angleTitle: params.angleTitle,
         hookSummary: params.hookSummary,
         actualDurationSec: params.actualDurationSec,
+        publishLanguage: contentLang.label,
         edl: compactEdl,
         rulebook: params.rulebook,
         target: {
           platform: params.targetConfig.platform,
           countryCode: params.targetConfig.countryCode,
+          languageStyle: params.targetConfig.languageStyle,
           ageGroup: params.targetConfig.ageGroup,
           personaNiche: params.targetConfig.personaNiche,
           controversyLevel: params.targetConfig.controversyLevel,
@@ -393,8 +460,24 @@ export async function evaluateClipVersion(params: {
       maxOutputTokens: 2048
     });
     const parsed = CombinedEvalSchema.parse(res.json);
-    // Pastikan instruksi mixing audio selalu akurat terhadap kondisi fisik audio di EDL
     parsed.playbook.audioMusicGuide.renderedAudioState = deterministic.playbook.audioMusicGuide.renderedAudioState;
+
+    // Bersihkan hashtag Indonesia yang tidak sengaja bocor pada target pasar internasional
+    if (isEnglishTarget) {
+      const filterForeign = (tags: string[], fallbackTags: string[]) => {
+        const cleaned = tags.filter((t) => !INDO_HASHTAG_BLOCKLIST.has(t.trim().toLowerCase()));
+        return cleaned.length > 0 ? cleaned : fallbackTags;
+      };
+      parsed.playbook.hashtags.niche = filterForeign(
+        parsed.playbook.hashtags.niche,
+        deterministic.playbook.hashtags.niche
+      );
+      parsed.playbook.hashtags.broad = filterForeign(
+        parsed.playbook.hashtags.broad,
+        deterministic.playbook.hashtags.broad
+      );
+    }
+
     return {
       evaluation: parsed.evaluation,
       playbook: parsed.playbook,

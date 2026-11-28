@@ -41,10 +41,14 @@ export const batchService = {
       };
     }
 
-    const firstRaw = rawVideos[0];
-    const transcript = safeParse<{ words?: unknown[] } | null>(firstRaw.transcriptJson, null);
+    const totalWords = rawVideos.reduce((acc, vid) => {
+      const tr = safeParse<{ words?: unknown[] } | null>(vid.transcriptJson, null);
+      return acc + (tr?.words?.length ?? 0);
+    }, 0);
+    const avgRawDur =
+      rawVideos.reduce((acc, vid) => acc + (vid.durationSec ?? 30), 0) / Math.max(1, rawVideos.length);
     const briefLen = campaign.brief?.rawText.length ?? 200;
-    const rulebook = safeParse<{ durationRules?: { idealSec?: number } } | null>(
+    const rulebook = safeParse<{ durationRules?: { idealSec?: number; maxSec?: number } } | null>(
       campaign.brief?.parsedRulebookJson,
       null
     );
@@ -52,9 +56,9 @@ export const batchService = {
     const est = await estimateBatchCost({
       userId,
       briefTextLength: briefLen,
-      transcriptWordCount: transcript?.words?.length ?? 0,
+      transcriptWordCount: totalWords,
       batchCount: targetConfig.batchCount,
-      targetDurationSec: Math.min(firstRaw.durationSec ?? 30, rulebook?.durationRules?.idealSec ?? 30)
+      targetDurationSec: Math.min(avgRawDur, rulebook?.durationRules?.maxSec ?? rulebook?.durationRules?.idealSec ?? 45)
     });
 
     return { ok: true, data: est };

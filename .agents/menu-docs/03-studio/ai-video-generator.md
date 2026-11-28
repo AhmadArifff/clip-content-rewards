@@ -7,7 +7,7 @@ route: "/campaigns/:id/batches/:batchId"
 lead_developer: "AhmadArifff"
 status: "Done"
 last_commit: "HEAD"
-last_updated: "2026-11-26"
+last_updated: "2026-11-28"
 tags: ["ai-director", "edl-json", "ffmpeg", "sse", "safe-zone", "multi-variant"]
 database_tables:
   - "generation_batches"
@@ -84,6 +84,9 @@ graph TD
 | 1 | **Video sumber 16:9 berisi teks di pinggir layar** | Center crop ke 9:16 memotong teks penting. | Mode default `fit_blur_bg` menjaga seluruh lebar 16:9 utuh di tengah latar blur 9:16; tersedia pula `center_crop` dan `split_screen`. |
 | 2 | **User belum memasang kunci AI `brain` saat uji lokal** | Generator gagal total. | `edl-director.service.ts` menyediakan fallback perencana heuristik lokal yang tetap membentuk multi-varian EDL tervalidasi Zod. |
 | 3 | **1 dari 5 variasi gagal render** | Seluruh batch sia-sia. | Status batch menjadi `partial_success`; variasi yang sukses tetap siap tonton/unduh dan variasi gagal memiliki tombol *Retry Klip Ini*. |
+| 4 | **User mengunggah 3 video mentah sekaligus** | Versi lama hanya memotong `rawVideos[0]` dan mengabaikan video ke-2 & ke-3. | `render-queue.worker.ts` & `edl-director.service.ts` meneruskan seluruh `rawVideos[]` (transkrip, silence, durasi) dan mendistribusikan variasi ke semua video mentah secara merata. |
+| 5 | **Pembicara terpotong di tengah kalimat (mis. berhenti mendadak di 0:38)** | Video terasa gantung/cacat saat ditonton. | `snapSegmentToSpeechBoundary()` menyelaraskan `startSec`/`endSec` ke tanda baca akhir kalimat (`.!?`) atau jeda bicara, serta menyediakan 3 mode `clipEndingMode` (`complete_story`, `full_source`, `part_series`). |
+| 6 | **Target negara US/Global namun teks Hook/CTA masih berbahasa Indonesia** | Algoritma OCR/NLP YouTube & TikTok salah membaca pasar Indonesia. | `resolveContentLanguage()` & auto-sync negara di `TargetGeneratorPanel.vue` mengunci 100% teks layar (Hook, CTA, Part 1/2) ke Bahasa Inggris untuk target luar negeri. |
 
 ---
 
@@ -108,6 +111,7 @@ graph TD
 | Tanggal | Commit Hash | Pengembang | Milestone | Ringkasan Perubahan & Dampak |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-26 | `HEAD` | AhmadArifff | **M6** | Implementasi Target Audience Matrix, Reusable Target Profiles, AI Director EDL Planner, Local Queue + SSE, FFmpeg 9:16 Safe-Zone Renderer & Range Streaming. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M17** | Upgrade Multi-Video Director (distribusi seluruh `rawVideos[]`), Anti-Cut Speech Boundary Snapper + `clipEndingMode` (`complete_story`/`full_source`/`part_series`), skema ringkas Gemini AI Director, dan Kunci Bahasa Target Negara (US/Global -> 100% English on-screen). |
 
 ---
 

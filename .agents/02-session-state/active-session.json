@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M16",
-  "current_sprint": "M16 Completed (Free-Tier AI Quota Manager, Gemini Model Waterfall & Gemini Native Audio STT)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M16: BYOK Free-Tier Guard + Gemini Audio STT + seluruh fitur V2) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M17",
+  "current_sprint": "M17 Completed (Multi-Video Anti-Cut Director, Geo-Language Lock & Real Phone Safe-Zone 2026)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M17: BYOK Free-Tier Guard + Multi-Video Anti-Cut Director + Kunci Bahasa Target Negara + Safe-Zone Presisi HP 2026) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -126,15 +126,23 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Menambahkan pacer RPM anti-429, retry 429/503, maxOutputTokens, dan Gemini Model Waterfall (pro -> flash -> flash-lite) pada llm-json.adapter.ts; kompresi token prompt ~65% di brief-parser, edl-director, & viral-evaluator; Gemini Native Audio STT (chunk 3 menit 32kbps mono + interpolatePhraseToWords) pada stt.adapter.ts; fallback otomatis 1 kunci Gemini Brain -> STT pada media.service.ts; katalog gemini-2.5-flash-lite & panduan Mode 100% Gratis di /settings/api-keys; serta 3 uji baru m16.free-tier-ai.test.ts PASS."
+    },
+    {
+      "id": "M17_MULTIVIDEO_ANTICUT_LANGUAGE_LOCK_AND_REAL_SAFEZONE",
+      "title": "V2: Multi-Video Anti-Cut Director, Target-Country Language Lock & Real 2026 Phone Safe-Zone Overlay",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan ClipEndingModeSchema (complete_story/full_source/part_series) di @clip/shared; membuat content-language.helper.ts (resolveContentLanguage & snapSegmentToSpeechBoundary anti-potong tengah kalimat); upgrade render-queue.worker.ts & edl-director.service.ts agar mendistribusikan seluruh rawVideos[] (termasuk auto_face_track per media) dengan skema Gemini AI ringkas tahan fallback; mengunci 100% teks layar & Upload Playbook ke Bahasa Inggris untuk target non-ID (US/UK/Global); menyelaraskan SafeZoneOverlay.vue & ass-subtitle.builder.ts terhadap antarmuka HP aktual TikTok & YouTube Shorts 2026; serta memperbarui PRD.md v1.2, MILESTONE.md, & aturan/menu-docs .agents/."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M15 (c1ebcf7) + Tag rilis v2.1.0 ke main & dev",
-    "Implementasi Free-Tier RPM Pacer, retry 429/503, dan Gemini Model Waterfall (pro -> flash -> flash-lite) pada llm-json.adapter.ts",
-    "Kompresi token payload prompt hemat ~65% di brief-parser.service.ts, edl-director.service.ts, & viral-evaluator.service.ts",
-    "Implementasi Gemini Native Audio STT (chunk 3 menit 32kbps mono + interpolasi word-level) di stt.adapter.ts + fallback otomatis kunci Gemini Brain -> STT di media.service.ts",
-    "Penambahan gemini-2.5-flash-lite & kartu panduan Mode 100% Gratis di /settings/api-keys + m16.free-tier-ai.test.ts PASS"
+    "Push M16 (c8a1587) ke main & dev",
+    "Implementasi content-language.helper.ts: resolveContentLanguage (US/Global -> 100% English) & snapSegmentToSpeechBoundary (anti-terpotong tengah kalimat)",
+    "Upgrade render-queue.worker.ts & edl-director.service.ts untuk distribusi multi-raw-video penuh + skema ringkas Gemini Director + clipEndingMode (complete_story/full_source/part_series)",
+    "Upgrade viral-evaluator.service.ts & edl-patcher.service.ts dengan geo-language lock anti-bocor hashtag/teks Indonesia pada target internasional",
+    "Kalibrasi SafeZoneOverlay.vue & ass-subtitle.builder.ts sesuai screenshot HP nyata TikTok & YouTube Shorts 2026 + auto-sync bahasa negara di TargetGeneratorPanel.vue",
+    "Update PRD.md v1.2, MILESTONE.md, .agents/rules/30 & 50, menu-docs V2, dan uji integrasi m17.multivideo-lang-boundary.test.ts"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -149,7 +157,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push M16 (Free-Tier AI Quota Manager & Gemini Native Audio STT) ke main & dev",
-    "User langsung melanjutkan testing manual di http://localhost:3000 dengan 1 kunci Gemini (atau plus Groq Whisper gratis)"
+    "Minta izin user untuk commit & push M17 (Multi-Video Anti-Cut Director, Geo-Language Lock & Real Phone Safe-Zone 2026) ke main & dev",
+    "User langsung menguji ulang campaign target US 3 video di http://localhost:3000"
   ]
 }

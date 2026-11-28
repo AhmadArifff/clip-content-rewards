@@ -3,9 +3,9 @@
 **Product:** Clip Content Rewards (`clip-content-rewards`)
 **Author:** Product Management & Architecture Team
 **Owner:** AhmadArifff
-**Date:** 2026-11-26
-**Version:** v1.1
-**Status:** Gap-Audited & Technically Blueprinted (M3 Complete -> Ready for M4 Scaffolding)
+**Date:** 2026-11-28
+**Version:** v1.2
+**Status:** Production V2 Active (M0-M17 Verified)
 **Repository:** `https://github.com/AhmadArifff/clip-content-rewards.git`
 **Technical Blueprint:** [technical-blueprint-m3.md](./.agents/knowledge/technical-blueprint-m3.md)
 
@@ -266,7 +266,7 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
   1. **Platform & Rasio:** TikTok (9:16), YouTube Shorts (9:16), YouTube Long (16:9).
   2. **Demografi & Wilayah:** Country/Region (ID, US, UK, MY, SG, Global, dll.), Bahasa & Gaya Bahasa, Rentang Usia (13-17, 18-24, 25-34, 35-44, 45+), Gender Focus.
   3. **Personalisasi & Psikologi Viral:** Persona/Niche audiens, Tingkat Kontroversi/Polarisasi (*Aman/Edukasi*, *Opini Tegas*, *Hot Take*, *Debat Terkendali - Policy Safe*), Tipe Hook 3 Detik Pertama (*Curiosity Gap*, *Bold Claim*, *Pattern Interrupt*, *Pain Point*, *Storytelling*, *Myth-Busting*, *Listicle*), Pemicu Emosi Utama, dan Primary KPI Goal (*Watch-Time/Loop*, *Comments/Debate*, *Shares/Saves*, *Conversion/Click*).
-  4. **Gaya Produksi, Framing & Audio Awal:** Editing Style/Pacing (*Fast-Cut Retention*, *Clean Talking-Head*, *Cinematic Story*, *Podcast Highlight*), **Mode Framing 16:9 -> 9:16** (*Center Crop*, *Fit-Width + Blurred Background* agar teks/presentasi pinggir tidak terpotong, *Split-Screen Atas-Bawah*), Gaya Caption/Subtitle (*Hormozi Bold*, *Clean Minimal*, *Bilingual*, *Off* menggunakan *bundled local fonts* di `server/assets/fonts/`), Mode Audio Awal (*Original 100% Normalized*, *Original Ducking 20% untuk Sound Platform*, *Mute Total 0% untuk Full Trending Sound*), **Mode Diversifikasi Batch** (*Distinct Moments* dengan batas overlap antar clip <= 30% vs *A/B Hook Test* pada momen inti sama), serta **Jumlah Variasi** (1-10 clip).
+  4. **Gaya Produksi, Framing, Multi-Video & Anti-Cut Ending:** Editing Style/Pacing (*Fast-Cut Retention*, *Clean Talking-Head*, *Cinematic Story*, *Podcast Highlight*), **Mode Framing 16:9 -> 9:16** (*Center Crop*, *Fit-Width + Blurred Background*, *Split-Screen*, *Smart Auto-Track 9:16*), Gaya Caption/Subtitle (*Hormozi Bold*, *Clean Minimal*, *Bilingual*, *Off*), Mode Audio Awal (*Original 100% Normalized*, *Original Ducking 20%*, *Mute Total 0%*), **Mode Diversifikasi Batch** (*Distinct Moments* vs *A/B Hook Test*), **Distribusi Multi-Raw-Video** (seluruh video mentah yang diunggah pada campaign didistribusikan otomatis lintas variasi agar tidak hanya memecah 1 video pertama), **Mode Penyelesaian Video (`clipEndingMode`)** (*Tuntas di Akhir Kalimat / Anti-Terpotong* dengan *Speech Boundary Snapper* pada tanda baca & jeda bicara, *Video Utuh Full Tanpa Potong Akhir*, atau *Seri Bersambung Part 1 -> Part 2* lengkap dengan teaser CTA), **Kunci Bahasa Target Negara** (otomatis mengunci 100% teks layar Hook/CTA/Judul/Caption/Hashtag ke Bahasa Inggris/Target saat wilayah selain `ID` dipilih agar algoritma TikTok/YouTube luar negeri tidak tercampur sinyal bahasa Indonesia), serta **Jumlah Variasi** (1-10 clip).
   5. **Profil Preset Target Audiens Reusable:** User dapat menyimpan kombinasi parameter target di atas sebagai *Target Profile* (misal `"Akun ID Gen-Z Santai"`, `"Akun US Finance Hot-Take"`) dan memuat ulang dalam 1 klik untuk campaign berikutnya.
 - [ ] **Given** parameter lengkap dipilih, **When** user menekan *Generate Batch*, **Then** sistem menampilkan estimasi token API terlebih dahulu, lalu menjalankan queue worker lokal yang memancarkan progress real-time via SSE untuk setiap clip (*Planning EDL -> Cutting -> Audio Mixing -> Subtitles -> Scoring -> Done*).
 - [ ] **Given** 1 dari 5 clip gagal karena timeout/rate-limit API, **When** batch selesai diproses, **Then** 4 clip yang berhasil tetap tersimpan utuh dan clip yang gagal memiliki tombol *Retry Clip Ini* tanpa mengulang keseluruhan batch.
@@ -292,7 +292,9 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
   - **Jam Tayang Optimal:** Rentang jam & hari terbaik dalam zona waktu target Country + penjelasan berbasis kebiasaan kelompok usia.
   - **Engagement Booster:** 2 ide *Pinned Comment* pemicu interaksi + frame cover rekomendasi.
 - [ ] **Given** user membuka panel **Dampak & Kritik**, **Then** sistem menyajikan narasi *Projected Upload Impact* dan daftar *Actionable Critique* berbasis timestamp di mana setiap item kritik memiliki tombol **1-Klik "Perbaiki dengan Prompt"**.
-- [ ] **Given** user memutar preview video, **When** user mengaktifkan toggle **Safe-Zone Overlay (TikTok / YouTube Shorts)**, **Then** overlay transparan area tombol kanan, header atas, dan area caption bawah tampil di atas player untuk inspeksi visual.
+- [ ] **Given** user memutar preview video, **When** user mengaktifkan toggle **Safe-Zone Overlay (TikTok / YouTube Shorts)**, **Then** overlay transparan mengikuti tata letak aplikasi HP aktual 2026:
+  - **TikTok (9:16):** Tab atas tipis (`Teman | Mengikuti | Saran` + Search, `~9%`), rail aksi kanan (`Avatar +`, `Heart`, `Comment`, `Bookmark`, `Share`, `Sound Disc`, `~17%-20%` kanan), dan blok metadata bawah kiri (`Efek`, nama kreator, caption 2 baris + hashtag, ticker audio, `~29%` bawah).
+  - **YouTube Shorts (9:16):** Pojok kanan atas saja (`Search` + `...`, kiri/tengah atas terbuka bersih), rail aksi kanan (`Heart/Like`, `Comment`, `Simpan`, `Bagikan`, `Remix`, thumbnail audio kotak, `~17%-20%` kanan), dan blok bawah kiri (`Avatar + @Handle + tombol Subscribe putih` + judul 1 baris, `~22%` bawah).
 
 ---
 
@@ -488,3 +490,4 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
 | :--- | :--- | :--- | :--- |
 | `v1.0` | 2026-11-26 | AhmadArifff & AI PM | Initial baseline PRD (M1): Locked Nuxt 3/Vue 3 + Express + SQLite/Prisma + Local FFmpeg + BYOK architecture, full 3-stage flow, targeting matrix, upload playbook, prompt re-editor, & bulk ZIP export. |
 | `v1.1` | 2026-11-26 | AhmadArifff & AI Architect/Critic | M3 Gap Audit upgrade: Menambahkan Whisper audio chunking (<=20MB/chunk) untuk video >1 jam, supporting assets (watermark/logo/outro/B-roll), 3 mode framing 16:9->9:16, reusable `target_profiles`, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate, serta tautan ke `technical-blueprint-m3.md`. |
+| `v1.2` | 2026-11-28 | AhmadArifff & AI Architect | M16-M17 Field Feedback upgrade: Menambahkan Free-Tier AI Quota Guard + Gemini Native Audio STT, Multi-Raw-Video Distribution, Anti-Cut Speech Boundary Snapper & `clipEndingMode` (`complete_story`/`full_source`/`part_series`), Target-Country Content Language Lock (anti-leak algoritma luar negeri), dan kalibrasi Safe-Zone Overlay TikTok & YouTube Shorts sesuai antarmuka HP aktual 2026. |

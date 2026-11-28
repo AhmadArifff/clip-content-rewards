@@ -7,6 +7,7 @@ import {
   type TargetConfig
 } from '@clip/shared';
 import { generateStructuredJsonWithByok, getActiveKeyForRole } from './llm-json.adapter.js';
+import { resolveContentLanguage } from './content-language.helper.js';
 
 export interface SubtitleOverrideInput {
   index: number;
@@ -141,10 +142,13 @@ export function buildDeterministicEdlPatch(params: {
   }
 
   if (presetCodes.includes('inject_brief_cta') || /(tambah.{0,15}cta|disclaimer|wajib brief)/i.test(text)) {
+    const contentLang = resolveContentLanguage(targetConfig);
+    const defaultCta = contentLang.code === 'en' ? 'Check link in bio now!' : 'Cek link di bio sekarang!';
+    const tagPrefix = contentLang.code === 'en' ? 'Check link in bio' : 'Cek link di bio';
     const ctaText =
       rulebook?.requiredHashtags?.length
-        ? `Cek link di bio ${rulebook.requiredHashtags.slice(0, 2).join(' ')}`
-        : 'Cek link di bio sekarang!';
+        ? `${tagPrefix} ${rulebook.requiredHashtags.slice(0, 2).join(' ')}`
+        : defaultCta;
     patch.complianceOverlaysPatch = {
       ctaText,
       disclosureText: rulebook?.mandatoryDos.some((d) => /#ad|sponsored|iklan/i.test(d)) ? '#ad' : ''
@@ -199,9 +203,11 @@ export async function planEdlPatchWithPrompt(params: {
     };
   }
 
+  const contentLang = resolveContentLanguage(params.targetConfig);
   const systemPrompt =
     'Anda adalah Video EDL Patcher. Ubah instruksi revisi user menjadi JSON EdlPatch parsial yang hanya memodifikasi bagian yang diminta ' +
-    'tanpa merusak bagian lain. Field yang valid: { "humanSummary": string, "framingMode"?, "audioPatch"?, "segmentsPatch"?, "hookBannerPatch"?, "captionsPatch"?, "supportingOverlaysPatch"?, "complianceOverlaysPatch"? }.';
+    'tanpa merusak bagian lain. Field yang valid: { "humanSummary": string, "framingMode"?, "audioPatch"?, "segmentsPatch"?, "hookBannerPatch"?, "captionsPatch"?, "supportingOverlaysPatch"?, "complianceOverlaysPatch"? }. ' +
+    `Semua teks layar baru (hookBannerPatch.text, complianceOverlaysPatch.ctaText) WAJIB menggunakan bahasa target ${contentLang.label} (Country: ${params.targetConfig.countryCode}).`;
 
   try {
     const res = await generateStructuredJsonWithByok({

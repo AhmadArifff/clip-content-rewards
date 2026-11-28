@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import type { TargetConfig } from '@clip/shared';
-import { Sparkles, Calculator, BookmarkPlus, Play } from 'lucide-vue-next';
+import { Sparkles, Calculator, BookmarkPlus, Play, Globe2, Film } from 'lucide-vue-next';
 import { apiRequest } from '~/composables/useApi';
 
 interface MasterPresetRow {
@@ -50,6 +50,7 @@ interface EstimateResult {
 const props = defineProps<{
   campaignId: string;
   hasRawVideo: boolean;
+  rawVideoCount?: number;
   watermarks: Array<{ id: string; originalFilename: string }>;
 }>();
 
@@ -85,6 +86,7 @@ const config = ref<TargetConfig>({
   captionStyle: 'hormozi_bold',
   initialAudioMode: 'ducking_20',
   batchDiversityMode: 'distinct_moments',
+  clipEndingMode: 'complete_story',
   batchCount: 3,
   referencePacingId: null,
   brandKitId: null,
@@ -93,6 +95,32 @@ const config = ref<TargetConfig>({
     outroAssetId: null
   }
 });
+
+const COUNTRY_DEFAULT_LANGUAGE_MAP: Record<string, string> = {
+  ID: 'Bahasa Indonesia Santai',
+  US: 'English (US Casual & Punchy)',
+  UK: 'English (UK Conversational)',
+  AU: 'English (AU Casual)',
+  CA: 'English (North America Casual)',
+  SG: 'English (International Clean)',
+  MY: 'English (International Clean)',
+  GLOBAL: 'English (International Viral)'
+};
+
+const isInternationalTarget = computed(() => config.value.countryCode.toUpperCase() !== 'ID');
+
+watch(
+  () => config.value.countryCode,
+  (nextCode) => {
+    const upper = (nextCode || 'ID').toUpperCase();
+    config.value.languageStyle = COUNTRY_DEFAULT_LANGUAGE_MAP[upper] ?? 'English (International)';
+    if (upper !== 'ID' && config.value.personaNiche === 'Kreator & Pekerja Muda') {
+      config.value.personaNiche = 'Young Creators & Professionals';
+    } else if (upper === 'ID' && config.value.personaNiche === 'Young Creators & Professionals') {
+      config.value.personaNiche = 'Kreator & Pekerja Muda';
+    }
+  }
+);
 
 const byCat = (cat: string) => computed(() => presets.value.filter((p) => p.category === cat));
 const countries = byCat('country');
@@ -152,6 +180,7 @@ function applySelectedProfile() {
   if (found) {
     config.value = {
       ...found.targetConfig,
+      clipEndingMode: found.targetConfig.clipEndingMode ?? 'complete_story',
       supportingAssets: config.value.supportingAssets
     };
     infoMsg.value = `Profil "${found.profileName}" dimuat ke formulir.`;
@@ -271,6 +300,28 @@ onMounted(loadPresetsAndProfiles);
     <div v-if="errorMsg" class="p-3 rounded text-xs font-semibold studio-badge-err">{{ errorMsg }}</div>
     <div v-if="infoMsg" class="p-3 rounded text-xs font-semibold studio-badge-ok">{{ infoMsg }}</div>
 
+    <!-- Indikator Pintar Multi-Video & Kunci Bahasa Internasional -->
+    <div v-if="isInternationalTarget || (rawVideoCount ?? 0) >= 2" class="flex flex-wrap gap-2">
+      <div
+        v-if="isInternationalTarget"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium studio-badge-ok"
+      >
+        <Globe2 class="w-3.5 h-3.5 shrink-0" />
+        <span>
+          Kunci Bahasa {{ config.countryCode }} Aktif: Teks Hook layar, CTA, judul, caption &amp; hashtag otomatis 100% Bahasa Inggris agar algoritma target luar negeri akurat.
+        </span>
+      </div>
+      <div
+        v-if="(rawVideoCount ?? 0) >= 2"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium studio-badge-ok"
+      >
+        <Film class="w-3.5 h-3.5 shrink-0" />
+        <span>
+          Mode Multi-Video Aktif: Seluruh {{ rawVideoCount }} video mentah akan didistribusikan ke variasi batch ini.
+        </span>
+      </div>
+    </div>
+
     <!-- Grid Parameter Targeting Lengkap -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
       <div class="space-y-1">
@@ -368,6 +419,15 @@ onMounted(loadPresetsAndProfiles);
         <select id="tg-diversity" v-model="config.batchDiversityMode" class="studio-input text-xs">
           <option value="distinct_moments">Momen Berbeda (Anti-Duplikat)</option>
           <option value="ab_hook_test">A/B Test Hook (Momen Inti Sama)</option>
+        </select>
+      </div>
+
+      <div class="space-y-1">
+        <label for="tg-ending-mode" class="block text-xs font-semibold">Mode Penyelesaian Video</label>
+        <select id="tg-ending-mode" v-model="config.clipEndingMode" class="studio-input text-xs">
+          <option value="complete_story">Tuntas di Akhir Kalimat (Anti-Terpotong)</option>
+          <option value="full_source">Video Utuh Full (Tanpa Potong Akhir)</option>
+          <option value="part_series">Seri Bersambung (Part 1 -&gt; Part 2)</option>
         </select>
       </div>
 

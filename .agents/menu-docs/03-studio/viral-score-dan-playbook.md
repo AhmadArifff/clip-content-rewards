@@ -7,7 +7,7 @@ route: "/clips/:clipId"
 lead_developer: "AhmadArifff"
 status: "Done"
 last_commit: "HEAD"
-last_updated: "2026-11-26"
+last_updated: "2026-11-28"
 tags: ["viral-score", "upload-playbook", "brief-compliance", "critique", "safe-zone"]
 database_tables:
   - "clips"
@@ -81,6 +81,8 @@ graph TD
 | 1 | **Video hasil render bervolume 100% pada target TikTok** | Suara asli tabrakan dengan sound musik trending TikTok saat upload. | Evaluator otomatis memunculkan kritik spesifik beserta tombol 1-klik *"Perbaiki dengan Prompt"* untuk mengecilkan ke 15% atau mute total 0%. |
 | 2 | **Subtitle terlalu rendah mendekati area caption TikTok/Shorts** | Teks tertutup nama akun dan ticker musik di layar HP. | Safe-Zone Overlay menampakkan batas zona merah secara visual, dan dimensi `audioSafeZone` menandai peringatan otomatis. |
 | 3 | **Browser tidak mengizinkan `navigator.clipboard` pada akses LAN HTTP** | Tombol *Salin Semua Playbook* gagal menyalin di HP lewat IP LAN. | Fungsi `copyText` menyediakan fallback `textarea` + `execCommand('copy')` agar tetap bekerja di konteks HTTP LAN lokal. |
+| 4 | **Target negara US/UK/Global namun hashtag/caption Playbook mengandung `#tiktokindonesia`** | Distribusi algoritma TikTok/YouTube melenceng ke audiens Indonesia. | `viral-evaluator.service.ts` mengunci 100% `titleOptions`, `captionDescription`, `hashtags`, dan `pinnedComments` ke Bahasa Inggris serta menyaring blocklist tag Indonesia untuk negara non-`ID`. |
+| 5 | **Tata letak Safe-Zone Overlay meleset dari tampilan nyata aplikasi HP** | Kreator salah mengira area aman atas/kanan/bawah. | `SafeZoneOverlay.vue` & `ass-subtitle.builder.ts` dikalibrasi ulang mengikuti proporsi nyata HP 2026 untuk TikTok (`top 10%`, `right 20%`, `bottom 30%`) & YouTube Shorts (`top-right Search/...`, `right 20%`, `bottom 23%` dengan tombol Subscribe putih). |
 
 ---
 
@@ -105,6 +107,7 @@ graph TD
 | Tanggal | Commit Hash | Pengembang | Milestone | Ringkasan Perubahan & Dampak |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-26 | `HEAD` | AhmadArifff | **M7** | Implementasi Viral Score Engine 6 dimensi, Brief Compliance Checklist, Projected Impact, Actionable Critique per timestamp, Upload Playbook tersinkron audio, ranking batch, dan Safe-Zone Overlay Player. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M17** | Kunci Bahasa Target Negara pada Upload Playbook (anti-leak `#tiktokindonesia` untuk pasar US/Global) serta kalibrasi pixel-accurate `SafeZoneOverlay.vue` & margin ASS mengikuti antarmuka HP nyata 2026 TikTok & YouTube Shorts. |
 
 ---
 

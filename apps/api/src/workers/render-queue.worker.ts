@@ -83,13 +83,25 @@ class LocalRenderQueueWorker {
   }
 
   private buildMediaSources(batch: NonNullable<Awaited<ReturnType<typeof batchRepository.findBatchById>>>): {
-    rawVideos: RenderMediaSource[];
+    rawVideos: Array<
+      RenderMediaSource & {
+        originalFilename: string;
+        transcript: TranscriptPayload | null;
+        silences: SilenceInterval[];
+      }
+    >;
     watermarkPathById: Map<string, string>;
     primaryRaw: RenderMediaSource;
     primarySilences: SilenceInterval[];
     primaryTranscript: TranscriptPayload | null;
   } {
-    const rawVideos: RenderMediaSource[] = [];
+    const rawVideos: Array<
+      RenderMediaSource & {
+        originalFilename: string;
+        transcript: TranscriptPayload | null;
+        silences: SilenceInterval[];
+      }
+    > = [];
     const watermarkPathById = new Map<string, string>();
     let primarySilences: SilenceInterval[] = [];
     let primaryTranscript: TranscriptPayload | null = null;
@@ -101,16 +113,20 @@ class LocalRenderQueueWorker {
       }
       if (m.assetType === 'raw_video') {
         const transcript = m.transcriptJson ? (JSON.parse(m.transcriptJson) as TranscriptPayload) : null;
+        const silences = m.silencesJson ? (JSON.parse(m.silencesJson) as SilenceInterval[]) : [];
         if (rawVideos.length === 0) {
           primaryTranscript = transcript;
-          primarySilences = m.silencesJson ? (JSON.parse(m.silencesJson) as SilenceInterval[]) : [];
+          primarySilences = silences;
         }
         rawVideos.push({
           id: m.id,
+          originalFilename: m.originalFilename,
           filePath: m.filePath,
           durationSec: m.durationSec ?? 5,
           hasAudio: m.hasAudio,
-          words: transcript?.words ?? []
+          words: transcript?.words ?? [],
+          transcript,
+          silences
         });
       }
     }
@@ -177,6 +193,13 @@ class LocalRenderQueueWorker {
         userId,
         mediaAssetId: mediaBundle.primaryRaw.id,
         mediaDurationSec: mediaBundle.primaryRaw.durationSec,
+        rawVideos: mediaBundle.rawVideos.map((v) => ({
+          id: v.id,
+          originalFilename: v.originalFilename,
+          durationSec: v.durationSec,
+          transcript: v.transcript,
+          silences: v.silences
+        })),
         rulebook,
         targetConfig,
         transcript: mediaBundle.primaryTranscript,
@@ -207,7 +230,7 @@ class LocalRenderQueueWorker {
         }
       }
 
-      // Jika mode Smart Auto-Track 9:16 aktif, analisis koordinat fokus subjek/wajah pada video sumber
+      // Jika mode Smart Auto-Track 9:16 aktif, analisis koordinat fokus subjek/wajah per video sumber secara akurat
       if (targetConfig.framingMode === 'auto_face_track') {
         try {
           this.emitProgress({
@@ -217,21 +240,37 @@ class LocalRenderQueueWorker {
             stageLabel: 'Memindai posisi subjek/wajah untuk Smart Auto-Track 9:16...',
             timestamp: new Date().toISOString()
           });
-          const absPrimaryPath = resolveSafeStoragePath(mediaBundle.primaryRaw.filePath);
-          const allSegments = planned.drafts.flatMap((d) =>
-            d.edl.segments.map((s) => ({ startSec: s.startSec, endSec: s.endSec }))
-          );
-          if (allSegments.length > 0) {
-            const tracked = await analyzeSubjectFocusTrack(absPrimaryPath, allSegments);
-            let cursor = 0;
-            for (const draft of planned.drafts) {
-              draft.edl.segments = draft.edl.segments.map((seg) => {
-                const res = tracked[cursor];
-                cursor += 1;
-                if (!res) return seg;
-                return { ...seg, focusX: res.focusX, cropX: res.cropX };
-              });
-            }
+          const rawById = new Map(mediaBundle.rawVideos.map((v) => [v.id, v]));
+          const segRefsByMedia = new Map<
+            string,
+            Array<{ draftIdx: number; segIdx: number; startSec: number; endSec: number }>
+          >();
+
+          planned.drafts.forEach((draft, draftIdx) => {
+            draft.edl.segments.forEach((seg, segIdx) => {
+              const bucket = segRefsByMedia.get(seg.mediaAssetId) ?? [];
+              bucket.push({ draftIdx, segIdx, startSec: seg.startSec, endSec: seg.endSec });
+              segRefsByMedia.set(seg.mediaAssetId, bucket);
+            });
+          });
+
+          for (const [mediaId, refs] of segRefsByMedia.entries()) {
+            const mediaItem = rawById.get(mediaId) ?? mediaBundle.primaryRaw;
+            const absPath = resolveSafeStoragePath(mediaItem.filePath);
+            const tracked = await analyzeSubjectFocusTrack(
+              absPath,
+              refs.map((r) => ({ startSec: r.startSec, endSec: r.endSec }))
+            );
+            refs.forEach((ref, idx) => {
+              const res = tracked[idx];
+              if (!res) return;
+              const seg = planned.drafts[ref.draftIdx].edl.segments[ref.segIdx];
+              planned.drafts[ref.draftIdx].edl.segments[ref.segIdx] = {
+                ...seg,
+                focusX: res.focusX,
+                cropX: res.cropX
+              };
+            });
           }
         } catch {
           // Fallback aman ke crop tengah jika analisis vision gagal pada video tertentu

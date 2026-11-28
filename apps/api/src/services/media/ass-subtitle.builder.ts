@@ -137,12 +137,17 @@ export function writeAssAndSrtFiles(params: {
     ? buildTimedCuesFromEdl(edl, wordsByMediaId, totalDurationSec)
     : [];
 
-  // Konversi verticalOffsetPct (45..82% dari atas) ke MarginV dari bawah
+  // Konversi verticalOffsetPct (45..82% dari atas) ke MarginV dari bawah mengikuti Safe-Zone real HP 2026
+  // TikTok bottom metadata ~29% (~557px), YT Shorts bottom metadata ~22% (~422px), right rail ~19-20% (~215px)
+  const isTiktokPreset = edl.captions.safeZonePreset === 'tiktok_9_16';
+  const minSafeBottomPx = isVertical ? (isTiktokPreset ? 560 : 440) : 90;
   const computedMarginV = isVertical
-    ? Math.max(360, Math.min(820, Math.round(playResY * (1 - edl.captions.verticalOffsetPct / 100))))
+    ? Math.max(minSafeBottomPx, Math.min(860, Math.round(playResY * (1 - edl.captions.verticalOffsetPct / 100))))
     : 90;
-  const marginR = isVertical ? (edl.captions.safeZonePreset === 'tiktok_9_16' ? 180 : 160) : 90;
+  const marginR = isVertical ? (isTiktokPreset ? 215 : 195) : 90;
   const marginL = isVertical ? 70 : 90;
+  const hookMarginV = isVertical ? 235 : 80;
+  const ctaMarginV = isVertical ? (isTiktokPreset ? 565 : 455) : 85;
 
   const fontName = sanitizeAssFontName(edl.captions.fontFamily);
   const captionFontSize = edl.captions.style === 'hormozi_bold' ? (isVertical ? 64 : 52) : (isVertical ? 52 : 42);
@@ -169,8 +174,8 @@ export function writeAssAndSrtFiles(params: {
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
     `Style: Caption,${fontName},${captionFontSize},${captionPrimary},&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,4,2,2,${marginL},${marginR},${computedMarginV},1`,
-    `Style: HookBanner,${fontName},${isVertical ? 44 : 42},&H00FFFFFF,&H00FFFFFF,${hookOutline},${hookBack},-1,0,0,0,100,100,0,0,3,14,0,8,${marginL},${marginR},${isVertical ? 300 : 80},1`,
-    `Style: CtaOverlay,${fontName},${isVertical ? 40 : 34},&H00FFFFFF,&H00FFFFFF,${ctaBg},${ctaBg},-1,0,0,0,100,100,0,0,3,12,0,2,${marginL},${marginR},${Math.max(computedMarginV + 110, 480)},1`,
+    `Style: HookBanner,${fontName},${isVertical ? 44 : 42},&H00FFFFFF,&H00FFFFFF,${hookOutline},${hookBack},-1,0,0,0,100,100,0,0,3,14,0,8,${marginL},${marginR},${hookMarginV},1`,
+    `Style: CtaOverlay,${fontName},${isVertical ? 36 : 34},&H00FFFFFF,&H00FFFFFF,${ctaBg},${ctaBg},-1,0,0,0,100,100,0,0,3,10,0,2,${marginL},${marginR},${ctaMarginV},1`,
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'

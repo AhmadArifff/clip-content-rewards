@@ -589,6 +589,7 @@ onMounted(fetchDetail);
         v-if="detail"
         :campaign-id="detail.id"
         :has-raw-video="rawVideos.length > 0"
+        :raw-video-count="rawVideos.length"
         :watermarks="watermarkAssets"
       />
 
