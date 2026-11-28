@@ -4,6 +4,11 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'],
   css: ['~/assets/css/themes.css'],
+  vite: {
+    optimizeDeps: {
+      include: ['lucide-vue-next', 'zod']
+    }
+  },
   runtimeConfig: {
     apiBaseUrl: process.env.API_BASE_URL || 'http://127.0.0.1:4000'
   },
@@ -12,12 +17,14 @@ export default defineNuxtConfig({
       title: 'Clip Content Rewards Studio',
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'theme-color', content: '#0d0f12' },
         {
           name: 'description',
           content: 'Studio lokal AI Auto-Editor, Viral Scorer & Upload Playbook untuk TikTok & YouTube Content Rewards'
         }
       ],
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { ShieldCheck, ArrowRight } from 'lucide-vue-next';
+import { ArrowRight } from 'lucide-vue-next';
 import { useAuthStore } from '~/stores/auth';
 import { useThemeStore } from '~/stores/theme';
 import { useThemeCopy } from '~/composables/useThemeCopy';
+import BrandLogo from '~/components/shared/BrandLogo.vue';
 import ThemeSwitcher from '~/components/shared/ThemeSwitcher.vue';
 
 const router = useRouter();
@@ -38,9 +39,12 @@ async function handleSubmit() {
 <template>
   <div class="min-h-screen flex flex-col justify-between p-4 md:p-8">
     <header class="max-w-5xl w-full mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <ShieldCheck class="w-5 h-5" style="color: var(--accent-bg);" />
-        <span class="studio-heading font-bold text-base">Clip Content Rewards</span>
+      <div class="flex items-center gap-2.5">
+        <BrandLogo size="md" />
+        <div>
+          <span class="studio-heading font-bold text-base block leading-tight">Clip Content Rewards</span>
+          <span class="text-[11px] studio-muted font-mono">AI Auto-Editor Studio</span>
+        </div>
       </div>
       <ThemeSwitcher />
     </header>

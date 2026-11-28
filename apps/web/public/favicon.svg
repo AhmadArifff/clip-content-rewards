@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#141B26" />
+      <stop offset="100%" stop-color="#090D13" />
+    </linearGradient>
+    <linearGradient id="prism" x1="15" y1="13" x2="35" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="55%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="rim" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.4" />
+    </linearGradient>
+  </defs>
+  <path d="M12 3H36L45 12V36L36 45H12L3 36V12L12 3Z" fill="url(#bg)" stroke="url(#rim)" stroke-width="2" />
+  <path d="M10 15V10H15" stroke="#6EE7B7" stroke-width="1.8" stroke-linecap="square" opacity="0.7" />
+  <path d="M38 33V38H33" stroke="#22D3EE" stroke-width="1.8" stroke-linecap="square" opacity="0.7" />
+  <path d="M17 13.5L32.5 22.4L24.2 26.8L17 22.8V13.5Z" fill="url(#prism)" />
+  <path d="M17 26.2L22.6 29.3L33.5 24.4L17 34.5V26.2Z" fill="#6EE7B7" />
+  <path d="M35 11L36.1 13.9L39 15L36.1 16.1L35 19L33.9 16.1L31 15L33.9 13.9L35 11Z" fill="#22D3EE" />
+</svg>

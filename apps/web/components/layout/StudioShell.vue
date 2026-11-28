@@ -4,6 +4,7 @@ import { Clapperboard, Activity, KeyRound, SlidersHorizontal, LogOut, Cpu } from
 import { useAuthStore } from '~/stores/auth';
 import { useThemeStore } from '~/stores/theme';
 import { useThemeCopy } from '~/composables/useThemeCopy';
+import BrandLogo from '~/components/shared/BrandLogo.vue';
 import ThemeSwitcher from '~/components/shared/ThemeSwitcher.vue';
 
 const route = useRoute();
@@ -36,12 +37,15 @@ async function handleLogout() {
     >
       <div class="space-y-6">
         <div class="flex items-center justify-between md:block">
-          <div>
-            <span class="font-mono text-[10px] tracking-widest uppercase px-1.5 py-0.5 rounded studio-badge-ok">
-              {{ copy.shortTag }}
-            </span>
-            <p class="studio-heading text-base font-bold mt-2 tracking-tight">ClipStudio Local</p>
-            <p class="text-xs studio-muted">{{ copy.brandSubtitle }}</p>
+          <div class="flex items-center gap-2.5">
+            <BrandLogo size="md" />
+            <div class="min-w-0">
+              <span class="font-mono text-[10px] tracking-widest uppercase px-1.5 py-0.5 rounded studio-badge-ok">
+                {{ copy.shortTag }}
+              </span>
+              <p class="studio-heading text-sm font-bold mt-1 tracking-tight leading-tight">ClipStudio Local</p>
+              <p class="text-[11px] studio-muted truncate">{{ copy.brandSubtitle }}</p>
+            </div>
           </div>
         </div>
 
@@ -105,9 +109,12 @@ async function handleLogout() {
     <header style="background: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
       <div class="max-w-5xl mx-auto px-4 md:px-8 py-4 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p class="text-[11px] uppercase tracking-[0.2em] studio-muted font-semibold">{{ copy.shortTag }}</p>
-            <h1 class="studio-heading text-2xl font-semibold tracking-tight leading-tight">Clip Content Rewards</h1>
+          <div class="flex items-center gap-3">
+            <BrandLogo size="md" />
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.2em] studio-muted font-semibold">{{ copy.shortTag }}</p>
+              <h1 class="studio-heading text-2xl font-semibold tracking-tight leading-tight">Clip Content Rewards</h1>
+            </div>
           </div>
           <div class="flex items-center gap-3 flex-wrap">
             <ThemeSwitcher />
@@ -150,12 +157,7 @@ async function handleLogout() {
     <div class="px-4 md:px-6 pt-4">
       <header class="max-w-6xl mx-auto studio-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div
-            class="h-10 w-10 flex items-center justify-center font-bold text-sm"
-            style="background: var(--accent-bg); color: var(--accent-fg); border: 2px solid #0f172a; border-radius: 10px;"
-          >
-            CR
-          </div>
+          <BrandLogo size="md" />
           <div>
             <p class="studio-heading text-base font-bold leading-tight">ClipRewards Desk</p>
             <p class="text-xs studio-muted">{{ copy.brandSubtitle }}</p>

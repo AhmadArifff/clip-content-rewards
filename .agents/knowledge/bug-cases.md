@@ -2,9 +2,16 @@
 
 Log historis kendala teknis, akar masalah, dan solusi terverifikasi untuk `clip-content-rewards`.
 
-> **Status Saat Ini:** 5 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M9`.
+> **Status Saat Ini:** 6 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M11`.
 
 ---
+
+### Kasus #06: Layar Hitam Kosong Saat Pertama Membuka `http://localhost:3000` di Mode `nuxt dev`
+- **Tanggal & Milestone:** `2026-11-28` (`M11`)
+- **Konteks & Gejala (Symptom):** Saat pertama membuka `http://localhost:3000` pada `npm run dev` (mode SPA `ssr: false`), browser sempat menampilkan layar gelap kosong `#0d0f12` dengan judul tab sudah muncul sementara log Vite menampilkan `new dependencies optimized: lucide-vue-next -> reloading`.
+- **Akar Masalah (Root Cause):** (1) `lucide-vue-next` belum didaftarkan di `vite.optimizeDeps.include` sehingga memicu optimasi & reload mendadak saat kunjungan pertama; (2) belum tersedia `spa-loading-template.html` sehingga masa inisialisasi SPA terlihat kosong; (3) `authStore.hydrate()` belum menangkap error jaringan bila user membuka browser sebelum API selesai boot.
+- **Solusi yang Diterapkan (Fix Applied):** Menambahkan `vite.optimizeDeps.include: ['lucide-vue-next', 'zod']` di `apps/web/nuxt.config.ts`, menambahkan `apps/web/app/spa-loading-template.html`, dan menambahkan blok `catch` aman pada `hydrate()` di `apps/web/stores/auth.ts`.
+- **Pelajaran Pencegahan (Key Takeaway):** Selalu pre-optimize pustaka ikon besar di Vite dev config dan sediakan SPA loading template pada proyek Nuxt `ssr: false`.
 
 ### Kasus #05: Breaking Change ESM pada `archiver@8.0.0` (`default` Export Dihapus, Diganti `ZipArchive`)
 - **Tanggal & Milestone:** `2026-11-27` (`M9`)

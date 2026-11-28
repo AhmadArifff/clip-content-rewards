@@ -35,8 +35,10 @@ export const useAuthStore = defineStore('auth', {
             this.user = null;
           }
         }
-      } finally {
         this.initialized = true;
+      } catch {
+        this.user = null;
+      } finally {
         this.loading = false;
       }
     },
