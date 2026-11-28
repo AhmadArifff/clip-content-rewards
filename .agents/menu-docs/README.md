@@ -19,6 +19,7 @@
 | **09** | **03-studio** | Reference Video Pacing Cloner (Style-Only Rhythm & Tempo) | `/pacing` | `M11 (V2)` | `Done` | [`03-studio/reference-pacing-cloner.md`](./03-studio/reference-pacing-cloner.md) |
 | **10** | **03-studio** | Visual Multi-Track Timeline Editor Interaktif | `/clips/:clipId` | `M12 (V2)` | `Done` | [`03-studio/visual-timeline-editor.md`](./03-studio/visual-timeline-editor.md) |
 | **11** | **03-studio** | Smart Face-Tracking Auto-Crop 9:16 & Cover Frame Selector | `/clips/:clipId` | `M13 (V2)` | `Done` | [`03-studio/smart-autocrop-dan-cover.md`](./03-studio/smart-autocrop-dan-cover.md) |
+| **12** | **04-export** | Campaign Content Calendar & Export Laporan Excel (`.xlsx` 3-Sheet) | `/calendar` | `M14 (V2)` | `Done` | [`04-export/kalender-dan-excel.md`](./04-export/kalender-dan-excel.md) |
 
 ---
 

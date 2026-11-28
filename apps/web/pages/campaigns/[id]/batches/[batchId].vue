@@ -15,7 +15,9 @@ import {
   Award,
   ShieldCheck,
   Archive,
-  FileText
+  FileText,
+  FileSpreadsheet,
+  CalendarDays
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import { apiRequest } from '~/composables/useApi';
@@ -76,6 +78,7 @@ const liveStageLabel = ref('Menghubungkan status render lokal...');
 const errorMsg = ref('');
 const exportNotice = ref('');
 const exportingZip = ref(false);
+const exportingExcel = ref(false);
 const selectedClipIds = ref<string[]>([]);
 const sortBy = ref<'score' | 'sequence'>('score');
 const filterMode = ref<'all' | 'high_score' | 'brief_pass' | 'approved'>('all');
@@ -154,6 +157,49 @@ async function handleBulkZipExport(filter: 'all' | 'approved' | 'high_score' | '
     errorMsg.value = err instanceof Error ? err.message : 'Gagal mengunduh arsip ZIP.';
   } finally {
     exportingZip.value = false;
+  }
+}
+
+async function handleBatchExcelExport() {
+  errorMsg.value = '';
+  exportNotice.value = '';
+  exportingExcel.value = true;
+  try {
+    const response = await fetch(`/api/export/calendar.xlsx?batchId=${encodeURIComponent(batchId.value)}`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      let msg = 'Gagal membuat laporan Excel (.xlsx).';
+      try {
+        const errPayload = (await response.json()) as { error?: { message?: string } };
+        if (errPayload.error?.message) msg = errPayload.error.message;
+      } catch {
+        // Gunakan pesan default
+      }
+      errorMsg.value = msg;
+      return;
+    }
+
+    const blob = await response.blob();
+    const disp = response.headers.get('content-disposition') || '';
+    const match = disp.match(/filename="([^"]+)"/i);
+    const filename = match?.[1] || `laporan-batch-${Date.now()}.xlsx`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    exportNotice.value = `Laporan Excel (.xlsx) berhasil diunduh: ${filename}`;
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal mengunduh laporan Excel.';
+  } finally {
+    exportingExcel.value = false;
   }
 }
 
@@ -398,6 +444,25 @@ onBeforeUnmount(() => {
             <Download class="w-4 h-4" />
             <span>ZIP Terpilih ({{ selectedClipIds.length }})</span>
           </button>
+
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold min-h-[40px] transition"
+            style="background: var(--status-ok-bg); color: var(--status-ok-fg); border: 1.5px solid var(--status-ok-fg);"
+            :disabled="exportingExcel"
+            @click="handleBatchExcelExport"
+          >
+            <FileSpreadsheet class="w-4 h-4" />
+            <span>{{ exportingExcel ? 'Menyusun Excel...' : 'Export Excel (.xlsx)' }}</span>
+          </button>
+
+          <NuxtLink
+            :to="`/calendar?campaignId=${campaignId}`"
+            class="studio-btn-secondary text-xs"
+          >
+            <CalendarDays class="w-4 h-4" />
+            <span>Buka Kalender</span>
+          </NuxtLink>
         </div>
       </section>
 

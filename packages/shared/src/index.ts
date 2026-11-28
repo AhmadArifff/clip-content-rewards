@@ -391,6 +391,31 @@ export const CompleteChunkUploadInputSchema = z.object({
   assetType: MediaAssetTypeSchema.default('raw_video')
 });
 
+export const PublishStatusSchema = z.enum([
+  'unscheduled',
+  'scheduled',
+  'published'
+]);
+export type PublishStatus = z.infer<typeof PublishStatusSchema>;
+
+export const UpdateClipScheduleInputSchema = z.object({
+  scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  scheduledSlot: z.string().trim().max(40).nullable().optional(),
+  publishStatus: PublishStatusSchema.optional(),
+  publishedUrl: z.string().trim().max(300).nullable().optional(),
+  calendarNote: z.string().trim().max(300).nullable().optional()
+});
+export type UpdateClipScheduleInput = z.infer<typeof UpdateClipScheduleInputSchema>;
+
+export const AutoScheduleInputSchema = z.object({
+  campaignId: z.string().min(1).optional(),
+  batchId: z.string().min(1).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  maxPerPlatformPerDay: z.number().int().min(1).max(5).default(2),
+  onlyApproved: z.boolean().default(false)
+});
+export type AutoScheduleInput = z.infer<typeof AutoScheduleInputSchema>;
+
 export type ServiceResult<T> =
   | { ok: true; data: T; meta?: Record<string, unknown> }
   | { ok: false; code: string; message: string; statusCode: number; details?: unknown };

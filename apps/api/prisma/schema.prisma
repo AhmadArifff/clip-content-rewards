@@ -168,22 +168,28 @@ model GenerationBatch {
 }
 
 model Clip {
-  id              String   @id @default(cuid())
-  batchId         String   @map("batch_id")
-  sequenceIndex   Int      @map("sequence_index")
-  angleTitle      String   @map("angle_title")
-  hookSummary     String?  @map("hook_summary")
-  activeVersionId String?  @map("active_version_id")
-  isApproved      Boolean  @default(false) @map("is_approved")
-  status          String   @default("queued")
-  errorMessage    String?  @map("error_message")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id              String    @id @default(cuid())
+  batchId         String    @map("batch_id")
+  sequenceIndex   Int       @map("sequence_index")
+  angleTitle      String    @map("angle_title")
+  hookSummary     String?   @map("hook_summary")
+  activeVersionId String?   @map("active_version_id")
+  isApproved      Boolean   @default(false) @map("is_approved")
+  status          String    @default("queued")
+  errorMessage    String?   @map("error_message")
+  scheduledAt     DateTime? @map("scheduled_at")
+  scheduledSlot   String?   @map("scheduled_slot")
+  publishStatus   String    @default("unscheduled") @map("publish_status")
+  publishedUrl    String?   @map("published_url")
+  calendarNote    String?   @map("calendar_note")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   batch    GenerationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   versions ClipVersion[]
 
   @@index([batchId, status])
+  @@index([publishStatus, scheduledAt])
   @@map("clips")
 }
 

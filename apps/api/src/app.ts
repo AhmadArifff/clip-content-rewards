@@ -6,6 +6,7 @@ import { globalErrorHandler } from './middlewares/error.middleware.js';
 import { apiKeyRouter } from './routes/api-key.routes.js';
 import { authRouter } from './routes/auth.routes.js';
 import { batchRouter } from './routes/batch.routes.js';
+import { calendarRouter } from './routes/calendar.routes.js';
 import { campaignRouter } from './routes/campaign.routes.js';
 import { clipRouter } from './routes/clip.routes.js';
 import { exportRouter } from './routes/export.routes.js';
@@ -28,6 +29,7 @@ export function createApp() {
   app.use('/api/campaigns', campaignRouter);
   app.use('/api', mediaRouter);
   app.use('/api', batchRouter);
+  app.use('/api', calendarRouter);
   app.use('/api', exportRouter);
   app.use('/api', pacingRouter);
   app.use('/api/clips', clipRouter);
