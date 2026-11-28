@@ -719,6 +719,21 @@ onMounted(async () => {
                   class="w-full h-full object-contain"
                   @timeupdate="onVideoTimeUpdate"
                 />
+                <div
+                  v-else
+                  class="w-full h-full flex flex-col items-center justify-center p-5 text-center text-white space-y-2"
+                >
+                  <img
+                    v-if="selectedVersion.hasCover"
+                    :src="`/api/clips/${clip.id}/cover?versionId=${selectedVersion.id}`"
+                    alt="Cover arsip klip"
+                    class="w-36 rounded opacity-75 object-cover"
+                  />
+                  <p class="text-xs font-bold">Media MP4 Diarsipkan Ringan</p>
+                  <p class="text-[11px] opacity-80 leading-relaxed">
+                    Berkas video MP4 sudah dibersihkan untuk menghemat disk lokal, namun Skor Viral, Upload Playbook, Kalender, &amp; Laporan Excel tetap utuh di kanan.
+                  </p>
+                </div>
                 <SafeZoneOverlay :mode="safeZoneMode" />
                 <FrameAnnotationOverlay
                   :pin-mode="pinMode"

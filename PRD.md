@@ -4,8 +4,8 @@
 **Author:** Product Management & Architecture Team
 **Owner:** AhmadArifff
 **Date:** 2026-11-28
-**Version:** v1.2
-**Status:** Production V2 Active (M0-M17 Verified)
+**Version:** v1.3
+**Status:** Production V2 Active (M0-M18 Verified)
 **Repository:** `https://github.com/AhmadArifff/clip-content-rewards.git`
 **Technical Blueprint:** [technical-blueprint-m3.md](./.agents/knowledge/technical-blueprint-m3.md)
 
@@ -339,6 +339,22 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 
 ---
 
+### Epic 7: Storage Maintenance, Lifecycle Retention & Content Hygiene Center (`M18`)
+
+#### Story 7.1: Pemantauan Kapasitas Disk, Peringatan Klip Menganggur >= 30 Hari & Pembersihan Aman
+**As a** kreator lokal yang memproduksi banyak batch video,
+**I want to** memiliki 1 menu khusus pemeliharaan penyimpanan yang memberi insight kapasitas disk, memperingatkan konten yang >= 30 hari belum dicek maupun dijadwalkan upload, serta menyediakan opsi Arsip Ringan / Pin / Snooze / Hapus Aman,
+**So that** disk laptop tidak menumpuk oleh file MP4 mati tanpa kehilangan riwayat Skor Viral, Upload Playbook, Kalender, dan Laporan Excel.
+
+**Priority:** `P1 (V2 Production)` | **Milestone:** `M18`
+
+**Acceptance Criteria (9 Skenario Lapangan Terverifikasi):**
+- [ ] **Given** klip hasil generate tidak pernah dibuka (`lastInspectedAt`), belum diunduh (`downloadCount`), dan belum dijadwalkan (`unscheduled`) melewati ambang peringatan dini (default `14 hari`) atau ambang kritis (default `30 hari`), **When** user membuka studio, **Then** badge angka notifikasi tampil pada menu **Maintenance** di sidebar + banner pengingat di Dashboard `/campaigns`, dan tab *Perlu Keputusan* di `/maintenance` menampilkan alasan, usia hari, ukuran MB, serta tombol aksi **Cek**, **Jadwalkan**, **Lindungi (Pin)**, **Snooze 30 Hari**, **Arsip Ringan (Hapus MP4)**, dan **Hapus Permanen**.
+- [ ] **Given** klip sudah berstatus **Sudah Tayang (`published`)**, **When** user memilih **Arsip Ringan (`prune-media`)**, **Then** hanya berkas fisik besar (`.mp4`, `.ass`, `.srt`) yang dihapus untuk menghemat ~98% disk, sementara `cover.jpg`, Skor Viral, Upload Playbook, jadwal Kalender, dan Laporan Excel tetap utuh 100%.
+- [ ] **Given** terdapat versi revisi lama non-aktif (`v1`, `v2`), video mentah raksasa di `storage/uploads/` dari campaign kedaluwarsa/selesai, atau file temp/orphan/render gagal, **When** user meninjau tab terkait di `/maintenance`, **Then** tersedia aksi 1-klik dengan modal **Dry-Run Preview MB** (kebijakan **Zero Silent Auto-Delete**: tidak ada penghapusan diam-diam tanpa persetujuan user), blokir otomatis HTTP `409` saat ada render berjalan, kebijakan retensi dinamis di tabel `master_presets` (`retention_policy`), serta audit trail di tabel `storage_cleanup_logs`.
+
+---
+
 ## 7. Core Data Contracts (Overview)
 
 ### 7.1 Entity Overview (SQLite WAL + Prisma - Detail Skema di `technical-blueprint-m3.md`)
@@ -491,3 +507,4 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
 | `v1.0` | 2026-11-26 | AhmadArifff & AI PM | Initial baseline PRD (M1): Locked Nuxt 3/Vue 3 + Express + SQLite/Prisma + Local FFmpeg + BYOK architecture, full 3-stage flow, targeting matrix, upload playbook, prompt re-editor, & bulk ZIP export. |
 | `v1.1` | 2026-11-26 | AhmadArifff & AI Architect/Critic | M3 Gap Audit upgrade: Menambahkan Whisper audio chunking (<=20MB/chunk) untuk video >1 jam, supporting assets (watermark/logo/outro/B-roll), 3 mode framing 16:9->9:16, reusable `target_profiles`, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate, serta tautan ke `technical-blueprint-m3.md`. |
 | `v1.2` | 2026-11-28 | AhmadArifff & AI Architect | M16-M17 Field Feedback upgrade: Menambahkan Free-Tier AI Quota Guard + Gemini Native Audio STT, Multi-Raw-Video Distribution, Anti-Cut Speech Boundary Snapper & `clipEndingMode` (`complete_story`/`full_source`/`part_series`), Target-Country Content Language Lock (anti-leak algoritma luar negeri), dan kalibrasi Safe-Zone Overlay TikTok & YouTube Shorts sesuai antarmuka HP aktual 2026. |
+| `v1.3` | 2026-11-28 | AhmadArifff & AI Architect | M18 Storage Maintenance & Content Lifecycle Retention (Epic 7): Menambahkan 9 skenario lapangan pemeliharaan disk lokal, tracking interaksi (`lastInspectedAt`/`downloadCount`), alert retensi 14/30 hari + badge sidebar, Arsip Ringan (hapus MP4 pertahankan Playbook/Kalender/Excel), pembersih versi non-aktif/orphan/raw lama, kebijakan Zero Silent Auto-Delete, dan `StorageCleanupLog`. |

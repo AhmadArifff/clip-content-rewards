@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Clapperboard, Activity, CalendarDays, Palette, KeyRound, SlidersHorizontal, LogOut, Cpu } from 'lucide-vue-next';
+import { computed, onMounted, ref } from 'vue';
+import { Clapperboard, Activity, CalendarDays, Palette, HardDrive, KeyRound, SlidersHorizontal, LogOut, Cpu } from 'lucide-vue-next';
+import { apiRequest } from '~/composables/useApi';
 import { useAuthStore } from '~/stores/auth';
 import { useThemeStore } from '~/stores/theme';
 import { useThemeCopy } from '~/composables/useThemeCopy';
@@ -13,14 +14,41 @@ const auth = useAuthStore();
 const themeStore = useThemeStore();
 const copy = useThemeCopy();
 
+const maintenanceAlerts = ref<{ criticalCount: number; warningCount: number; totalAlerts: number }>({
+  criticalCount: 0,
+  warningCount: 0,
+  totalAlerts: 0
+});
+
 const navItems = computed(() => [
-  { to: '/campaigns', label: copy.value.navCampaigns, icon: Clapperboard },
-  { to: '/pacing', label: copy.value.navPacing, icon: Activity },
-  { to: '/calendar', label: copy.value.navCalendar, icon: CalendarDays },
-  { to: '/brand-kits', label: copy.value.navBrandKits, icon: Palette },
-  { to: '/settings/api-keys', label: copy.value.navApiKeys, icon: KeyRound },
-  { to: '/settings/presets', label: copy.value.navPresets, icon: SlidersHorizontal }
+  { to: '/campaigns', label: copy.value.navCampaigns, icon: Clapperboard, badge: 0, badgeCritical: false },
+  { to: '/pacing', label: copy.value.navPacing, icon: Activity, badge: 0, badgeCritical: false },
+  { to: '/calendar', label: copy.value.navCalendar, icon: CalendarDays, badge: 0, badgeCritical: false },
+  { to: '/brand-kits', label: copy.value.navBrandKits, icon: Palette, badge: 0, badgeCritical: false },
+  {
+    to: '/maintenance',
+    label: copy.value.navMaintenance,
+    icon: HardDrive,
+    badge: maintenanceAlerts.value.totalAlerts,
+    badgeCritical: maintenanceAlerts.value.criticalCount > 0
+  },
+  { to: '/settings/api-keys', label: copy.value.navApiKeys, icon: KeyRound, badge: 0, badgeCritical: false },
+  { to: '/settings/presets', label: copy.value.navPresets, icon: SlidersHorizontal, badge: 0, badgeCritical: false }
 ]);
+
+onMounted(async () => {
+  if (!auth.user) return;
+  try {
+    const res = await apiRequest<{ criticalCount: number; warningCount: number; totalAlerts: number }>(
+      '/api/maintenance/alert-summary'
+    );
+    if (res.data) {
+      maintenanceAlerts.value = res.data;
+    }
+  } catch {
+    // Abaikan agar navigasi utama tidak pernah terganggu
+  }
+});
 
 async function handleLogout() {
   await auth.logout();
@@ -65,6 +93,13 @@ async function handleLogout() {
           >
             <component :is="item.icon" class="w-4 h-4 shrink-0" />
             <span>{{ item.label }}</span>
+            <span
+              v-if="item.badge > 0"
+              class="ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none"
+              :class="item.badgeCritical ? 'studio-badge-err' : 'studio-badge-warn'"
+            >
+              {{ item.badge }}
+            </span>
           </NuxtLink>
         </nav>
       </div>
@@ -141,6 +176,13 @@ async function handleLogout() {
           >
             <component :is="item.icon" class="w-4 h-4" />
             <span>{{ item.label }}</span>
+            <span
+              v-if="item.badge > 0"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none"
+              :class="item.badgeCritical ? 'studio-badge-err' : 'studio-badge-warn'"
+            >
+              {{ item.badge }}
+            </span>
           </NuxtLink>
           <span class="ml-auto hidden sm:inline text-xs studio-muted">{{ auth.user?.name }}</span>
         </nav>
@@ -191,6 +233,13 @@ async function handleLogout() {
           >
             <component :is="item.icon" class="w-4 h-4" />
             <span>{{ item.label }}</span>
+            <span
+              v-if="item.badge > 0"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none"
+              :class="item.badgeCritical ? 'studio-badge-err' : 'studio-badge-warn'"
+            >
+              {{ item.badge }}
+            </span>
           </NuxtLink>
         </nav>
 

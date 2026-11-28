@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { PlatformTarget } from '@clip/shared';
-import { Plus, ArrowRight, Trash2, FileText, Film, CheckCircle2, Clock } from 'lucide-vue-next';
+import { Plus, ArrowRight, Trash2, FileText, Film, CheckCircle2, Clock, HardDrive, AlertTriangle } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import { apiRequest } from '~/composables/useApi';
 import { useThemeCopy } from '~/composables/useThemeCopy';
@@ -28,6 +28,15 @@ const campaigns = ref<CampaignSummary[]>([]);
 const loading = ref(false);
 const showCreateForm = ref(false);
 const notice = ref<{ type: 'ok' | 'err'; text: string } | null>(null);
+const retentionAlert = ref<{
+  criticalCount: number;
+  warningCount: number;
+  totalAlerts: number;
+  diskWarningActive: boolean;
+  usedMb: number;
+  reclaimableMb: number;
+  staleDaysThreshold: number;
+} | null>(null);
 
 const title = ref('');
 const brandOwner = ref('');
@@ -102,7 +111,23 @@ async function handleDelete(id: string) {
   }
 }
 
-onMounted(fetchCampaigns);
+onMounted(async () => {
+  await fetchCampaigns();
+  try {
+    const res = await apiRequest<{
+      criticalCount: number;
+      warningCount: number;
+      totalAlerts: number;
+      diskWarningActive: boolean;
+      usedMb: number;
+      reclaimableMb: number;
+      staleDaysThreshold: number;
+    }>('/api/maintenance/alert-summary');
+    retentionAlert.value = res.data ?? null;
+  } catch {
+    retentionAlert.value = null;
+  }
+});
 </script>
 
 <template>
@@ -117,6 +142,35 @@ onMounted(fetchCampaigns);
           <Plus class="w-4 h-4" />
           <span>{{ showCreateForm ? 'Tutup Form' : 'Buat Campaign Baru' }}</span>
         </button>
+      </div>
+
+      <!-- Alert Proaktif Retensi & Kesehatan Disk (M18) -->
+      <div
+        v-if="retentionAlert && (retentionAlert.criticalCount > 0 || retentionAlert.warningCount > 0 || retentionAlert.diskWarningActive)"
+        class="p-4 rounded flex flex-wrap items-center justify-between gap-3 text-xs"
+        :class="retentionAlert.criticalCount > 0 || retentionAlert.diskWarningActive ? 'studio-badge-err' : 'studio-badge-warn'"
+      >
+        <div class="flex items-start gap-2.5 min-w-0">
+          <AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
+          <div class="space-y-0.5">
+            <p class="font-bold">
+              Pengingat Pemeliharaan Disk:
+              <template v-if="retentionAlert.criticalCount > 0">
+                {{ retentionAlert.criticalCount }} item kritis (melewati {{ retentionAlert.staleDaysThreshold }} hari / kuota disk)
+              </template>
+              <template v-else>
+                {{ retentionAlert.warningCount }} klip mendekati batas retensi
+              </template>
+            </p>
+            <p class="opacity-90">
+              Total disk terpakai {{ retentionAlert.usedMb }} MB; sekitar {{ retentionAlert.reclaimableMb }} MB siap dibebaskan atau diarsipkan ringan.
+            </p>
+          </div>
+        </div>
+        <NuxtLink to="/maintenance" class="studio-btn-secondary text-xs shrink-0">
+          <HardDrive class="w-3.5 h-3.5" />
+          <span>Kelola di Maintenance</span>
+        </NuxtLink>
       </div>
 
       <div

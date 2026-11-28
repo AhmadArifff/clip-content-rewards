@@ -10,6 +10,7 @@ import {
   type WordTimestamp
 } from '@clip/shared';
 import { resolveSafeStoragePath } from '../config/storage.js';
+import { prisma } from '../config/prisma.js';
 import { batchRepository } from '../repositories/batch.repository.js';
 import { planEdlPatchWithPrompt, type SubtitleOverrideInput } from './ai/edl-patcher.service.js';
 import { evaluateClipVersion } from './ai/viral-evaluator.service.js';
@@ -97,6 +98,13 @@ export const clipService = {
         hasAudio: m.hasAudio
       }));
 
+    // Catat interaksi inspeksi terbaru untuk sinyal retensi M18
+    const inspectedAt = new Date();
+    await prisma.clip.update({
+      where: { id: clip.id },
+      data: { lastInspectedAt: inspectedAt }
+    }).catch(() => {});
+
     return {
       ok: true,
       data: {
@@ -109,6 +117,13 @@ export const clipService = {
         hookSummary: clip.hookSummary,
         status: clip.status,
         isApproved: clip.isApproved,
+        publishStatus: clip.publishStatus,
+        lastInspectedAt: inspectedAt.toISOString(),
+        lastDownloadedAt: clip.lastDownloadedAt ? clip.lastDownloadedAt.toISOString() : null,
+        downloadCount: clip.downloadCount,
+        retentionProtected: clip.retentionProtected,
+        snoozedUntil: clip.snoozedUntil ? clip.snoozedUntil.toISOString() : null,
+        mediaPrunedAt: clip.mediaPrunedAt ? clip.mediaPrunedAt.toISOString() : null,
         activeVersionId: activeVersion?.id ?? null,
         targetConfig: safeJson<TargetConfig | null>(clip.batch.targetConfigJson, null),
         sourceMediaList,

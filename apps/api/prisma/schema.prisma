@@ -21,6 +21,7 @@ model User {
   campaigns      Campaign[]
   pacingProfiles ReferencePacingProfile[]
   brandKits      BrandAssetKit[]
+  cleanupLogs    StorageCleanupLog[]
 
   @@map("users")
 }
@@ -178,13 +179,19 @@ model Clip {
   isApproved      Boolean   @default(false) @map("is_approved")
   status          String    @default("queued")
   errorMessage    String?   @map("error_message")
-  scheduledAt     DateTime? @map("scheduled_at")
-  scheduledSlot   String?   @map("scheduled_slot")
-  publishStatus   String    @default("unscheduled") @map("publish_status")
-  publishedUrl    String?   @map("published_url")
-  calendarNote    String?   @map("calendar_note")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  scheduledAt        DateTime? @map("scheduled_at")
+  scheduledSlot      String?   @map("scheduled_slot")
+  publishStatus      String    @default("unscheduled") @map("publish_status")
+  publishedUrl       String?   @map("published_url")
+  calendarNote       String?   @map("calendar_note")
+  lastInspectedAt    DateTime? @map("last_inspected_at")
+  lastDownloadedAt   DateTime? @map("last_downloaded_at")
+  downloadCount      Int       @default(0) @map("download_count")
+  retentionProtected Boolean   @default(false) @map("retention_protected")
+  snoozedUntil       DateTime? @map("snoozed_until")
+  mediaPrunedAt      DateTime? @map("media_pruned_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   batch       GenerationBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
   versions    ClipVersion[]
@@ -192,6 +199,7 @@ model Clip {
 
   @@index([batchId, status])
   @@index([publishStatus, scheduledAt])
+  @@index([mediaPrunedAt, retentionProtected])
   @@map("clips")
 }
 
@@ -307,4 +315,20 @@ model BrandAssetKit {
 
   @@index([userId, createdAt])
   @@map("brand_asset_kits")
+}
+
+model StorageCleanupLog {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  actionType    String   @map("action_type")
+  itemsAffected Int      @default(0) @map("items_affected")
+  freedBytes    Int      @default(0) @map("freed_bytes")
+  summary       String
+  detailsJson   String?  @map("details_json")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("storage_cleanup_logs")
 }

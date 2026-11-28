@@ -60,7 +60,10 @@ const DEFAULT_PRESETS = [
   { category: 'prompt_preset', code: 'tighten_silences', labelId: 'Perketat Semua Jeda Hening (Fast Jump-Cut)', sortOrder: 60, config: { group: 'pacing', promptText: 'Potong seluruh jeda napas dan dead-air di atas 0.25 detik agar ritme video lebih cepat dan menjaga retensi.' } },
   { category: 'prompt_preset', code: 'raise_subtitle_safezone', labelId: 'Naikkan Subtitle ke Safe-Zone Tengah', sortOrder: 70, config: { group: 'caption', promptText: 'Naikkan posisi subtitle ke area aman tengah (verticalOffsetPct 66%) agar tidak tertutup teks deskripsi TikTok/Shorts.' } },
   { category: 'prompt_preset', code: 'zoom_in_115', labelId: 'Zoom-In 115% & Fokus Wajah', sortOrder: 80, config: { group: 'visual', promptText: 'Tambahkan zoom-in 1.15x pada segmen utama agar ekspresi pembicara lebih dekat dan kuat.' } },
-  { category: 'prompt_preset', code: 'inject_brief_cta', labelId: 'Tambahkan CTA / Disclaimer Wajib Brief', sortOrder: 90, config: { group: 'brief', promptText: 'Tambahkan teks CTA dan disclaimer wajib sesuai aturan Brief di 4 detik terakhir dalam area aman layar.' } }
+  { category: 'prompt_preset', code: 'inject_brief_cta', labelId: 'Tambahkan CTA / Disclaimer Wajib Brief', sortOrder: 90, config: { group: 'brief', promptText: 'Tambahkan teks CTA dan disclaimer wajib sesuai aturan Brief di 4 detik terakhir dalam area aman layar.' } },
+
+  // Retention & Storage Maintenance Policy Default (M18)
+  { category: 'retention_policy', code: 'default_policy', labelId: 'Kebijakan Retensi & Pemeliharaan Disk Default (30 Hari)', sortOrder: 10, config: { staleDaysThreshold: 30, warningDaysThreshold: 14, publishedPruneDays: 14, diskWarningMb: 5120 } }
 ];
 
 async function main() {

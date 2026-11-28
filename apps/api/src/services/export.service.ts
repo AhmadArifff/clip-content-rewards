@@ -6,6 +6,7 @@ import type {
   UploadPlaybook
 } from '@clip/shared';
 import { resolveSafeStoragePath } from '../config/storage.js';
+import { prisma } from '../config/prisma.js';
 import { batchRepository } from '../repositories/batch.repository.js';
 
 function safeJson<T>(raw: string | null | undefined, fallback: T): T {
@@ -243,6 +244,16 @@ export const exportService = {
       };
     }
 
+    if (type === 'mp4') {
+      await prisma.clip.update({
+        where: { id: clip.id },
+        data: {
+          downloadCount: { increment: 1 },
+          lastDownloadedAt: new Date()
+        }
+      }).catch(() => {});
+    }
+
     return {
       ok: true,
       data: {
@@ -306,6 +317,15 @@ export const exportService = {
         statusCode: 400
       };
     }
+
+    // Catat statistik unduhan Bulk ZIP untuk sinyal retensi M18
+    await prisma.clip.updateMany({
+      where: { id: { in: matched.map((m) => m.clip.id) } },
+      data: {
+        downloadCount: { increment: 1 },
+        lastDownloadedAt: new Date()
+      }
+    }).catch(() => {});
 
     matched.sort((a, b) => {
       const sa = a.ver.viralScoreTotal ?? -1;

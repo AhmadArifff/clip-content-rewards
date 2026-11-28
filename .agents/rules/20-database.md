@@ -17,3 +17,8 @@
 ## 4. Manajemen Versi & Relasi Integritas
 - Setiap `Clip` memiliki relasi `1-to-N` ke `ClipVersion` (`v1`, `v2`, `v3`) serta pointer `active_version_id`.
 - Penghapusan campaign atau versi usang wajib membersihkan berkas fisik terkait di `storage/` melalui service transaksi terkoordinasi agar tidak meninggalkan file yatim (*orphan media files*).
+
+## 5. Lifecycle Tracking, Arsip Ringan & Audit Pembersihan Disk (`M18`)
+- Model `Clip` wajib melacak sinyal interaksi nyata (`last_inspected_at`, `last_downloaded_at`, `download_count`), proteksi retensi (`retention_protected`, `snoozed_until`), dan penanda Arsip Ringan (`media_pruned_at`).
+- Ambang retensi (`staleDaysThreshold`, `warningDaysThreshold`, `publishedPruneDays`, `diskWarningMb`) disimpan dinamis di `master_presets` kategori `retention_policy` (zero hardcode).
+- Setiap aksi penghapusan/pengarsipan disk wajib mencatat audit trail pada tabel `storage_cleanup_logs` (`action_type`, `items_affected`, `freed_bytes`, `summary`).

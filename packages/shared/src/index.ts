@@ -34,7 +34,8 @@ export const MasterPresetCategorySchema = z.enum([
   'hook_type',
   'controversy_level',
   'framing_mode',
-  'prompt_preset'
+  'prompt_preset',
+  'retention_policy'
 ]);
 export type MasterPresetCategory = z.infer<typeof MasterPresetCategorySchema>;
 
@@ -468,6 +469,36 @@ export type CreateBrandKitInput = z.infer<typeof CreateBrandKitInputSchema>;
 
 export const UpdateBrandKitInputSchema = CreateBrandKitInputSchema.partial();
 export type UpdateBrandKitInput = z.infer<typeof UpdateBrandKitInputSchema>;
+
+export const RetentionPolicyConfigSchema = z.object({
+  staleDaysThreshold: z.number().int().min(3).max(365).default(30),
+  warningDaysThreshold: z.number().int().min(1).max(180).default(14),
+  publishedPruneDays: z.number().int().min(1).max(365).default(14),
+  diskWarningMb: z.number().int().min(256).max(102400).default(5120)
+});
+export type RetentionPolicyConfig = z.infer<typeof RetentionPolicyConfigSchema>;
+
+export const UpdateRetentionPolicyInputSchema = RetentionPolicyConfigSchema.refine(
+  (p) => p.warningDaysThreshold < p.staleDaysThreshold,
+  { message: 'Ambang peringatan dini harus lebih kecil daripada ambang kritis retensi.' }
+);
+export type UpdateRetentionPolicyInput = z.infer<typeof UpdateRetentionPolicyInputSchema>;
+
+export const ClipRetentionActionInputSchema = z.object({
+  action: z.enum(['pin', 'unpin', 'snooze']),
+  snoozeDays: z.number().int().min(1).max(180).default(30)
+});
+export type ClipRetentionActionInput = z.infer<typeof ClipRetentionActionInputSchema>;
+
+export const MaintenanceBulkClipsInputSchema = z.object({
+  clipIds: z.array(z.string().min(1)).min(1).max(100)
+});
+export type MaintenanceBulkClipsInput = z.infer<typeof MaintenanceBulkClipsInputSchema>;
+
+export const MaintenanceDeleteRawAssetsInputSchema = z.object({
+  mediaAssetIds: z.array(z.string().min(1)).min(1).max(50)
+});
+export type MaintenanceDeleteRawAssetsInput = z.infer<typeof MaintenanceDeleteRawAssetsInputSchema>;
 
 export type ServiceResult<T> =
   | { ok: true; data: T; meta?: Record<string, unknown> }

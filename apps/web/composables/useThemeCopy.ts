@@ -10,6 +10,7 @@ export interface ThemeCopyDeck {
   navPacing: string;
   navCalendar: string;
   navBrandKits: string;
+  navMaintenance: string;
   navApiKeys: string;
   navPresets: string;
   pacingTitle: string;
@@ -18,6 +19,8 @@ export interface ThemeCopyDeck {
   calendarSubtitle: string;
   brandKitsTitle: string;
   brandKitsSubtitle: string;
+  maintenanceTitle: string;
+  maintenanceSubtitle: string;
   apiKeysTitle: string;
   apiKeysSubtitle: string;
   doctorTitle: string;
@@ -44,6 +47,7 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     navPacing: 'Ritme Referensi',
     navCalendar: 'Kalender & Excel',
     navBrandKits: 'Brand Kit',
+    navMaintenance: 'Maintenance Disk',
     navApiKeys: 'Brankas API & Mesin',
     navPresets: 'Preset Parameter',
     pacingTitle: 'Telemetri & Kloning Ritme Referensi',
@@ -52,6 +56,8 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     calendarSubtitle: 'Atur jadwal tayang anti-bentrok lintas campaign berdasarkan jam optimal Playbook dan ekspor buku kerja Excel 3-sheet siap presentasi.',
     brandKitsTitle: 'Pustaka Brand Asset Kit',
     brandKitsSubtitle: 'Kunci logo transparan, palet warna Hook/Subtitle ASS, font, posisi watermark, dan CTA sekali saja agar seluruh video campaign seragam.',
+    maintenanceTitle: 'Manajemen Storage, Retensi & Kebersihan Disk',
+    maintenanceSubtitle: 'Pantau kapasitas lokal, tangani klip menganggur >= 30 hari, arsipkan MP4 pasca-tayang tanpa kehilangan Playbook, dan bersihkan versi revisi lama.',
     apiKeysTitle: 'Brankas Kunci AI & Telemetri Mesin',
     apiKeysSubtitle: 'Konfigurasikan penyedia analisis brief, transkripsi kata, serta pantau status FFmpeg lokal.',
     doctorTitle: 'Telemetri Mesin Lokal',
@@ -76,6 +82,7 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     navPacing: 'Pola Ritme',
     navCalendar: 'Jadwal & Laporan',
     navBrandKits: 'Kit Identitas',
+    navMaintenance: 'Arsip & Retensi',
     navApiKeys: 'Koneksi AI & Studio',
     navPresets: 'Pustaka Preset',
     pacingTitle: 'Arsip Pola Ritme & Tempo Video Referensi',
@@ -84,6 +91,8 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     calendarSubtitle: 'Susun jadwal publikasi harian TikTok dan YouTube dengan rapi, pantau status tayang, dan unduh laporan spreadsheet lengkap.',
     brandKitsTitle: 'Kit Identitas Visual & Aset Merek',
     brandKitsSubtitle: 'Himpun logo resmi, warna utama dan aksen, tipografi subtitle, serta kalimat penutup CTA yang konsisten di setiap tayangan.',
+    maintenanceTitle: 'Arsip Media, Retensi & Kesehatan Penyimpanan',
+    maintenanceSubtitle: 'Tinjau konten yang belum dijadwalkan, rapikan berkas MP4 yang telah tayang sambil menjaga catatan Playbook, dan kendalikan ruang penyimpanan lokal.',
     apiKeysTitle: 'Koneksi Kecerdasan Buatan & Kesiapan Studio',
     apiKeysSubtitle: 'Tautkan layanan AI pilihan Anda dan pastikan perangkat lokal siap memproduksi tayangan sesuai brief.',
     doctorTitle: 'Ringkasan Kesiapan Perangkat',
@@ -108,6 +117,7 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     navPacing: 'Kloning Ritme',
     navCalendar: 'Kalender Upload',
     navBrandKits: 'Kit Brand',
+    navMaintenance: 'Bersih-Bersih Disk',
     navApiKeys: 'Otak AI & Mesin',
     navPresets: 'Chip Preset Cepat',
     pacingTitle: 'Kloning Ritme Video Viral (Style-Only)',
@@ -116,6 +126,8 @@ const COPY_MAP: Record<ThemeId, ThemeCopyDeck> = {
     calendarSubtitle: 'Jadwalkan otomatis semua variasi skor tertinggi biar gak bentrok, centang yang sudah tayang, dan cetak laporan .xlsx kapan saja!',
     brandKitsTitle: 'Kit Aset Brand Reusable (1-Klik Pasang)',
     brandKitsSubtitle: 'Simpan logo, warna Hook/Subtitle, font, dan CTA andalan biar video ke-10 tampil sekece video pertama tanpa setting ulang!',
+    maintenanceTitle: 'Pusat Bersih-Bersih Disk & Alert Retensi 30 Hari',
+    maintenanceSubtitle: 'Cek klip nganggur yang lupa dijadwalkan, bersihkan versi lama atau MP4 sudah tayang tanpa hilangkan data Excel, bikin SSD laptop tetap ngebut!',
     apiKeysTitle: 'Sambungkan Otak AI & Cek Mesin Render',
     apiKeysSubtitle: 'Tempel kunci API milikmu sekali dengan aman, uji koneksi 1 klik, lalu gas produksi banyak variasi!',
     doctorTitle: 'Cek Kesehatan Mesin Render',

@@ -25,10 +25,10 @@
   - **CTA Overlay (`CtaOverlay`):** Posisikan rapi tepat di tepi bawah zona aman (`565px` TikTok / `455px` YT Shorts) agar tidak menutupi wajah/mulut pembicara maupun bertabrakan dengan metadata platform.
 - Setiap kali user mengubah gaya atau memperbaiki typo subtitle lewat *Inline Subtitle Editor*, file `.ass` & `.srt` diperbarui lalu dirender ulang tanpa mengubah potongan video kecuali diminta.
 
-## 5. Ketahanan Queue, Estimasi Token & Hygiene Storage
+## 5. Ketahanan Queue, Estimasi Token & Hygiene Storage (Zero Silent Auto-Delete)
 - Sebelum mengeksekusi batch generate, tampilkan estimasi jumlah token input/output agar user dapat mengontrol biaya API BYOK.
 - Terapkan Free-Tier RPM Pacer, retry `429/503`, Gemini Model Waterfall (`pro -> flash -> flash-lite`), dan izinkan **Partial Batch Retry** (ulang 1 clip yang gagal saja).
-- Sediakan pembersihan aman untuk folder `storage/temp` setelah job selesai/gagal agar disk lokal tetap lega.
+- **Zero Silent Auto-Delete Policy (`M18`):** Sistem **dilarang** menghapus video hasil generate atau video mentah secara diam-diam di background. Pembersihan selalu didahului peringatan retensi (`14/30 hari` tanpa interaksi/jadwal atau melewati kuota disk), pratinjau Dry-Run MB, opsi **Arsip Ringan** (hapus MP4 saja, pertahankan Skor/Playbook/Kalender/Excel), opsi **Pin/Snooze**, proteksi kunci HTTP `409` bila ada `render_jobs` aktif, serta audit log ke `storage_cleanup_logs`.
 
 ## 6. Multi-Video Director, Anti-Cut Speech Boundary & Kunci Bahasa Target Negara
 - **Multi-Video Utilization:** Jika campaign memiliki >1 `raw_video`, `render-queue.worker.ts` wajib meneruskan SELURUH `rawVideos[]` (beserta transkrip, durasi, dan silence masing-masing) ke `planMultiVariantEdls()` agar variasi terdistribusi lintas semua video mentah (termasuk `auto_face_track` per `mediaAssetId`).

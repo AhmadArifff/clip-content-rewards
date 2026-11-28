@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M17",
-  "current_sprint": "M17 Completed (Multi-Video Anti-Cut Director, Geo-Language Lock & Real Phone Safe-Zone 2026)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M17: BYOK Free-Tier Guard + Multi-Video Anti-Cut Director + Kunci Bahasa Target Negara + Safe-Zone Presisi HP 2026) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M18",
+  "current_sprint": "M18 Completed (Storage Maintenance, Lifecycle Retention & Content Hygiene Center)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M18: BYOK Free-Tier Guard + Multi-Video Anti-Cut Director + Geo-Language Lock + Real Safe-Zone + Storage Maintenance & Retention Center) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -133,16 +133,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Menambahkan ClipEndingModeSchema (complete_story/full_source/part_series) di @clip/shared; membuat content-language.helper.ts (resolveContentLanguage & snapSegmentToSpeechBoundary anti-potong tengah kalimat); upgrade render-queue.worker.ts & edl-director.service.ts agar mendistribusikan seluruh rawVideos[] (termasuk auto_face_track per media) dengan skema Gemini AI ringkas tahan fallback; mengunci 100% teks layar & Upload Playbook ke Bahasa Inggris untuk target non-ID (US/UK/Global); menyelaraskan SafeZoneOverlay.vue & ass-subtitle.builder.ts terhadap antarmuka HP aktual TikTok & YouTube Shorts 2026; serta memperbarui PRD.md v1.2, MILESTONE.md, & aturan/menu-docs .agents/."
+    },
+    {
+      "id": "M18_STORAGE_MAINTENANCE_AND_LIFECYCLE_RETENTION",
+      "title": "V2: Storage Maintenance, Lifecycle Retention & Content Hygiene Center",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan 6 kolom tracking interaksi & retensi di model Prisma Clip + model StorageCleanupLog + preset retention_policy ke-39 di master_presets; menginstrumentasi clip.service.ts (lastInspectedAt) & export.service.ts (downloadCount/lastDownloadedAt); membangun maintenance.service/controller/routes.ts (alert 14/30 hari, Pin/Snooze, Arsip Ringan hapus MP4 pertahankan Playbook/Kalender/Excel, pembersih versi non-aktif, raw lama, orphan/failed, guard 409 render lock, & StorageCleanupLog); membangun halaman /maintenance 6 tab + badge alert sidebar di StudioShell.vue + banner proaktif di /campaigns + fallback arsip ringan di Clip Inspector; serta memperbarui PRD.md v1.3, MILESTONE.md, aturan/menu-docs V2 maintenance-dan-retensi.md, & uji integrasi m18.maintenance-retention.test.ts."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M16 (c8a1587) ke main & dev",
-    "Implementasi content-language.helper.ts: resolveContentLanguage (US/Global -> 100% English) & snapSegmentToSpeechBoundary (anti-terpotong tengah kalimat)",
-    "Upgrade render-queue.worker.ts & edl-director.service.ts untuk distribusi multi-raw-video penuh + skema ringkas Gemini Director + clipEndingMode (complete_story/full_source/part_series)",
-    "Upgrade viral-evaluator.service.ts & edl-patcher.service.ts dengan geo-language lock anti-bocor hashtag/teks Indonesia pada target internasional",
-    "Kalibrasi SafeZoneOverlay.vue & ass-subtitle.builder.ts sesuai screenshot HP nyata TikTok & YouTube Shorts 2026 + auto-sync bahasa negara di TargetGeneratorPanel.vue",
-    "Update PRD.md v1.2, MILESTONE.md, .agents/rules/30 & 50, menu-docs V2, dan uji integrasi m17.multivideo-lang-boundary.test.ts"
+    "Push M17 (930d750) ke main & dev",
+    "Update Prisma schema (6 kolom tracking/retensi Clip + model StorageCleanupLog) & seed preset #39 retention_policy",
+    "Implementasi maintenance.service/controller/routes.ts + tracking lastInspectedAt & downloadCount",
+    "Implementasi halaman /maintenance (6 tab + modal konfirmasi Dry-Run MB), badge alert sidebar di StudioShell.vue, & banner proaktif di /campaigns",
+    "Update PRD.md v1.3, MILESTONE.md, .agents/rules/20 & 50, menu-docs V2 maintenance-dan-retensi.md, & uji integrasi m18.maintenance-retention.test.ts"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -157,7 +163,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push M17 (Multi-Video Anti-Cut Director, Geo-Language Lock & Real Phone Safe-Zone 2026) ke main & dev",
-    "User langsung menguji ulang campaign target US 3 video di http://localhost:3000"
+    "Minta izin user untuk commit & push M18 (Storage Maintenance, Lifecycle Retention & Content Hygiene Center) ke main & dev",
+    "User langsung meninjau menu /maintenance dan badge alert retensi di http://localhost:3000"
   ]
 }
