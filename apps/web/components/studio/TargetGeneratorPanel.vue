@@ -84,6 +84,7 @@ const config = ref<TargetConfig>({
   editingStyle: 'fast_cut_retention',
   framingMode: 'fit_blur_bg',
   captionStyle: 'hormozi_bold',
+  captionOverlapMode: 'auto_skip_embedded',
   initialAudioMode: 'ducking_20',
   batchDiversityMode: 'distinct_moments',
   clipEndingMode: 'complete_story',
@@ -183,6 +184,7 @@ function applySelectedProfile() {
   if (found) {
     config.value = {
       ...found.targetConfig,
+      captionOverlapMode: found.targetConfig.captionOverlapMode ?? 'auto_skip_embedded',
       clipEndingMode: found.targetConfig.clipEndingMode ?? 'complete_story',
       editAssemblyMode: found.targetConfig.editAssemblyMode ?? 'cinema_remix',
       colorGrade: found.targetConfig.colorGrade ?? 'viral_high_contrast',
@@ -411,6 +413,14 @@ onMounted(loadPresetsAndProfiles);
           <option value="clean_minimal">Clean Minimalist (Bersih)</option>
           <option value="bilingual">Bilingual Subtitle</option>
           <option value="off">Tanpa Subtitle</option>
+        </select>
+      </div>
+
+      <div class="space-y-1">
+        <label for="tg-caption-overlap" class="block text-xs font-semibold">Proteksi Double Subtitle</label>
+        <select id="tg-caption-overlap" v-model="config.captionOverlapMode" class="studio-input text-xs">
+          <option value="auto_skip_embedded">Otomatis Lewati Video Bersubtitle (Anti-Double)</option>
+          <option value="force_show">Paksa Tampilkan di Semua Segmen</option>
         </select>
       </div>
 

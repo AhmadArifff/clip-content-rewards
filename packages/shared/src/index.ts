@@ -100,6 +100,17 @@ export type SegmentTransition = z.infer<typeof SegmentTransitionSchema>;
 export const SegmentMotionSchema = z.enum(['none', 'push_in', 'pull_out']);
 export type SegmentMotion = z.infer<typeof SegmentMotionSchema>;
 
+export const CaptionOverlapModeSchema = z.enum(['auto_skip_embedded', 'force_show']);
+export type CaptionOverlapMode = z.infer<typeof CaptionOverlapModeSchema>;
+
+export const EmbeddedSubtitleSourceSchema = z.enum([
+  'none',
+  'soft_stream',
+  'vision_ai',
+  'manual_override'
+]);
+export type EmbeddedSubtitleSource = z.infer<typeof EmbeddedSubtitleSourceSchema>;
+
 export const TargetConfigSchema = z.object({
   platform: PlatformTargetSchema,
   countryCode: z.string().min(2).max(10),
@@ -119,6 +130,7 @@ export const TargetConfigSchema = z.object({
   editingStyle: z.string().min(2).max(60),
   framingMode: FramingModeSchema.default('fit_blur_bg'),
   captionStyle: z.enum(['hormozi_bold', 'clean_minimal', 'bilingual', 'off']),
+  captionOverlapMode: CaptionOverlapModeSchema.default('auto_skip_embedded'),
   initialAudioMode: z.enum([
     'original_normalized',
     'ducking_20',
@@ -420,9 +432,20 @@ export const AudioDiagnosticSchema = z.object({
     'ducking_20',
     'mute_for_platform_sound'
   ]),
-  reason: z.string()
+  reason: z.string(),
+  hasSoftSubtitleTrack: z.boolean().optional(),
+  hasEmbeddedSubtitles: z.boolean().optional(),
+  embeddedSubtitleSource: EmbeddedSubtitleSourceSchema.optional(),
+  embeddedSubtitleSample: z.string().max(180).optional(),
+  embeddedSubtitleConfidence: z.number().min(0).max(1).optional(),
+  embeddedSubtitleCheckedAt: z.string().optional()
 });
 export type AudioDiagnostic = z.infer<typeof AudioDiagnosticSchema>;
+
+export const UpdateEmbeddedSubtitleInputSchema = z.object({
+  hasEmbeddedSubtitles: z.boolean()
+});
+export type UpdateEmbeddedSubtitleInput = z.infer<typeof UpdateEmbeddedSubtitleInputSchema>;
 
 export const WordTimestampSchema = z.object({
   word: z.string(),

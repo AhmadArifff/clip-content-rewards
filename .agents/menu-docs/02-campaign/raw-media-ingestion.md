@@ -7,8 +7,8 @@ route: "/campaigns/:id/studio"
 lead_developer: "AhmadArifff"
 status: "Done"
 last_commit: "HEAD"
-last_updated: "2026-11-26"
-tags: ["chunked-upload", "ffprobe", "audio-diagnostic", "whisper-stt", "supporting-assets"]
+last_updated: "2026-11-28"
+tags: ["chunked-upload", "ffprobe", "audio-diagnostic", "whisper-stt", "supporting-assets", "embedded-subtitle-detector"]
 database_tables:
   - "media_assets"
 ---
@@ -83,6 +83,8 @@ graph TD
 | 1 | **Video mentah bisu (Visual-Only / B-Roll)** | Proses STT gagal atau crash. | `probeMediaAsset()` mendeteksi `hasAudio = false`, langsung set `transcript.mode = 'visual_only'` dan menyarankan *Mute 0%*. |
 | 2 | **Upload terputus (chunk hilang)** | File video gabungan korup. | `completeChunkedUpload()` memverifikasi keberadaan seluruh `part_0..N-1`; bila kurang, file batal dibuat dan folder temp dibersihkan. |
 | 3 | **User klik Transkrip sebelum pasang API Key STT** | Error mentah tidak jelas. | Mengembalikan `400 STT_KEY_MISSING` berbahasa Indonesia ramah yang mengarahkan ke menu Brankas API. |
+| 4 | **Video mentah sudah memiliki subtitle bawaan (hardcoded / soft stream)** | Subtitle baru dari aplikasi menimpa teks bawaan sehingga terjadi double subtitle. | Deteksi 3 lapis (`M20`): `ffprobe` cek stream `subtitle`, Gemini Vision pindai 1x pada contact-sheet `3x2` (di-cache di `audio_diagnostic_json`), dan saklar manual `PATCH /api/media/:mediaId/embedded-subtitle` + tombol `Cek Subtitle (AI)` di kartu video Studio. |
+| 5 | **Video musik tanpa dialog memicu token titik `"."` dari Whisper** | Menarik cue subtitle berikutnya muncul prematur sejak detik `0:00`. | `stt.adapter.ts` & `ass-subtitle.builder.ts` menyaring token tanda baca murni (`isSpokenWordToken`) dan mengembalikan mode `visual_only` jika tidak ada kata ucap asli. |
 
 ---
 
@@ -107,6 +109,7 @@ graph TD
 | Tanggal | Commit Hash | Pengembang | Milestone | Ringkasan Perubahan & Dampak |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-26 | `HEAD` | AhmadArifff | **M5** | Implementasi chunked upload, FFprobe, 1-pass Audio Diagnostic & Silence Detect, Supporting Assets, serta Auto-Chunked STT Adapter. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M20** | Tambah deteksi 3 lapis subtitle bawaan (`ffprobe` soft stream + `embedded-caption-detector.service.ts` Gemini Vision cached + manual override `PATCH /embedded-subtitle` & `POST /detect-subtitle`), filter token halusinasi Whisper di `stt.adapter.ts`, dan kartu status/saklar subtitle bawaan di `studio.vue`. |
 
 ---
 
@@ -118,7 +121,8 @@ graph TD
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **1** | **Input File Media & Jenis Berkas**<br>`apps/web/pages/campaigns/[id]/studio.vue` | `useChunkedUploader().uploadMediaFile()` | `POST /api/campaigns/:id/media/chunk` -> `POST /api/campaigns/:id/media/complete` | `mediaController` -> `mediaService` -> `probeMediaAsset()` -> `mediaRepository.create` | `media_assets` (`INSERT`), `storage/uploads/` |
 | **2** | **Tombol Transkrip Kata (AI)**<br>`apps/web/pages/campaigns/[id]/studio.vue` | `apiRequest('/api/media/:id/transcribe')` | `POST /api/media/:mediaId/transcribe` | `mediaController.transcribe` -> `mediaService.transcribeAsset` -> `transcribeMediaWithAutoChunking` | `media_assets` (`UPDATE`: `transcript_json`) |
-| **3** | **Tombol Hapus Media / Asset**<br>`apps/web/pages/campaigns/[id]/studio.vue` | `apiRequest('/api/media/:id')` | `DELETE /api/media/:mediaId` | `mediaController.remove` -> `mediaService.deleteAsset` | `media_assets` (`DELETE`), hapus file fisik |
+| **3** | **Tombol Cek Subtitle (AI) & Saklar Subtitle Bawaan**<br>`apps/web/pages/campaigns/[id]/studio.vue` | `apiRequest('/api/media/:id/detect-subtitle')` & `PATCH .../embedded-subtitle` | `POST /api/media/:mediaId/detect-subtitle`, `PATCH /api/media/:mediaId/embedded-subtitle` | `mediaController` -> `mediaService` -> `detectEmbeddedSubtitlesForMedia` | `media_assets` (`UPDATE`: `audio_diagnostic_json`) |
+| **4** | **Tombol Hapus Media / Asset**<br>`apps/web/pages/campaigns/[id]/studio.vue` | `apiRequest('/api/media/:id')` | `DELETE /api/media/:mediaId` | `mediaController.remove` -> `mediaService.deleteAsset` | `media_assets` (`DELETE`), hapus file fisik |
 
 ### 9B. Flow Testing Per-Konten dengan Ilustrasi Data Kasar
 

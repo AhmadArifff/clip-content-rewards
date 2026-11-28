@@ -5,6 +5,7 @@ import type { TranscriptPayload, WordTimestamp } from '@clip/shared';
 import { env } from '../../config/env.js';
 import { resolveSafeStoragePath } from '../../config/storage.js';
 import { sanitizeSecretFromText } from '../../utils/crypto.js';
+import { isSpokenWordToken } from '../media/ass-subtitle.builder.js';
 import {
   extractJsonObject,
   getGeminiWaterfallModels,
@@ -314,13 +315,14 @@ export async function transcribeMediaWithAutoChunking(params: {
 
       const lastAcceptedEnd = mergedWords.length > 0 ? mergedWords[mergedWords.length - 1].endSec : -1;
       for (const w of chunkRes.words) {
+        if (!isSpokenWordToken(w.word)) continue;
         const absStart = Math.round((w.startSec + offsetSec) * 100) / 100;
         const absEnd = Math.round((w.endSec + offsetSec) * 100) / 100;
         // Deduplikasi kata yang jatuh di zona overlap 2 detik
         if (chunkIndex > 0 && absStart < lastAcceptedEnd - 0.15) {
           continue;
         }
-        mergedWords.push({ word: w.word, startSec: absStart, endSec: absEnd });
+        mergedWords.push({ word: w.word.trim(), startSec: absStart, endSec: Math.max(absStart + 0.04, absEnd) });
       }
 
       chunkIndex += 1;
@@ -328,7 +330,8 @@ export async function transcribeMediaWithAutoChunking(params: {
       offsetSec += chunkDurLimit - CHUNK_OVERLAP_SEC;
     }
 
-    const fullText = textParts.join(' ').replace(/\s+/g, ' ').trim();
+    const rawFullText = textParts.join(' ').replace(/\s+/g, ' ').trim();
+    const fullText = mergedWords.length > 0 ? rawFullText : '';
     if (!fullText && mergedWords.length === 0) {
       return {
         mode: 'visual_only',

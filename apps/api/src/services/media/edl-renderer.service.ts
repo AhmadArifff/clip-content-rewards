@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import type { CinemaColorGrade, EdlDocument, WordTimestamp } from '@clip/shared';
 import { env } from '../../config/env.js';
 import { resolveSafeStoragePath } from '../../config/storage.js';
-import { writeAssAndSrtFiles } from './ass-subtitle.builder.js';
+import { computeEdlSegmentTimeline, writeAssAndSrtFiles } from './ass-subtitle.builder.js';
 import { probeMediaAsset } from './media-probe.service.js';
 
 export interface RenderMediaSource {
@@ -12,6 +12,7 @@ export interface RenderMediaSource {
   durationSec: number;
   hasAudio: boolean;
   words: WordTimestamp[];
+  hasEmbeddedSubtitles?: boolean;
 }
 
 export interface RenderEdlResult {
@@ -69,30 +70,12 @@ export function clampEdlToMediaDurations(
     };
   });
 
-  // Hitung durasi efektif dengan memperhitungkan speed ramp & overlap transisi xfade
-  let totalDurationSec = 0;
-  let prevEffDur = 0;
-  for (let i = 0; i < clampedSegments.length; i += 1) {
-    const seg = clampedSegments[i];
-    const effDur = (seg.endSec - seg.startSec) / (seg.speed ?? 1.0);
-    if (i === 0) {
-      totalDurationSec = effDur;
-    } else {
-      const tr = seg.transition ?? 'cut';
-      const canXfade = tr !== 'cut' && prevEffDur >= 0.85 && effDur >= 0.85;
-      if (canXfade) {
-        const td = Math.min(0.45, Math.max(0.18, seg.transitionDurationSec ?? 0.3), prevEffDur * 0.35, effDur * 0.35);
-        totalDurationSec = Math.max(0.2, totalDurationSec - td) + effDur;
-      } else {
-        totalDurationSec += effDur;
-      }
-    }
-    prevEffDur = effDur;
-  }
+  // Hitung durasi efektif dengan rumus identik builder subtitle (kompensasi speed ramp & xfade)
+  const timeline = computeEdlSegmentTimeline(clampedSegments);
 
   return {
     clampedEdl: { ...edl, segments: clampedSegments },
-    totalDurationSec: Math.round(totalDurationSec * 100) / 100
+    totalDurationSec: timeline.totalDurationSec
   };
 }
 
@@ -200,9 +183,10 @@ export async function renderEdlToMp4(params: {
   edl: EdlDocument;
   sources: RenderMediaSource[];
   watermarkRelPath?: string | null;
+  skipEmbeddedSubtitles?: boolean;
 }): Promise<RenderEdlResult> {
   const started = Date.now();
-  const { batchId, clipId, versionNumber, edl, sources, watermarkRelPath } = params;
+  const { batchId, clipId, versionNumber, edl, sources, watermarkRelPath, skipEmbeddedSubtitles = true } = params;
 
   const sourcesById = new Map(sources.map((s) => [s.id, s]));
   const { clampedEdl, totalDurationSec } = clampEdlToMediaDurations(edl, sourcesById);
@@ -212,15 +196,20 @@ export async function renderEdlToMp4(params: {
   fs.mkdirSync(absDir, { recursive: true });
 
   const wordsByMediaId: Record<string, WordTimestamp[]> = {};
+  const skipCaptionMediaIds = new Set<string>();
   for (const s of sources) {
     wordsByMediaId[s.id] = s.words;
+    if (skipEmbeddedSubtitles && s.hasEmbeddedSubtitles) {
+      skipCaptionMediaIds.add(s.id);
+    }
   }
 
   const subs = writeAssAndSrtFiles({
     outputDir: absDir,
     edl: clampedEdl,
     wordsByMediaId,
-    totalDurationSec
+    totalDurationSec,
+    skipCaptionMediaIds
   });
 
   // Pemetaan input unik ke indeks FFmpeg

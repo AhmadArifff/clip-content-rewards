@@ -2,9 +2,16 @@
 
 Log historis kendala teknis, akar masalah, dan solusi terverifikasi untuk `clip-content-rewards`.
 
-> **Status Saat Ini:** 7 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M13`.
+> **Status Saat Ini:** 8 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M20`.
 
 ---
+
+### Kasus #08: Subtitle Muncul Prematur Sejak 0:00 (`. I'M NOT`), Drift `speed`/`xfade`, & Double Subtitle di Video Bawaan
+- **Tanggal & Milestone:** `2026-11-28` (`M20`)
+- **Konteks & Gejala (Symptom):** Pada hasil Cinema Remix 3 video (`M19`), cue pertama `". I'M NOT"` muncul sejak `0:00` padahal dialog baru diucapkan di detik `0:06`, cue akhir terbalik (`0:36.32 -> 0:35.85`), dan subtitle kuning menimpa subtitle putih bawaan dari Video 1.
+- **Akar Masalah (Root Cause):** (1) Whisper menghasilkan token tanda baca tunggal `"."` di awal video musik (Video 2); (2) `buildTimedCuesFromEdl()` menggabungkan 3 kata lintas batas segmen dan jeda hening panjang sehingga menarik `"I'M NOT"` mundur ke `0:00.00`; (3) cursor subtitle tidak membagi durasi dengan `seg.speed` dan tidak mengurangi overlap transisi `xfade`; (4) belum ada deteksi subtitle tertanam per video sumber.
+- **Solusi yang Diterapkan (Fix Applied):** Menambahkan `isSpokenWordToken()`, `computeEdlSegmentTimeline()` (dibagi bersama antara `ass-subtitle.builder.ts` & `edl-renderer.service.ts`), isolasi cue per `segIndex` & jeda `>= 0.65s`, deteksi 3 lapis subtitle bawaan (`ffprobe` soft stream + `embedded-caption-detector.service.ts` Gemini Vision cached + manual toggle Studio), serta `skipCaptionMediaIds` per segmen di renderer & `clip.service.ts`.
+- **Pelajaran Pencegahan (Key Takeaway):** Seluruh kalkulasi waktu subtitle HARUS memakai fungsi timeline yang identik dengan filtergraph FFmpeg dan selalu memecah cue di batas transisi segmen maupun jeda hening.
 
 ### Kasus #07: Konflik Manifest `.nuxt` Saat Menjalankan `nuxt build` Bersamaan dengan `nuxt dev` Aktif
 - **Tanggal & Milestone:** `2026-11-28` (`M13`)

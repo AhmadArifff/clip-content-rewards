@@ -18,7 +18,9 @@ import {
   VolumeX,
   FileAudio,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Subtitles,
+  ScanEye
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import TargetGeneratorPanel from '~/components/studio/TargetGeneratorPanel.vue';
@@ -96,6 +98,8 @@ const editMentionsText = ref('');
 // Media Upload State
 const selectedAssetType = ref<MediaAssetType>('raw_video');
 const transcribingId = ref<string | null>(null);
+const detectingSubtitleId = ref<string | null>(null);
+const togglingSubtitleId = ref<string | null>(null);
 
 const rawVideos = computed(() => (detail.value?.mediaAssets ?? []).filter((m) => m.assetType === 'raw_video'));
 const supportingAssets = computed(() => (detail.value?.mediaAssets ?? []).filter((m) => m.assetType !== 'raw_video'));
@@ -256,6 +260,48 @@ async function handleTranscribe(mediaId: string) {
     notice.value = { type: 'err', text: err instanceof Error ? err.message : 'Gagal menjalankan transkripsi.' };
   } finally {
     transcribingId.value = null;
+  }
+}
+
+async function handleDetectEmbeddedSubtitle(mediaId: string) {
+  detectingSubtitleId.value = mediaId;
+  notice.value = null;
+  try {
+    const res = await apiRequest<{
+      detection: { checked: boolean; hasEmbeddedSubtitles: boolean; note: string };
+    }>(`/api/media/${mediaId}/detect-subtitle`, { method: 'POST' });
+    const det = res.data?.detection;
+    notice.value = {
+      type: det?.checked ? 'ok' : 'warn',
+      text: det?.note || 'Pemeriksaan subtitle bawaan selesai.'
+    };
+    await fetchDetail();
+  } catch (err) {
+    notice.value = { type: 'err', text: err instanceof Error ? err.message : 'Gagal memindai subtitle bawaan.' };
+  } finally {
+    detectingSubtitleId.value = null;
+  }
+}
+
+async function handleToggleEmbeddedSubtitle(mediaId: string, nextValue: boolean) {
+  togglingSubtitleId.value = mediaId;
+  notice.value = null;
+  try {
+    await apiRequest(`/api/media/${mediaId}/embedded-subtitle`, {
+      method: 'PATCH',
+      body: JSON.stringify({ hasEmbeddedSubtitles: nextValue })
+    });
+    notice.value = {
+      type: 'ok',
+      text: nextValue
+        ? 'Video ditandai sudah memiliki subtitle bawaan. Subtitle otomatis akan dilewati pada segmen video ini agar tidak dobel.'
+        : 'Video ditandai bersih tanpa subtitle bawaan. Subtitle Safe-Zone dapat dirender pada segmen video ini.'
+    };
+    await fetchDetail();
+  } catch (err) {
+    notice.value = { type: 'err', text: err instanceof Error ? err.message : 'Gagal menyimpan status subtitle bawaan.' };
+  } finally {
+    togglingSubtitleId.value = null;
   }
 }
 
@@ -523,6 +569,64 @@ onMounted(fetchDetail);
                   </span>
                 </div>
                 <p class="studio-muted leading-relaxed">{{ vid.audioDiagnostic.reason }}</p>
+              </div>
+
+              <!-- Status Subtitle Bawaan (Anti-Double Subtitle M20) -->
+              <div
+                class="p-3 rounded text-xs space-y-2"
+                style="background: var(--bg-surface); border: 1px solid var(--border-color);"
+              >
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="font-bold inline-flex items-center gap-1.5">
+                    <Subtitles class="w-3.5 h-3.5" style="color: var(--accent-bg);" />
+                    <span>Subtitle Bawaan Video</span>
+                  </span>
+                  <span
+                    v-if="vid.audioDiagnostic?.hasEmbeddedSubtitles"
+                    class="px-2 py-0.5 rounded font-semibold studio-badge-warn"
+                  >
+                    Terdeteksi (Auto-Skip Ganda)
+                  </span>
+                  <span
+                    v-else-if="vid.audioDiagnostic?.embeddedSubtitleCheckedAt"
+                    class="px-2 py-0.5 rounded font-semibold studio-badge-ok"
+                  >
+                    Bersih (Tanpa Subtitle Bawaan)
+                  </span>
+                  <span
+                    v-else
+                    class="px-2 py-0.5 rounded font-medium studio-muted"
+                    style="border: 1px solid var(--border-color);"
+                  >
+                    Belum Dicek (Otomatis saat Generate)
+                  </span>
+                </div>
+
+                <p v-if="vid.audioDiagnostic?.hasEmbeddedSubtitles && vid.audioDiagnostic?.embeddedSubtitleSample" class="studio-muted italic">
+                  Contoh teks terdeteksi di video: "{{ vid.audioDiagnostic.embeddedSubtitleSample }}"
+                </p>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <label class="inline-flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
+                    <input
+                      type="checkbox"
+                      :checked="Boolean(vid.audioDiagnostic?.hasEmbeddedSubtitles)"
+                      :disabled="togglingSubtitleId === vid.id"
+                      class="w-4 h-4 accent-current"
+                      @change="handleToggleEmbeddedSubtitle(vid.id, ($event.target as HTMLInputElement).checked)"
+                    />
+                    <span class="font-medium">Sudah ada subtitle bawaan (jangan timpa)</span>
+                  </label>
+                  <button
+                    type="button"
+                    class="studio-btn-secondary text-xs"
+                    :disabled="detectingSubtitleId === vid.id"
+                    @click="handleDetectEmbeddedSubtitle(vid.id)"
+                  >
+                    <ScanEye class="w-3.5 h-3.5" />
+                    <span>{{ detectingSubtitleId === vid.id ? 'Memindai...' : 'Cek Subtitle (AI)' }}</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Transkrip Status & Tombol STT -->

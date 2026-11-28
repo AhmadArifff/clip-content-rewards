@@ -2,11 +2,16 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MediaAssetType, ServiceResult, TranscriptPayload } from '@clip/shared';
+import { AudioDiagnosticSchema } from '@clip/shared';
 import { resolveSafeStoragePath } from '../config/storage.js';
 import { campaignRepository } from '../repositories/campaign.repository.js';
 import { mediaRepository } from '../repositories/media.repository.js';
 import { getActiveKeyForRole } from './ai/llm-json.adapter.js';
 import { transcribeMediaWithAutoChunking } from './ai/stt.adapter.js';
+import {
+  detectEmbeddedSubtitlesForMedia,
+  parseAudioDiagnosticSafe
+} from './media/embedded-caption-detector.service.js';
 import { probeMediaAsset } from './media/media-probe.service.js';
 
 const ALLOWED_VIDEO_EXTS = ['.mp4', '.mov', '.mkv', '.webm'];
@@ -305,6 +310,97 @@ export const mediaService = {
         statusCode: 502
       };
     }
+  },
+
+  async detectEmbeddedSubtitle(userId: string, mediaId: string): Promise<ServiceResult<unknown>> {
+    const asset = await mediaRepository.findByIdWithOwner(mediaId, userId);
+    if (!asset) {
+      return {
+        ok: false,
+        code: 'MEDIA_NOT_FOUND',
+        message: 'Berkas media tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    if (asset.assetType === 'watermark') {
+      return {
+        ok: false,
+        code: 'NOT_A_VIDEO',
+        message: 'Watermark gambar tidak memerlukan pemeriksaan subtitle bawaan.',
+        statusCode: 400
+      };
+    }
+
+    const result = await detectEmbeddedSubtitlesForMedia({
+      userId,
+      media: {
+        id: asset.id,
+        originalFilename: asset.originalFilename,
+        filePath: asset.filePath,
+        durationSec: asset.durationSec,
+        hasAudio: asset.hasAudio,
+        audioDiagnosticJson: asset.audioDiagnosticJson
+      },
+      force: true
+    });
+
+    const refreshed = await mediaRepository.findByIdWithOwner(mediaId, userId);
+    return {
+      ok: true,
+      data: {
+        media: refreshed ? serializeMedia(refreshed) : serializeMedia(asset),
+        detection: {
+          checked: result.checked,
+          hasEmbeddedSubtitles: result.hasEmbeddedSubtitles,
+          source: result.source,
+          confidence: result.confidence,
+          sampleText: result.sampleText,
+          note: result.note
+        }
+      }
+    };
+  },
+
+  async setEmbeddedSubtitleOverride(
+    userId: string,
+    mediaId: string,
+    hasEmbeddedSubtitles: boolean
+  ): Promise<ServiceResult<unknown>> {
+    const asset = await mediaRepository.findByIdWithOwner(mediaId, userId);
+    if (!asset) {
+      return {
+        ok: false,
+        code: 'MEDIA_NOT_FOUND',
+        message: 'Berkas media tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    if (asset.assetType === 'watermark') {
+      return {
+        ok: false,
+        code: 'NOT_A_VIDEO',
+        message: 'Watermark gambar tidak mendukung pengaturan subtitle bawaan.',
+        statusCode: 400
+      };
+    }
+
+    const currentDiag = parseAudioDiagnosticSafe(asset.audioDiagnosticJson, asset.hasAudio);
+    const nextDiag = AudioDiagnosticSchema.parse({
+      ...currentDiag,
+      hasEmbeddedSubtitles,
+      embeddedSubtitleSource: 'manual_override',
+      embeddedSubtitleConfidence: 1,
+      embeddedSubtitleCheckedAt: new Date().toISOString()
+    });
+
+    const updated = await mediaRepository.updateAnalysis(asset.id, {
+      audioDiagnosticJson: JSON.stringify(nextDiag),
+      status: asset.status || 'ready'
+    });
+
+    return { ok: true, data: serializeMedia(updated) };
   },
 
   async deleteAsset(userId: string, mediaId: string): Promise<ServiceResult<{ deletedId: string }>> {

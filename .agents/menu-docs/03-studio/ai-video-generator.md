@@ -87,6 +87,7 @@ graph TD
 | 4 | **User mengunggah 3 video mentah sekaligus** | Versi lama hanya memotong `rawVideos[0]` dan mengabaikan video ke-2 & ke-3. | `render-queue.worker.ts` & `edl-director.service.ts` meneruskan seluruh `rawVideos[]` (transkrip, silence, durasi) dan mendistribusikan variasi ke semua video mentah secara merata. |
 | 5 | **Pembicara terpotong di tengah kalimat (mis. berhenti mendadak di 0:38)** | Video terasa gantung/cacat saat ditonton. | `snapSegmentToSpeechBoundary()` menyelaraskan `startSec`/`endSec` ke tanda baca akhir kalimat (`.!?`) atau jeda bicara, serta menyediakan 3 mode `clipEndingMode` (`complete_story`, `full_source`, `part_series`). |
 | 6 | **Target negara US/Global namun teks Hook/CTA masih berbahasa Indonesia** | Algoritma OCR/NLP YouTube & TikTok salah membaca pasar Indonesia. | `resolveContentLanguage()` & auto-sync negara di `TargetGeneratorPanel.vue` mengunci 100% teks layar (Hook, CTA, Part 1/2) ke Bahasa Inggris untuk target luar negeri. |
+| 7 | **Subtitle muncul terlalu awal (0:00) atau double di atas video bersubtitle bawaan** | Subtitle tidak sinkron saat memakai `speed`/`xfade` atau menimpa teks permanen dari video sumber. | `computeEdlSegmentTimeline()` menyamakan math timeline subtitle & FFmpeg, `isSpokenWordToken()` menyaring halusinasi Whisper, cue dipecah pada batas segmen/jeda `>= 0.65s`, dan `captionOverlapMode = 'auto_skip_embedded'` otomatis melewati segmen video yang terdeteksi punya subtitle bawaan (`M20`). |
 
 ---
 
@@ -113,6 +114,7 @@ graph TD
 | 2026-11-26 | `HEAD` | AhmadArifff | **M6** | Implementasi Target Audience Matrix, Reusable Target Profiles, AI Director EDL Planner, Local Queue + SSE, FFmpeg 9:16 Safe-Zone Renderer & Range Streaming. |
 | 2026-11-28 | `HEAD` | AhmadArifff | **M17** | Upgrade Multi-Video Director (distribusi seluruh `rawVideos[]`), Anti-Cut Speech Boundary Snapper + `clipEndingMode` (`complete_story`/`full_source`/`part_series`), skema ringkas Gemini AI Director, dan Kunci Bahasa Target Negara (US/Global -> 100% English on-screen). |
 | 2026-11-28 | `HEAD` | AhmadArifff | **M19** | Upgrade AI Multimodal Cinema Remix Engine 100% Gratis: Auto-Transcribe sebelum generate, FFmpeg Contact-Sheet Storyboard Indexer -> Gemini Vision (`thinkingBudget: 0` fix), True Cross-Video Montage (5 struktur film berbeda menggabungkan banyak video mentah), FFmpeg Cinema VFX (`xfade`, `acrossfade`, 5 Color Grading, Speed Ramp, `zoompan` Motion), serta transparansi badge Director & Remix di Batch UI. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M20** | Precision Subtitle Sync (`computeEdlSegmentTimeline` kompensasi `speed` & `xfade`, filter halusinasi Whisper, isolasi cue antar-segmen/jeda `>= 0.65s`), Smart Anti-Double-Caption Detector per segmen (`auto_skip_embedded` di `TargetGeneratorPanel.vue` & worker), serta pembersihan tag demografi pada Hook Banner. |
 
 ---
 

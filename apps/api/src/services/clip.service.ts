@@ -17,6 +17,7 @@ import { evaluateClipVersion } from './ai/viral-evaluator.service.js';
 import { brandKitService } from './brand-kit.service.js';
 import { buildTimedCuesFromEdl } from './media/ass-subtitle.builder.js';
 import { renderEdlToMp4, type RenderMediaSource } from './media/edl-renderer.service.js';
+import { parseAudioDiagnosticSafe } from './media/embedded-caption-detector.service.js';
 import {
   analyzeSubjectFocusTrack,
   extractAndRankCoverCandidates,
@@ -45,17 +46,28 @@ export const clipService = {
       };
     }
 
+    const targetConfig = safeJson<TargetConfig | null>(clip.batch.targetConfigJson, null);
+    const shouldSkipEmbedded = (targetConfig?.captionOverlapMode ?? 'auto_skip_embedded') !== 'force_show';
     const wordsByMediaId: Record<string, WordTimestamp[]> = {};
+    const skipCaptionMediaIds = new Set<string>();
     for (const m of clip.batch.campaign.mediaAssets) {
-      if (m.assetType === 'raw_video' && m.transcriptJson) {
-        const t = safeJson<TranscriptPayload | null>(m.transcriptJson, null);
-        wordsByMediaId[m.id] = t?.words ?? [];
+      if (m.assetType === 'raw_video') {
+        if (m.transcriptJson) {
+          const t = safeJson<TranscriptPayload | null>(m.transcriptJson, null);
+          wordsByMediaId[m.id] = t?.words ?? [];
+        }
+        const diag = parseAudioDiagnosticSafe(m.audioDiagnosticJson, m.hasAudio);
+        if (shouldSkipEmbedded && diag.hasEmbeddedSubtitles) {
+          skipCaptionMediaIds.add(m.id);
+        }
       }
     }
 
     const versions = clip.versions.map((v) => {
       const edl = safeJson<EdlDocument | null>(v.edlJson, null);
-      const cues = edl ? buildTimedCuesFromEdl(edl, wordsByMediaId, v.actualDurationSec ?? 30) : [];
+      const cues = edl
+        ? buildTimedCuesFromEdl(edl, wordsByMediaId, v.actualDurationSec ?? 30, { skipCaptionMediaIds })
+        : [];
       const impactCritique = safeJson<{
         briefChecklist?: unknown[];
         projectedImpact?: unknown;
@@ -89,14 +101,18 @@ export const clipService = {
 
     const sourceMediaList = clip.batch.campaign.mediaAssets
       .filter((m) => m.assetType === 'raw_video')
-      .map((m) => ({
-        id: m.id,
-        originalFilename: m.originalFilename,
-        durationSec: m.durationSec ?? 5,
-        width: m.width,
-        height: m.height,
-        hasAudio: m.hasAudio
-      }));
+      .map((m) => {
+        const diag = parseAudioDiagnosticSafe(m.audioDiagnosticJson, m.hasAudio);
+        return {
+          id: m.id,
+          originalFilename: m.originalFilename,
+          durationSec: m.durationSec ?? 5,
+          width: m.width,
+          height: m.height,
+          hasAudio: m.hasAudio,
+          hasEmbeddedSubtitles: Boolean(diag.hasEmbeddedSubtitles)
+        };
+      });
 
     // Catat interaksi inspeksi terbaru untuk sinyal retensi M18
     const inspectedAt = new Date();
@@ -125,7 +141,7 @@ export const clipService = {
         snoozedUntil: clip.snoozedUntil ? clip.snoozedUntil.toISOString() : null,
         mediaPrunedAt: clip.mediaPrunedAt ? clip.mediaPrunedAt.toISOString() : null,
         activeVersionId: activeVersion?.id ?? null,
-        targetConfig: safeJson<TargetConfig | null>(clip.batch.targetConfigJson, null),
+        targetConfig,
         sourceMediaList,
         activeVersion,
         versions
@@ -187,12 +203,14 @@ export const clipService = {
         watermarkPathById.set(m.id, m.filePath);
       } else if (m.assetType === 'raw_video') {
         const tr = safeJson<TranscriptPayload | null>(m.transcriptJson, null);
+        const diag = parseAudioDiagnosticSafe(m.audioDiagnosticJson, m.hasAudio);
         sources.push({
           id: m.id,
           filePath: m.filePath,
           durationSec: m.durationSec ?? 5,
           hasAudio: m.hasAudio,
-          words: tr?.words ?? []
+          words: tr?.words ?? [],
+          hasEmbeddedSubtitles: Boolean(diag.hasEmbeddedSubtitles)
         });
       }
     }
@@ -210,7 +228,8 @@ export const clipService = {
       versionNumber: nextVersionNumber,
       edl: patchedEdl,
       sources,
-      watermarkRelPath
+      watermarkRelPath,
+      skipEmbeddedSubtitles: (targetConfig.captionOverlapMode ?? 'auto_skip_embedded') !== 'force_show'
     });
 
     const { evaluation, playbook } = await evaluateClipVersion({
@@ -292,12 +311,14 @@ export const clipService = {
         watermarkPathById.set(m.id, m.filePath);
       } else if (m.assetType === 'raw_video') {
         const tr = safeJson<TranscriptPayload | null>(m.transcriptJson, null);
+        const diag = parseAudioDiagnosticSafe(m.audioDiagnosticJson, m.hasAudio);
         sources.push({
           id: m.id,
           filePath: m.filePath,
           durationSec: m.durationSec ?? 5,
           hasAudio: m.hasAudio,
-          words: tr?.words ?? []
+          words: tr?.words ?? [],
+          hasEmbeddedSubtitles: Boolean(diag.hasEmbeddedSubtitles)
         });
       }
     }
@@ -324,7 +345,8 @@ export const clipService = {
       versionNumber: nextVersionNumber,
       edl: validatedEdl,
       sources,
-      watermarkRelPath
+      watermarkRelPath,
+      skipEmbeddedSubtitles: (targetConfig.captionOverlapMode ?? 'auto_skip_embedded') !== 'force_show'
     });
 
     const { evaluation, playbook } = await evaluateClipVersion({

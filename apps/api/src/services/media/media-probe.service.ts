@@ -84,6 +84,18 @@ export async function probeMediaAsset(relativePath: string, assetType: string): 
   const streams = parsed.streams ?? [];
   const videoStream = streams.find((s) => s.codec_type === 'video');
   const audioStream = streams.find((s) => s.codec_type === 'audio');
+  const hasSoftSubtitleTrack = streams.some((s) => s.codec_type === 'subtitle');
+  const softSubMeta = hasSoftSubtitleTrack
+    ? {
+        hasSoftSubtitleTrack: true,
+        hasEmbeddedSubtitles: true,
+        embeddedSubtitleSource: 'soft_stream' as const,
+        embeddedSubtitleConfidence: 1,
+        embeddedSubtitleCheckedAt: new Date().toISOString()
+      }
+    : {
+        hasSoftSubtitleTrack: false
+      };
 
   const durationSec = parsed.format?.duration ? Math.round(Number(parsed.format.duration) * 100) / 100 : null;
   const width = videoStream?.width ?? null;
@@ -116,7 +128,8 @@ export async function probeMediaAsset(relativePath: string, assetType: string): 
         maxVolumeDb: null,
         loudnessLufs: null,
         recommendedAudioMode: 'mute_for_platform_sound',
-        reason: 'Video mentah tidak memiliki trek audio (Visual-Only). Disarankan mode Mute 0% dan gunakan Trending Sound saat upload di TikTok/YouTube.'
+        reason: 'Video mentah tidak memiliki trek audio (Visual-Only). Disarankan mode Mute 0% dan gunakan Trending Sound saat upload di TikTok/YouTube.',
+        ...softSubMeta
       }),
       silences: []
     };
@@ -174,7 +187,8 @@ export async function probeMediaAsset(relativePath: string, assetType: string): 
     maxVolumeDb,
     loudnessLufs: meanVolumeDb,
     recommendedAudioMode,
-    reason
+    reason,
+    ...softSubMeta
   });
 
   return {

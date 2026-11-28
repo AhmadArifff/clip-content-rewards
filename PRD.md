@@ -4,8 +4,8 @@
 **Author:** Product Management & Architecture Team
 **Owner:** AhmadArifff
 **Date:** 2026-11-28
-**Version:** v1.4
-**Status:** Production V2 Active (M0-M19 Verified | M20 Roadmap Logged)
+**Version:** v1.5
+**Status:** Production V2 Active (M0-M20 Verified | M21 Optional Generative B-Roll Logged)
 **Repository:** `https://github.com/AhmadArifff/clip-content-rewards.git`
 **Technical Blueprint:** [technical-blueprint-m3.md](./.agents/knowledge/technical-blueprint-m3.md)
 
@@ -355,7 +355,7 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 
 ---
 
-### Epic 8: AI Multimodal Cinema Director, Multi-Video Remix Engine & Generative B-Roll Roadmap (`M19` & `M20`)
+### Epic 8: AI Multimodal Cinema Director, Precision Subtitle Sync & Generative B-Roll Roadmap (`M19`, `M20` & `M21`)
 
 #### Story 8.1: Multi-Video Cinema Remix 100% Gratis (Gemini Vision + FFmpeg 8.1.2 Cinema VFX + Edit Model BYOK) (`M19`)
 **As a** kreator konten,
@@ -369,12 +369,24 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 - [ ] **Given** user mengunggah `>= 2` video mentah dan memilih mode **`Cinema AI Remix`**, **When** batch dimulai, **Then** sistem otomatis mentranskrip video ber-audio yang belum ditranskrip (`Groq Whisper` / `Gemini STT`), mengekstrak contact-sheet storyboard `3x2` lokal (100% gratis) untuk dikirim ke **Gemini Multimodal Vision AI** (dengan `thinkingBudget: 0` untuk model `2.5-flash` & waterfall otomatis), lalu merakit variasi film pendek yang menggabungkan segmen lintas video (`>= 2` sumber berbeda dalam 1 klip) menggunakan FFmpeg 8.1.2 (`xfade` transitions, `acrossfade` audio, 5 preset Cinema Color Grading, per-segment Speed Ramp `0.6x-1.6x`, dan smooth `zoompan` camera motion).
 - [ ] **Given** batch selesai dirender, **When** user melihat halaman Detail Batch, **Then** tampil indikator transparan sumber penyutradaraan (`Disutradarai Gemini Vision AI` vs `Mode Cinema Lokal` beserta alasannya) serta lencana `Remix N Video | M Shot | K Transisi` pada setiap kartu klip.
 
-#### Story 8.2: Opsional BYOK Generative Video B-Roll Bridge (Seedance / Veo / fal.ai) (`M20` - Backlog Opsional)
+#### Story 8.2: Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector (`M20` - 100% Gratis)
+**As a** kreator yang sering menerima video mentah campuran (sebagian sudah ada subtitle bawaan / burned-in dari brand, sebagian video musik tanpa dialog, sebagian talking-head polos),
+**I want to** memastikan subtitle yang dibuat aplikasi selalu sinkron tepat detik pengucapannya (tidak muncul lebih awal dari `0:00` atau bergeser saat ada `speed`/`xfade`) serta otomatis mendeteksi dan melewati subtitle pada video mentah yang sudah memiliki subtitle bawaan,
+**So that** hasil akhir 100% bersih tanpa subtitle muncul prematur, tanpa token titik halusinasi Whisper, dan bebas dari double subtitle yang saling tumpang tindih.
+
+**Priority:** `P0 (V2 Quality Critical)` | **Milestone:** `M20`
+
+**Acceptance Criteria:**
+- [ ] **Given** video mentah musik menghasilkan token halusinasi Whisper (seperti `"."`, `"..."`, `"[Music]"`) atau timeline memiliki banyak segmen dengan `speed` dan overlap `xfade`, **When** `ass-subtitle.builder.ts` merakit `subtitles.ass` & `subtitles.srt`, **Then** seluruh token tanda baca murni disaring, pengelompokan kata wajib pecah pada batas segmen dan jeda hening `>= 0.65s`, dan seluruh timestamp dikalkulasi dengan rumus timeline `computeEdlSegmentTimeline()` yang identik dengan FFmpeg renderer (kompensasi `speed` & `xfade`, zero early-start & zero inverted timestamps).
+- [ ] **Given** salah satu video mentah sudah memiliki trek subtitle lunak (`ffprobe` stream `subtitle`) atau burned-in subtitle pada piksel video, **When** pemeriksaan otomatis berjalan (1x per video via Gemini Vision di atas contact-sheet `3x2` yang sama, di-cache permanen di `audioDiagnosticJson`) atau user mengaktifkan saklar manual *"Sudah ada subtitle bawaan (jangan timpa)"* di kartu video Studio, **Then** mode default `captionOverlapMode = 'auto_skip_embedded'` otomatis melewati burn-in subtitle hanya untuk segmen video tersebut (sementara segmen video lain yang polos tetap mendapat subtitle sinkron).
+- [ ] **Given** Hook Banner dirender di atas video, **Then** teks hook layar bebas dari tag demografi/negara dalam kurung seperti `(Young Creators & Professionals)` atau `(US)`.
+
+#### Story 8.3: Opsional BYOK Generative Video B-Roll Bridge (Seedance / Veo / fal.ai) (`M21` - Backlog Opsional)
 **As a** kreator yang ingin menyisipkan adegan B-Roll generatif baru dari nol (di luar rekaman kamera mentah),
 **I want to** menyambungkan kunci BYOK penyedia video generatif opsional (seperti Seedance via fal.ai / Atlas Cloud atau Google Veo) di `/settings/api-keys`,
 **So that** AI Director dapat menghasilkan klip B-Roll 5 detik berbayar per penggunaan hanya saat diaktifkan eksplisit oleh saya dan menggabungkannya ke timeline `M19`.
 
-**Priority:** `P2 (Optional Paid BYOK Expansion)` | **Milestone:** `M20 (Planned)`
+**Priority:** `P2 (Optional Paid BYOK Expansion)` | **Milestone:** `M21 (Planned)`
 
 ---
 
@@ -531,4 +543,5 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
 | `v1.1` | 2026-11-26 | AhmadArifff & AI Architect/Critic | M3 Gap Audit upgrade: Menambahkan Whisper audio chunking (<=20MB/chunk) untuk video >1 jam, supporting assets (watermark/logo/outro/B-roll), 3 mode framing 16:9->9:16, reusable `target_profiles`, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate, serta tautan ke `technical-blueprint-m3.md`. |
 | `v1.2` | 2026-11-28 | AhmadArifff & AI Architect | M16-M17 Field Feedback upgrade: Menambahkan Free-Tier AI Quota Guard + Gemini Native Audio STT, Multi-Raw-Video Distribution, Anti-Cut Speech Boundary Snapper & `clipEndingMode` (`complete_story`/`full_source`/`part_series`), Target-Country Content Language Lock (anti-leak algoritma luar negeri), dan kalibrasi Safe-Zone Overlay TikTok & YouTube Shorts sesuai antarmuka HP aktual 2026. |
 | `v1.3` | 2026-11-28 | AhmadArifff & AI Architect | M18 Storage Maintenance & Content Lifecycle Retention (Epic 7): Menambahkan 9 skenario lapangan pemeliharaan disk lokal, tracking interaksi (`lastInspectedAt`/`downloadCount`), alert retensi 14/30 hari + badge sidebar, Arsip Ringan (hapus MP4 pertahankan Playbook/Kalender/Excel), pembersih versi non-aktif/orphan/raw lama, kebijakan Zero Silent Auto-Delete, dan `StorageCleanupLog`. |
-| `v1.4` | 2026-11-28 | AhmadArifff & AI Architect | M19 AI Multimodal Cinema Director & Multi-Video Remix Engine 100% Gratis (Epic 8): Menambahkan Edit Nama Model BYOK (`gemini-3.5-flash` dll.), Auto-Transcribe sebelum generate, FFmpeg Contact-Sheet Storyboard Indexer untuk Gemini Vision, True Cross-Video Cinema Remix (5 struktur film berbeda), FFmpeg Cinema VFX (`xfade`, `acrossfade`, 5 Color Grading, Speed Ramp, Motion), serta pencatatan roadmap opsional M20 (BYOK Generative Video B-Roll Seedance/Veo/fal.ai). |
+| `v1.4` | 2026-11-28 | AhmadArifff & AI Architect | M19 AI Multimodal Cinema Director & Multi-Video Remix Engine 100% Gratis (Epic 8): Menambahkan Edit Nama Model BYOK (`gemini-3.5-flash` dll.), Auto-Transcribe sebelum generate, FFmpeg Contact-Sheet Storyboard Indexer untuk Gemini Vision, True Cross-Video Cinema Remix (5 struktur film berbeda), FFmpeg Cinema VFX (`xfade`, `acrossfade`, 5 Color Grading, Speed Ramp, Motion), serta pencatatan roadmap opsional M21 (BYOK Generative Video B-Roll Seedance/Veo/fal.ai). |
+| `v1.5` | 2026-11-28 | AhmadArifff & AI Architect | M20 Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector (Epic 8 Story 8.2, 100% Gratis): Filter halusinasi tanda baca Whisper, isolasi pengelompokan kata per segmen & jeda hening `>= 0.65s`, kompensasi presisi `speed` + `xfade` melalui `computeEdlSegmentTimeline()`, deteksi 3 lapis subtitle bawaan (FFprobe soft stream + Gemini Vision 1x cached pada contact-sheet + saklar manual UI), skip subtitle per segmen (`auto_skip_embedded`), serta pembersihan tag demografi pada Hook Banner. |

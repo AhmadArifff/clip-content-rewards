@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M19",
-  "current_sprint": "M19 Completed (AI Multimodal Cinema Remix Engine, FFmpeg Cinema VFX & Editable BYOK Model - 100% Gratis)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M19: AI Multimodal Cinema Multi-Video Remix + FFmpeg VFX + Edit Model BYOK + Storage Maintenance) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M20",
+  "current_sprint": "M20 Completed (Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector - 100% Gratis)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards 100% gratis operasional (M0-M20: Precision Subtitle Sync, Smart Anti-Double-Caption Detector, AI Multimodal Cinema Multi-Video Remix + FFmpeg VFX, Edit Model BYOK, & Storage Maintenance) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -146,17 +146,24 @@
       "title": "V2: AI Multimodal Cinema Remix Engine, FFmpeg Cinema VFX & Editable BYOK Model (100% Gratis)",
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
-      "details": "Menambahkan endpoint PATCH /api/api-keys/:id & form inline Ubah Model (mendukung gemini-3.5-flash & nama model kustom + cek ketersediaan saat Uji Koneksi); memperbaiki llm-json.adapter.ts (dukungan gambar Multimodal Vision + thinkingBudget: 0 anti-truncate JSON pada gemini-2.5-flash + fallback aman 400/404); membangun vision-storyboard.service.ts (ekstrak contact-sheet 3x2 lokal gratis); upgrade edl-director.service.ts (Mode Cinema AI Remix yang benar-benar menggabungkan Video 1+2+3 ke 1 film baru + 5 struktur film berbeda + transparansi directorMode/directorNote); upgrade render-queue.worker.ts (Auto-Transcribe Groq/Gemini & Storyboard Vision); upgrade edl-renderer.service.ts (FFmpeg 8.1.2 xfade, acrossfade, 5 Cinema Color Grading, Speed Ramp, & zoompan d=1 camera motion); serta memperbarui PRD.md v1.4 (termasuk roadmap opsional M20 Seedance/Veo), MILESTONE.md, & menu-docs V2."
+      "details": "Menambahkan endpoint PATCH /api/api-keys/:id & form inline Ubah Model (mendukung gemini-3.5-flash & nama model kustom + cek ketersediaan saat Uji Koneksi); memperbaiki llm-json.adapter.ts (dukungan gambar Multimodal Vision + thinkingBudget: 0 anti-truncate JSON pada gemini-2.5-flash + fallback aman 400/404); membangun vision-storyboard.service.ts (ekstrak contact-sheet 3x2 lokal gratis); upgrade edl-director.service.ts (Mode Cinema AI Remix yang benar-benar menggabungkan Video 1+2+3 ke 1 film baru + 5 struktur film berbeda + transparansi directorMode/directorNote); upgrade render-queue.worker.ts (Auto-Transcribe Groq/Gemini & Storyboard Vision); upgrade edl-renderer.service.ts (FFmpeg 8.1.2 xfade, acrossfade, 5 Cinema Color Grading, Speed Ramp, & zoompan d=1 camera motion); serta memperbarui PRD.md v1.4, MILESTONE.md, & menu-docs V2."
+    },
+    {
+      "id": "M20_PRECISION_SUBTITLE_SYNC_AND_ANTI_DOUBLE_CAPTION",
+      "title": "V2: Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector (100% Gratis)",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menyelesaikan bug subtitle muncul prematur sejak 0:00 dan double subtitle: menambahkan isSpokenWordToken() anti-halusinasi Whisper (stt.adapter.ts & ass-subtitle.builder.ts), menyatukan rumus timeline speed + xfade via computeEdlSegmentTimeline() antara ass-subtitle.builder.ts & edl-renderer.service.ts, mengisolasi cue pada batas segmen & jeda hening >= 0.65s, membangun deteksi 3 lapis subtitle bawaan (ffprobe soft stream + embedded-caption-detector.service.ts Gemini Vision cached 1x di atas storyboard 3x2 + saklar manual PATCH /api/media/:mediaId/embedded-subtitle & POST /detect-subtitle), menambahkan proteksi auto_skip_embedded per segmen di worker/renderer/clip.service/TargetGeneratorPanel/studio.vue, membersihkan tag demografi pada Hook Banner, serta memperbarui PRD.md v1.5, MILESTONE.md, bug-cases.md Kasus #08, & uji integrasi m20.subtitle-sync-and-embedded-detect.test.ts."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M18 (1b2b156) ke main & dev",
-    "Tambahkan edit inline nama model BYOK (PATCH /api/api-keys/:id) + dukungan gemini-3.5-flash & verifikasi model pada Uji Koneksi",
-    "Fix Gemini 2.5 Flash thinkingBudget: 0 + dukungan gambar Multimodal Vision di llm-json.adapter.ts",
-    "Bangun vision-storyboard.service.ts (contact sheet 3x2 lokal 100% gratis) + Auto-Transcribe otomatis di render-queue.worker.ts",
-    "Upgrade edl-director.service.ts & edl-renderer.service.ts: True Multi-Video Cinema Remix (Video 1+2+3 digabung dalam 1 film), xfade/acrossfade, 5 Cinema Color Grading, Speed Ramp, & camera motion",
-    "Update PRD.md v1.4 (M19 + M20 opsional Seedance/Veo), MILESTONE.md, .agents docs, & uji integrasi m19.cinema-remix-and-model-edit.test.ts"
+    "Push M19 (fe60cf9) ke main & dev",
+    "Fix sinkronisasi subtitle di ass-subtitle.builder.ts & stt.adapter.ts: filter token halusinasi Whisper, isolasi batas segmen & jeda >= 0.65s, kompensasi presisi speed & xfade via computeEdlSegmentTimeline()",
+    "Bangun Detektor 3 Lapis Subtitle Bawaan (100% gratis): ffprobe soft stream + embedded-caption-detector.service.ts (Gemini Vision cached 1x) + manual override API & UI Studio",
+    "Tambahkan proteksi per-segmen captionOverlapMode (auto_skip_embedded) di renderer, worker, clip.service, & TargetGeneratorPanel.vue agar bebas double subtitle",
+    "Bersihkan tag demografi seperti (Young Creators & Professionals) dan (US) dari Hook Banner",
+    "Update PRD.md v1.5 (M20 + M21 Seedance/Veo), MILESTONE.md, .agents docs, bug-cases.md Kasus #08, & uji integrasi m20.subtitle-sync-and-embedded-detect.test.ts"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -171,7 +178,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push M19 (AI Multimodal Cinema Remix Engine, FFmpeg Cinema VFX & Edit Model BYOK) ke main & dev",
-    "User langsung mengganti model ke gemini-3.5-flash (jika ingin mencoba) dan menguji generate Cinema AI Remix 3 video di http://localhost:3000"
+    "Minta izin user untuk commit & push M20 (Precision Subtitle Sync Engine & Smart Anti-Double-Caption Detector) ke main & dev",
+    "User langsung menguji deteksi subtitle bawaan di Studio dan generate ulang Cinema AI Remix di http://localhost:3000"
   ]
 }

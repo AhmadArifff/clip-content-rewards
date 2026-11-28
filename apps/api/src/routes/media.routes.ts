@@ -14,4 +14,6 @@ mediaRouter.use(requireAuth);
 mediaRouter.post('/campaigns/:id/media/chunk', chunkUpload.single('chunk'), mediaController.uploadChunk);
 mediaRouter.post('/campaigns/:id/media/complete', mediaController.completeUpload);
 mediaRouter.post('/media/:mediaId/transcribe', mediaController.transcribe);
+mediaRouter.post('/media/:mediaId/detect-subtitle', mediaController.detectSubtitle);
+mediaRouter.patch('/media/:mediaId/embedded-subtitle', mediaController.setEmbeddedSubtitle);
 mediaRouter.delete('/media/:mediaId', mediaController.remove);

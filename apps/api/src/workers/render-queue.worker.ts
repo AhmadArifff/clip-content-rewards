@@ -16,6 +16,10 @@ import { evaluateClipVersion } from '../services/ai/viral-evaluator.service.js';
 import { brandKitService } from '../services/brand-kit.service.js';
 import { mediaService } from '../services/media.service.js';
 import { renderEdlToMp4, type RenderMediaSource } from '../services/media/edl-renderer.service.js';
+import {
+  detectEmbeddedSubtitlesForMedia,
+  parseAudioDiagnosticSafe
+} from '../services/media/embedded-caption-detector.service.js';
 import { extractVideoStoryboards, type VideoStoryboard } from '../services/media/vision-storyboard.service.js';
 import { analyzeSubjectFocusTrack } from '../services/media/vision-tracker.service.js';
 import { getActiveKeyForRole } from '../services/ai/llm-json.adapter.js';
@@ -91,6 +95,8 @@ class LocalRenderQueueWorker {
         originalFilename: string;
         transcript: TranscriptPayload | null;
         silences: SilenceInterval[];
+        audioDiagnosticJson: string | null;
+        embeddedSubtitleCheckedAt: string | null;
       }
     >;
     watermarkPathById: Map<string, string>;
@@ -103,6 +109,8 @@ class LocalRenderQueueWorker {
         originalFilename: string;
         transcript: TranscriptPayload | null;
         silences: SilenceInterval[];
+        audioDiagnosticJson: string | null;
+        embeddedSubtitleCheckedAt: string | null;
       }
     > = [];
     const watermarkPathById = new Map<string, string>();
@@ -117,6 +125,7 @@ class LocalRenderQueueWorker {
       if (m.assetType === 'raw_video') {
         const transcript = m.transcriptJson ? (JSON.parse(m.transcriptJson) as TranscriptPayload) : null;
         const silences = m.silencesJson ? (JSON.parse(m.silencesJson) as SilenceInterval[]) : [];
+        const audioDiag = parseAudioDiagnosticSafe(m.audioDiagnosticJson, m.hasAudio);
         if (rawVideos.length === 0) {
           primaryTranscript = transcript;
           primarySilences = silences;
@@ -128,6 +137,9 @@ class LocalRenderQueueWorker {
           durationSec: m.durationSec ?? 5,
           hasAudio: m.hasAudio,
           words: transcript?.words ?? [],
+          hasEmbeddedSubtitles: Boolean(audioDiag.hasEmbeddedSubtitles),
+          audioDiagnosticJson: m.audioDiagnosticJson,
+          embeddedSubtitleCheckedAt: audioDiag.embeddedSubtitleCheckedAt ?? null,
           transcript,
           silences
         });
@@ -208,12 +220,20 @@ class LocalRenderQueueWorker {
         }
       }
 
-      // M19: Ekstrak storyboard visual contact-sheet agar Gemini Vision benar-benar "menonton" seluruh video mentah
+      // M19 & M20: Ekstrak storyboard visual 3x2 untuk Gemini Vision Director & deteksi subtitle bawaan (anti-double)
       let storyboards: VideoStoryboard[] = [];
+      const shouldCheckEmbeddedSub =
+        !isTestEnv &&
+        activeBrainKey?.provider === 'gemini' &&
+        (targetConfig.captionOverlapMode ?? 'auto_skip_embedded') !== 'force_show';
+      const uncheckedEmbeddedVideos = shouldCheckEmbeddedSub
+        ? mediaBundle.rawVideos.filter((v) => !v.embeddedSubtitleCheckedAt)
+        : [];
+
       if (
         !isTestEnv &&
         activeBrainKey?.provider === 'gemini' &&
-        (targetConfig.editAssemblyMode ?? 'cinema_remix') === 'cinema_remix'
+        ((targetConfig.editAssemblyMode ?? 'cinema_remix') === 'cinema_remix' || uncheckedEmbeddedVideos.length > 0)
       ) {
         this.emitProgress({
           batchId,
@@ -228,8 +248,40 @@ class LocalRenderQueueWorker {
             originalFilename: v.originalFilename,
             filePath: v.filePath,
             durationSec: v.durationSec
-          }))
+          })),
+          Math.max(4, mediaBundle.rawVideos.length)
         );
+      }
+
+      // M20: Deteksi subtitle tertanam (burned-in) otomatis 1x per video menggunakan storyboard yang sama (0 FFmpeg ekstra)
+      if (uncheckedEmbeddedVideos.length > 0) {
+        const sbByMediaId = new Map(storyboards.map((s) => [s.mediaAssetId, s]));
+        for (let sIdx = 0; sIdx < uncheckedEmbeddedVideos.length; sIdx += 1) {
+          const vid = uncheckedEmbeddedVideos[sIdx];
+          this.emitProgress({
+            batchId,
+            status: 'processing',
+            progressPct: 10,
+            stageLabel: `Memeriksa subtitle bawaan video #${sIdx + 1}/${uncheckedEmbeddedVideos.length} (${vid.originalFilename})...`,
+            timestamp: new Date().toISOString()
+          });
+          await detectEmbeddedSubtitlesForMedia({
+            userId,
+            media: {
+              id: vid.id,
+              originalFilename: vid.originalFilename,
+              filePath: vid.filePath,
+              durationSec: vid.durationSec,
+              hasAudio: vid.hasAudio,
+              audioDiagnosticJson: vid.audioDiagnosticJson
+            },
+            preloadedStoryboard: sbByMediaId.get(vid.id) ?? null
+          }).catch(() => {});
+        }
+        const refreshedBatchAfterSub = await batchRepository.findBatchById(batchId);
+        if (refreshedBatchAfterSub) {
+          mediaBundle = this.buildMediaSources(refreshedBatchAfterSub);
+        }
       }
 
       let pacingBlueprint: PacingBlueprint | null = null;
@@ -459,16 +511,17 @@ class LocalRenderQueueWorker {
         watermarkRelPath = kit?.logoFilePath ?? null;
       }
 
+      const targetConfig = JSON.parse(batch.targetConfigJson) as TargetConfig;
       const rendered = await renderEdlToMp4({
         batchId,
         clipId,
         versionNumber: activeVer.versionNumber,
         edl,
         sources: mediaBundle.rawVideos,
-        watermarkRelPath
+        watermarkRelPath,
+        skipEmbeddedSubtitles: (targetConfig.captionOverlapMode ?? 'auto_skip_embedded') !== 'force_show'
       });
 
-      const targetConfig = JSON.parse(batch.targetConfigJson) as TargetConfig;
       const rulebook = batch.campaign.brief?.parsedRulebookJson
         ? (JSON.parse(batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
         : null;

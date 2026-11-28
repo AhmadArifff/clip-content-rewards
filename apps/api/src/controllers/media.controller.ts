@@ -1,5 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
-import { CompleteChunkUploadInputSchema } from '@clip/shared';
+import {
+  CompleteChunkUploadInputSchema,
+  UpdateEmbeddedSubtitleInputSchema
+} from '@clip/shared';
 import { mediaService } from '../services/media.service.js';
 import { sendServiceResult } from '../utils/http.js';
 
@@ -58,6 +61,29 @@ export const mediaController = {
   async transcribe(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await mediaService.transcribeAsset(req.user!.sub, String(req.params.mediaId));
+      sendServiceResult(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async detectSubtitle(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mediaService.detectEmbeddedSubtitle(req.user!.sub, String(req.params.mediaId));
+      sendServiceResult(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async setEmbeddedSubtitle(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = UpdateEmbeddedSubtitleInputSchema.parse(req.body ?? {});
+      const result = await mediaService.setEmbeddedSubtitleOverride(
+        req.user!.sub,
+        String(req.params.mediaId),
+        parsed.hasEmbeddedSubtitles
+      );
       sendServiceResult(res, result);
     } catch (err) {
       next(err);

@@ -228,22 +228,19 @@ function getLocalizedTemplates(targetConfig: TargetConfig, rulebook: BriefRulebo
   const hashtagsSnippet = rulebook?.requiredHashtags?.slice(0, 2).join(' ') ?? '';
 
   if (lang.code === 'en') {
-    const cleanNiche = /^[a-z0-9\s&/+-]+$/i.test(targetConfig.personaNiche) && !/kreator|pekerja muda/i.test(targetConfig.personaNiche)
-      ? targetConfig.personaNiche
-      : 'this drop';
     return {
       lang,
       cinemaAngles: [
-        { title: 'Cinema Trailer Remix', hook: `Wait until you see how this unfolds (${cleanNiche})` },
+        { title: 'Cinema Trailer Remix', hook: 'Wait until you see how this unfolds' },
         { title: 'A-Roll + B-Roll Story Cut', hook: 'Behind the scenes nobody expected' },
-        { title: 'Flash-Forward Climax Edit', hook: `Watch the ending first, then see how it started` },
-        { title: 'High-Energy Commercial Cut', hook: `Blink and you will miss the best moment` },
+        { title: 'Flash-Forward Climax Edit', hook: 'Watch the ending first, then see how it started' },
+        { title: 'High-Energy Commercial Cut', hook: 'Blink and you will miss the best moment' },
         { title: 'Cinematic Showcase Montage', hook: 'Every angle brought together in one reel' }
       ],
       singleAngles: [
-        { title: 'Direct Hook Cut', hook: `Wait until you see this (${cleanNiche})` },
+        { title: 'Direct Hook Cut', hook: 'Wait until you see this' },
         { title: 'Contrast Angle', hook: 'Most people get this completely wrong' },
-        { title: 'Key Takeaway', hook: `Watch this before you scroll (${targetConfig.countryCode})` },
+        { title: 'Key Takeaway', hook: 'Watch this before you scroll past' },
         { title: 'Debate Opener', hook: 'Do you agree with this take?' },
         { title: 'Result Spotlight', hook: 'Watch what happens in the final seconds' }
       ],
@@ -257,16 +254,16 @@ function getLocalizedTemplates(targetConfig: TargetConfig, rulebook: BriefRulebo
   return {
     lang,
     cinemaAngles: [
-      { title: 'Remix Trailer Sinematik', hook: `Tunggu sampai akhir, begini gabungannya!` },
+      { title: 'Remix Trailer Sinematik', hook: 'Tunggu sampai akhir, begini gabungannya!' },
       { title: 'Cerita A-Roll + B-Roll', hook: 'Momen di balik layar yang bikin nagih' },
       { title: 'Hook Flash-Forward Klimaks', hook: 'Lihat puncaknya dulu, baru awal ceritanya' },
       { title: 'Komersial Cepat Multi-Angle', hook: 'Jangan kedip, semua momen terbaik disatukan' },
       { title: 'Montage Sinematik Penuh', hook: 'Gabungan sudut terbaik dalam satu tayangan' }
     ],
     singleAngles: [
-      { title: 'Angle Hook Langsung', hook: `Stop scroll! Ini rahasia ${targetConfig.personaNiche}` },
+      { title: 'Angle Hook Langsung', hook: 'Stop scroll! Kamu wajib lihat bagian ini' },
       { title: 'Angle Sudut Kontras', hook: 'Kebanyakan orang masih salah langkah di sini' },
-      { title: 'Angle Poin Cepat', hook: `Wajib tahu sebelum terlambat (${targetConfig.countryCode})` },
+      { title: 'Angle Poin Cepat', hook: 'Wajib tahu sebelum kamu lewatkan' },
       { title: 'Angle Pemancing Diskusi', hook: 'Setuju atau tidak dengan cara ini?' },
       { title: 'Angle Bukti & Hasil', hook: 'Lihat perbedaannya dalam hitungan detik' }
     ],
@@ -753,6 +750,7 @@ export async function planMultiVariantEdls(params: {
     'Return compact valid JSON ONLY: {"clips":[{"angleTitle":string,"hookSummary":string,"hookBannerText":string,"ctaText":string,"segments":[{"mediaAssetId":string,"startSec":number,"endSec":number,"zoom":number,"cropX":"center"|"left"|"right","transition":"cut"|"fade"|"dissolve"|"smoothleft"|"smoothright"|"wipeleft"|"fadeblack"|"circleopen","speed":number,"motion":"none"|"push_in"|"pull_out"}]}]}. ' +
     `Create EXACTLY ${params.targetConfig.batchCount} clips. ` +
     'Use ONLY exact mediaAssetId values from rawVideos[] with 0 <= startSec < endSec <= durationSec and speed between 0.8 and 1.25. ' +
+    'NEVER put audience demographics, country codes, or parenthetical tags like "(US)" or "(Young Creators & Professionals)" inside hookBannerText or ctaText. ' +
     `${remixDirective} ${endingInstruction} ${languageRule}`;
 
   const wordsPerVideoBudget = Math.max(55, Math.floor(220 / Math.max(1, rawSources.length)));
