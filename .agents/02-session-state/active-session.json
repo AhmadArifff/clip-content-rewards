@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M11",
-  "current_sprint": "M11 Completed (Reference Video Pacing Cloner V2 | Style-Only FFmpeg Scene-Cut & Multi-Cut EDL Cloning)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11 Reference Pacing Cloner) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M12",
+  "current_sprint": "M12 Completed (Visual Multi-Track Timeline Editor V2 | 4-Track Interactive NLE + Direct EDL Render)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11 Pacing Cloner + V2 M12 Visual Timeline Editor) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -91,15 +91,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Menambahkan model Prisma ReferencePacingProfile, PacingBlueprintSchema (@clip/shared), pacing-analyzer.service.ts (FFmpeg scene-cut + fallback one-take + auto-delete file referensi), CRUD /api/pacing-profiles, integrasi multi-cut EDL & Playbook BPM sync, halaman /pacing 3 tema + visualisasi pola shot, dropdown TargetGeneratorPanel, 10/10 Vitest PASS, 4/4 Playwright E2E M11 PASS, dan menu-docs V2 reference-pacing-cloner.md."
+    },
+    {
+      "id": "M12_VISUAL_MULTI_TRACK_TIMELINE_EDITOR_V2",
+      "title": "V2: Visual Multi-Track Timeline Editor Interaktif (4-Track Split/Trim/Zoom/Hook/Audio + Direct EDL Render v(N+1))",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Membangun endpoint POST /api/clips/:clipId/render-edl + sourceMediaList pada clip.service.ts, komponen VisualTimelineEditor.vue 4-track dengan live playhead sync <video> (split, trim in/out, zoom, crop, framing, hook/CTA, subtitle safe-zone, audio mixer), Tab 4 di /clips/:clipId pada 3 tema + mobile 390px, 11/11 Vitest PASS, 4/4 Playwright E2E M12 PASS, dan menu-docs V2 visual-timeline-editor.md."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Release v1.0.0 ter-push ke GitHub (commit 8136b51 & tag v1.0.0 pada main & dev)",
-    "Membangun Reference Video Pacing Cloner (M11): model ReferencePacingProfile, FFmpeg scene-cut/BPM analyzer dengan guardrail style-only auto-delete",
-    "Mengintegrasikan kloning ritme multi-cut & zoom punch ke edl-director.service.ts, render-queue.worker.ts, dan sinkronisasi BPM di viral-evaluator.service.ts",
-    "Membangun halaman /pacing (3 tema + visualisasi bar shot) dan dropdown pemilih ritme di TargetGeneratorPanel.vue",
-    "Memverifikasi 10/10 Vitest PASS, 4/4 Playwright E2E M11 PASS, serta menambah menu-docs V2 reference-pacing-cloner.md (total 9 menu docs)"
+    "Push M11 (142a3ce) + Logo Futuristik Quantum Aperture Cut, favicon.svg & Fix Cold-Load Kasus #06 (14a5a1e) ke main & dev",
+    "Membangun endpoint direct EDL render POST /api/clips/:clipId/render-edl & sourceMediaList di clip.service.ts",
+    "Membangun VisualTimelineEditor.vue (4 track interaktif: Overlay Hook/CTA, Video Split/Trim/Zoom/Crop, Subtitle Safe-Zone, Audio Mixer + Live Playhead Sync)",
+    "Mengintegrasikan Tab 4 Timeline Visual di /clips/:clipId (responsif 3 tema + mobile 390px)",
+    "Memverifikasi 11/11 Vitest PASS, 4/4 Playwright E2E M12 PASS, serta menambah menu-docs V2 visual-timeline-editor.md (total 10 menu docs)"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -114,7 +121,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M11 (Reference Video Pacing Cloner) ke GitHub (main & dev)",
-    "Tawarkan langkah berikutnya: mulai pakai studio lokal (`npm run dev`) atau lanjut ke fitur V2 berikutnya (M12 Visual Timeline Editor / M13 Face-Tracking Crop / M14 Excel Calendar)"
+    "Minta izin user untuk commit & push checkpoint M12 (Visual Multi-Track Timeline Editor) ke GitHub (main & dev)",
+    "Tawarkan langkah berikutnya: langsung coba di studio lokal (http://localhost:3000) atau lanjut ke M13 (Smart Face-Tracking Auto-Crop) / M14 (Export Excel Kalender Konten)"
   ]
 }

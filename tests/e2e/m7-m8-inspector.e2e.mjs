@@ -152,8 +152,8 @@ async function run() {
     await page.screenshot({ path: path.join(SHOT_DIR, 'm78-playbook-editorial.png'), fullPage: true });
     console.log('[PASS] M78 Flow 3: Upload Playbook sinkron dengan audio v1 (100%) + jadwal WIB tampil');
 
-    // 4. Tab Edit Ulang -> Pilih Preset Mute 0% + Regenerate ke v2
-    await page.getByRole('tab', { name: 'Edit Ulang' }).click();
+    // 4. Tab Edit Prompt -> Pilih Preset Mute 0% + Regenerate ke v2
+    await page.getByRole('tab', { name: /Edit Prompt|Prompt/i }).click();
     await page.waitForSelector('text=Mute Audio Asli (0%)', { timeout: 10000 });
     await page.getByRole('button', { name: /Mute Audio Asli \(0%\)/i }).click();
     await page.getByRole('button', { name: 'Regenerate Versi v2' }).click();
@@ -181,7 +181,7 @@ async function run() {
     console.log('[PASS] M78 Flow 5: Riwayat versi, Rollback v1<->v2 & Tandai Final berfungsi normal');
 
     // 6. Tema Tactile + Mobile 390x844 zero overflow
-    await page.getByRole('tab', { name: 'Edit Ulang' }).click();
+    await page.getByRole('tab', { name: /Edit Prompt|Prompt/i }).click();
     await page.getByRole('button', { name: 'Tactile' }).click();
     await page.waitForTimeout(200);
     await page.screenshot({ path: path.join(SHOT_DIR, 'm78-reedit-tactile.png'), fullPage: true });

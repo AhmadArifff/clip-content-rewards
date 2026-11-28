@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { EdlSchema } from '@clip/shared';
 import { z } from 'zod';
 import { clipService } from '../services/clip.service.js';
 import { sendServiceResult } from '../utils/http.js';
@@ -7,6 +8,11 @@ const RegenerateBodySchema = z.object({
   userPrompt: z.string().max(1500).default(''),
   presetCodes: z.array(z.string()).default([]),
   subtitleOverrides: z.array(z.object({ index: z.number().int().min(0), text: z.string() })).optional()
+});
+
+const RenderEdlBodySchema = z.object({
+  edl: EdlSchema,
+  note: z.string().max(300).optional()
 });
 
 const ActiveVersionBodySchema = z.object({
@@ -40,6 +46,16 @@ export const clipController = {
         return;
       }
       const result = await clipService.regenerateClip(req.user!.sub, String(req.params.clipId), parsed);
+      sendServiceResult(res, result, 201);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async renderEdl(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = RenderEdlBodySchema.parse(req.body);
+      const result = await clipService.renderCustomEdl(req.user!.sub, String(req.params.clipId), parsed);
       sendServiceResult(res, result, 201);
     } catch (err) {
       next(err);

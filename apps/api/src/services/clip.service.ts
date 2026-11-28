@@ -76,6 +76,17 @@ export const clipService = {
 
     const activeVersion = versions.find((v) => v.id === clip.activeVersionId) ?? versions[0] ?? null;
 
+    const sourceMediaList = clip.batch.campaign.mediaAssets
+      .filter((m) => m.assetType === 'raw_video')
+      .map((m) => ({
+        id: m.id,
+        originalFilename: m.originalFilename,
+        durationSec: m.durationSec ?? 5,
+        width: m.width,
+        height: m.height,
+        hasAudio: m.hasAudio
+      }));
+
     return {
       ok: true,
       data: {
@@ -90,6 +101,7 @@ export const clipService = {
         isApproved: clip.isApproved,
         activeVersionId: activeVersion?.id ?? null,
         targetConfig: safeJson<TargetConfig | null>(clip.batch.targetConfigJson, null),
+        sourceMediaList,
         activeVersion,
         versions
       }
@@ -214,6 +226,124 @@ export const clipService = {
       ok: true,
       data: {
         patchSummary: patch.humanSummary,
+        newVersionId: newVer.id,
+        newVersionNumber: nextVersionNumber,
+        clip: detail.data
+      }
+    };
+  },
+
+  async renderCustomEdl(
+    userId: string,
+    clipId: string,
+    input: { edl: EdlDocument; note?: string }
+  ): Promise<ServiceResult<unknown>> {
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const validatedEdl = EdlSchema.parse(input.edl);
+    const targetConfig = JSON.parse(clip.batch.targetConfigJson) as TargetConfig;
+    const rulebook = clip.batch.campaign.brief?.parsedRulebookJson
+      ? (JSON.parse(clip.batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
+      : null;
+
+    const nextVersionNumber = Math.max(...clip.versions.map((v) => v.versionNumber), 0) + 1;
+
+    const sources: RenderMediaSource[] = [];
+    const watermarkPathById = new Map<string, string>();
+    for (const m of clip.batch.campaign.mediaAssets) {
+      if (m.assetType === 'watermark') {
+        watermarkPathById.set(m.id, m.filePath);
+      } else if (m.assetType === 'raw_video') {
+        const tr = safeJson<TranscriptPayload | null>(m.transcriptJson, null);
+        sources.push({
+          id: m.id,
+          filePath: m.filePath,
+          durationSec: m.durationSec ?? 5,
+          hasAudio: m.hasAudio,
+          words: tr?.words ?? []
+        });
+      }
+    }
+
+    if (sources.length === 0) {
+      return {
+        ok: false,
+        code: 'RAW_VIDEO_MISSING',
+        message: 'Video mentah sumber tidak ditemukan untuk merender timeline.',
+        statusCode: 400
+      };
+    }
+
+    const wmId = validatedEdl.supportingOverlays.watermarkAssetId;
+    const watermarkRelPath = wmId ? watermarkPathById.get(wmId) ?? null : null;
+
+    const rendered = await renderEdlToMp4({
+      batchId: clip.batchId,
+      clipId: clip.id,
+      versionNumber: nextVersionNumber,
+      edl: validatedEdl,
+      sources,
+      watermarkRelPath
+    });
+
+    const { evaluation, playbook } = await evaluateClipVersion({
+      userId,
+      edl: rendered.clampedEdl,
+      actualDurationSec: rendered.actualDurationSec,
+      rulebook,
+      targetConfig,
+      angleTitle: clip.angleTitle,
+      hookSummary: rendered.clampedEdl.hookBanner.text || clip.hookSummary || ''
+    });
+
+    const summary =
+      input.note?.trim() ||
+      `Visual Timeline (${rendered.clampedEdl.segments.length} segmen, ${rendered.actualDurationSec.toFixed(1)}s, audio ${
+        rendered.clampedEdl.audio.muteOriginal
+          ? 'Mute 0%'
+          : `${Math.round(rendered.clampedEdl.audio.originalVolume * 100)}%`
+      })`;
+
+    const newVer = await batchRepository.createClipVersion({
+      clipId: clip.id,
+      versionNumber: nextVersionNumber,
+      userPrompt: summary,
+      appliedPresetsJson: JSON.stringify(['visual_timeline_editor']),
+      edlJson: JSON.stringify(rendered.clampedEdl),
+      outputVideoPath: rendered.outputVideoRelPath,
+      outputSrtPath: rendered.outputSrtRelPath,
+      outputAssPath: rendered.outputAssRelPath,
+      coverImagePath: rendered.coverImageRelPath,
+      actualDurationSec: rendered.actualDurationSec,
+      viralScoreTotal: evaluation.totalScore,
+      briefCompliance: evaluation.briefComplianceStatus,
+      scoreBreakdownJson: JSON.stringify(evaluation.dimensions),
+      impactCritiqueJson: JSON.stringify({
+        briefChecklist: evaluation.briefChecklist,
+        projectedImpact: evaluation.projectedImpact,
+        critiques: evaluation.critiques
+      }),
+      uploadPlaybookJson: JSON.stringify(playbook),
+      renderDurationMs: rendered.renderDurationMs
+    });
+
+    await batchRepository.updateClip(clip.id, { activeVersionId: newVer.id, status: 'ready' });
+
+    const detail = await this.getClipDetail(userId, clip.id);
+    if (!detail.ok) return detail;
+
+    return {
+      ok: true,
+      data: {
+        summary,
         newVersionId: newVer.id,
         newVersionNumber: nextVersionNumber,
         clip: detail.data

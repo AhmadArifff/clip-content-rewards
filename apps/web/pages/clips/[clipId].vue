@@ -24,10 +24,12 @@ import {
   VolumeX,
   AlertTriangle,
   Clock,
-  Eye
+  Eye,
+  Film
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import SafeZoneOverlay from '~/components/studio/SafeZoneOverlay.vue';
+import VisualTimelineEditor, { type SourceMediaInfo } from '~/components/studio/VisualTimelineEditor.vue';
 import { apiRequest } from '~/composables/useApi';
 import { useThemeStore } from '~/stores/theme';
 
@@ -72,6 +74,7 @@ interface ClipDetailResponse {
   isApproved: boolean;
   activeVersionId: string | null;
   targetConfig: TargetConfig | null;
+  sourceMediaList?: SourceMediaInfo[];
   activeVersion: ClipVersionItem | null;
   versions: ClipVersionItem[];
 }
@@ -100,9 +103,10 @@ const switchingVersion = ref(false);
 const errorMsg = ref('');
 const noticeMsg = ref('');
 
-const activeTab = ref<'score' | 'playbook' | 'reedit'>('score');
+const activeTab = ref<'score' | 'playbook' | 'reedit' | 'timeline'>('score');
 const safeZoneMode = ref<'off' | 'tiktok' | 'youtube_shorts'>('off');
 const videoEl = ref<HTMLVideoElement | null>(null);
+const currentTimeSec = ref(0);
 const copiedKey = ref('');
 
 const regenPrompt = ref('');
@@ -193,10 +197,30 @@ function complianceBadgeClass(status: string | null | undefined): string {
 
 function seekTo(sec: number | undefined) {
   if (!videoEl.value || typeof sec !== 'number') return;
-  videoEl.value.currentTime = Math.max(0, sec);
+  const clamped = Math.max(0, sec);
+  videoEl.value.currentTime = clamped;
+  currentTimeSec.value = clamped;
   videoEl.value.play().catch(() => {
     // Abaikan autoplay block browser
   });
+}
+
+function onVideoTimeUpdate() {
+  if (!videoEl.value) return;
+  currentTimeSec.value = videoEl.value.currentTime || 0;
+}
+
+function onTimelineRendered(payload: {
+  summary: string;
+  newVersionId: string;
+  newVersionNumber: number;
+  clip: unknown;
+}) {
+  clip.value = payload.clip as ClipDetailResponse;
+  selectedVersionId.value = payload.newVersionId;
+  currentTimeSec.value = 0;
+  noticeMsg.value = `Versi v${payload.newVersionNumber} selesai dirender dari Visual Timeline: ${payload.summary}`;
+  activeTab.value = 'score';
 }
 
 async function copyText(key: string, text: string) {
@@ -510,6 +534,7 @@ onMounted(async () => {
                   :poster="selectedVersion.hasCover ? `/api/clips/${clip.id}/cover?versionId=${selectedVersion.id}` : undefined"
                   :src="`/api/clips/${clip.id}/stream-video?versionId=${selectedVersion.id}`"
                   class="w-full h-full object-contain"
+                  @timeupdate="onVideoTimeUpdate"
                 />
                 <SafeZoneOverlay :mode="safeZoneMode" />
               </div>
@@ -635,9 +660,9 @@ onMounted(async () => {
 
         <!-- KOLOM KANAN: 3 Tab Utama (Skor & Kritik | Upload Playbook | Re-Editor Prompt) -->
         <main class="lg:col-span-7 space-y-4 min-w-0">
-          <!-- Bar Tab -->
+          <!-- Bar Tab (4 Tab: Skor | Playbook | Edit Prompt | Timeline Visual) -->
           <div
-            class="studio-card p-1.5 grid grid-cols-3 gap-1.5"
+            class="studio-card p-1.5 grid grid-cols-4 gap-1"
             role="tablist"
             aria-label="Navigasi inspeksi klip"
           >
@@ -645,23 +670,24 @@ onMounted(async () => {
               type="button"
               role="tab"
               :aria-selected="activeTab === 'score'"
-              class="min-h-[44px] px-2 py-2 rounded text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 transition"
+              class="min-h-[44px] px-1.5 py-2 rounded text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 transition"
               :style="activeTab === 'score' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : {}"
               @click="activeTab = 'score'"
             >
-              <Award class="w-4 h-4 shrink-0" />
-              <span class="truncate">Skor & Kritik</span>
+              <Award class="w-3.5 h-3.5 shrink-0" />
+              <span class="hidden sm:inline">Skor &amp; Kritik</span>
+              <span class="sm:hidden">Skor</span>
             </button>
 
             <button
               type="button"
               role="tab"
               :aria-selected="activeTab === 'playbook'"
-              class="min-h-[44px] px-2 py-2 rounded text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 transition"
+              class="min-h-[44px] px-1.5 py-2 rounded text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 transition"
               :style="activeTab === 'playbook' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : {}"
               @click="activeTab = 'playbook'"
             >
-              <Music2 class="w-4 h-4 shrink-0" />
+              <Music2 class="w-3.5 h-3.5 shrink-0" />
               <span class="hidden sm:inline">Upload Playbook</span>
               <span class="sm:hidden">Playbook</span>
             </button>
@@ -670,12 +696,26 @@ onMounted(async () => {
               type="button"
               role="tab"
               :aria-selected="activeTab === 'reedit'"
-              class="min-h-[44px] px-2 py-2 rounded text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 transition"
+              class="min-h-[44px] px-1.5 py-2 rounded text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 transition"
               :style="activeTab === 'reedit' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : {}"
               @click="activeTab = 'reedit'"
             >
-              <SlidersHorizontal class="w-4 h-4 shrink-0" />
-              <span class="truncate">Edit Ulang</span>
+              <SlidersHorizontal class="w-3.5 h-3.5 shrink-0" />
+              <span class="hidden sm:inline">Edit Prompt</span>
+              <span class="sm:hidden">Prompt</span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="activeTab === 'timeline'"
+              class="min-h-[44px] px-1.5 py-2 rounded text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 transition"
+              :style="activeTab === 'timeline' ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)' } : {}"
+              @click="activeTab = 'timeline'"
+            >
+              <Film class="w-3.5 h-3.5 shrink-0" />
+              <span class="hidden sm:inline">Timeline Visual</span>
+              <span class="sm:hidden">Timeline</span>
             </button>
           </div>
 
@@ -1126,6 +1166,21 @@ onMounted(async () => {
                 </button>
               </div>
             </section>
+          </div>
+
+          <!-- ==================== TAB 4: VISUAL MULTI-TRACK TIMELINE (M12) ==================== -->
+          <div v-else-if="activeTab === 'timeline' && selectedVersion.edl">
+            <VisualTimelineEditor
+              :clip-id="clip.id"
+              :base-version-number="selectedVersion.versionNumber"
+              :next-version-number="nextVersionNumber"
+              :edl="selectedVersion.edl"
+              :source-media-list="clip.sourceMediaList ?? []"
+              :platform="clip.targetConfig?.platform ?? 'tiktok'"
+              :current-time-sec="currentTimeSec"
+              @seek="seekTo"
+              @rendered="onTimelineRendered"
+            />
           </div>
         </main>
       </div>
