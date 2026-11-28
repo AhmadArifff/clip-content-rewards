@@ -25,7 +25,9 @@ import {
   AlertTriangle,
   Clock,
   Eye,
-  Film
+  Film,
+  Camera,
+  Star
 } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import SafeZoneOverlay from '~/components/studio/SafeZoneOverlay.vue';
@@ -89,6 +91,17 @@ interface PromptPresetItem {
   };
 }
 
+interface CoverCandidateRow {
+  index: number;
+  timestampSec: number;
+  score: number;
+  isRecommended: boolean;
+  sharpnessScore: number;
+  brightnessScore: number;
+  subjectScore: number;
+  imageUrl: string;
+}
+
 const route = useRoute();
 const themeStore = useThemeStore();
 const clipId = computed(() => String(route.params.clipId));
@@ -113,6 +126,12 @@ const regenPrompt = ref('');
 const selectedPresetCodes = ref<string[]>([]);
 const showSubtitleEditor = ref(false);
 const editedCues = ref<Record<number, string>>({});
+
+const coverCacheKey = ref(Date.now());
+const coverCandidates = ref<CoverCandidateRow[]>([]);
+const scanningCovers = ref(false);
+const savingCover = ref(false);
+const activeCoverTs = ref<number | null>(null);
 
 const selectedVersion = computed<ClipVersionItem | null>(() => {
   if (!clip.value) return null;
@@ -165,6 +184,8 @@ watch(selectedVersion, (ver) => {
     map[cue.index] = cue.text;
   }
   editedCues.value = map;
+  coverCandidates.value = [];
+  activeCoverTs.value = null;
 });
 
 function formatTime(sec: number | undefined): string {
@@ -412,6 +433,53 @@ async function handleToggleApproval() {
   }
 }
 
+async function handleScanCoverCandidates() {
+  if (!selectedVersion.value) return;
+  scanningCovers.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await apiRequest<{
+      versionId: string;
+      versionNumber: number;
+      candidates: CoverCandidateRow[];
+    }>(`/api/clips/${clipId.value}/cover-candidates?versionId=${selectedVersion.value.id}`);
+    coverCandidates.value = res.data?.candidates ?? [];
+    noticeMsg.value = `Berhasil memindai ${coverCandidates.value.length} kandidat sampul terbaik untuk v${selectedVersion.value.versionNumber}.`;
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal memindai kandidat sampul cover.';
+  } finally {
+    scanningCovers.value = false;
+  }
+}
+
+async function handleApplyCover(timestampSec: number) {
+  if (!selectedVersion.value) return;
+  savingCover.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await apiRequest<{
+      updated: boolean;
+      timestampSec: number;
+    }>(`/api/clips/${clipId.value}/cover`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        versionId: selectedVersion.value.id,
+        timestampSec: Math.max(0.05, timestampSec)
+      })
+    });
+    if (res.data?.updated) {
+      activeCoverTs.value = res.data.timestampSec;
+      coverCacheKey.value = Date.now();
+      selectedVersion.value.hasCover = true;
+      noticeMsg.value = `Sampul cover v${selectedVersion.value.versionNumber} diperbarui dari detik ${res.data.timestampSec.toFixed(1)}s!`;
+    }
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal memperbarui sampul cover.';
+  } finally {
+    savingCover.value = false;
+  }
+}
+
 onMounted(async () => {
   await Promise.all([fetchClip(), fetchPromptPresets()]);
 });
@@ -531,7 +599,7 @@ onMounted(async () => {
                   controls
                   playsinline
                   preload="metadata"
-                  :poster="selectedVersion.hasCover ? `/api/clips/${clip.id}/cover?versionId=${selectedVersion.id}` : undefined"
+                  :poster="selectedVersion.hasCover ? `/api/clips/${clip.id}/cover?versionId=${selectedVersion.id}&cb=${coverCacheKey}` : undefined"
                   :src="`/api/clips/${clip.id}/stream-video?versionId=${selectedVersion.id}`"
                   class="w-full h-full object-contain"
                   @timeupdate="onVideoTimeUpdate"
@@ -596,6 +664,84 @@ onMounted(async () => {
                   <span>Cover (.jpg)</span>
                 </a>
               </div>
+            </div>
+          </section>
+
+          <!-- Panel Pemilih Sampul / Cover Frame Selector (M13) -->
+          <section class="studio-card p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="studio-heading text-sm font-bold inline-flex items-center gap-1.5">
+                <Camera class="w-4 h-4" style="color: var(--accent-bg);" />
+                <span>Pemilih Sampul / Cover Terbaik</span>
+              </h2>
+              <span
+                v-if="activeCoverTs !== null"
+                class="px-2 py-0.5 rounded font-mono text-[11px] font-bold studio-badge-ok"
+              >
+                Aktif: {{ activeCoverTs.toFixed(1) }}s
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="studio-btn-primary text-xs !min-h-[40px]"
+                :disabled="!selectedVersion.hasVideo || scanningCovers || savingCover"
+                @click="handleScanCoverCandidates"
+              >
+                <Sparkles class="w-3.5 h-3.5" />
+                <span>{{ scanningCovers ? 'Memindai 6 Frame...' : 'Pindai 6 Kandidat Cover' }}</span>
+              </button>
+
+              <button
+                type="button"
+                class="studio-btn-secondary text-xs !min-h-[40px]"
+                :disabled="!selectedVersion.hasVideo || savingCover"
+                @click="handleApplyCover(Math.max(0.1, currentTimeSec))"
+              >
+                <Camera class="w-3.5 h-3.5" />
+                <span>Pakai Frame Playhead ({{ currentTimeSec.toFixed(1) }}s)</span>
+              </button>
+            </div>
+
+            <p v-if="coverCandidates.length === 0" class="text-[11px] studio-muted leading-relaxed">
+              Pindai otomatis 6 momen terbaik berdasarkan ketajaman, pencahayaan, dan fokus wajah, atau geser pemutar video lalu jadikan frame saat ini sebagai cover unduhan (.jpg) &amp; paket ZIP.
+            </p>
+
+            <div v-else class="grid grid-cols-3 gap-2">
+              <button
+                v-for="cand in coverCandidates"
+                :key="cand.index"
+                type="button"
+                class="group relative rounded overflow-hidden text-left transition focus:outline-none"
+                :class="selectedVersion.edl?.aspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16]'"
+                :disabled="savingCover"
+                :style="{
+                  border: activeCoverTs === cand.timestampSec
+                    ? '2.5px solid var(--accent-bg)'
+                    : '1.5px solid var(--border-color)'
+                }"
+                :title="`Pilih frame detik ${cand.timestampSec.toFixed(1)}s (Skor ${cand.score})`"
+                @click="handleApplyCover(cand.timestampSec)"
+              >
+                <img
+                  :src="cand.imageUrl"
+                  :alt="`Kandidat cover detik ${cand.timestampSec.toFixed(1)}s`"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <span
+                  v-if="cand.isRecommended"
+                  class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase inline-flex items-center gap-0.5 bg-amber-400 text-slate-950"
+                >
+                  <Star class="w-2.5 h-2.5 fill-current" />
+                  <span>TOP</span>
+                </span>
+                <div class="absolute inset-x-0 bottom-0 px-1.5 py-1 bg-black/75 text-white flex items-center justify-between text-[10px] font-mono">
+                  <span>{{ cand.timestampSec.toFixed(1) }}s</span>
+                  <span class="font-bold">{{ cand.score }}pt</span>
+                </div>
+              </button>
             </div>
           </section>
 

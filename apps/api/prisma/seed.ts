@@ -47,6 +47,7 @@ const DEFAULT_PRESETS = [
 
   // Framing Modes 16:9 -> 9:16
   { category: 'framing_mode', code: 'center_crop', labelId: 'Center Crop 9:16 (Potong Penuh ke Tengah)', sortOrder: 10, config: {} },
+  { category: 'framing_mode', code: 'auto_face_track', labelId: 'Smart Auto-Track 9:16 (Ikuti Wajah/Subjek Aktif)', sortOrder: 15, config: { visionTracking: true } },
   { category: 'framing_mode', code: 'fit_blur_bg', labelId: 'Fit-Width + Latar Blur (Jaga Teks Pinggir Utuh)', sortOrder: 20, config: {} },
   { category: 'framing_mode', code: 'split_screen', labelId: 'Split-Screen Atas-Bawah (Multi-Fokus)', sortOrder: 30, config: {} },
 

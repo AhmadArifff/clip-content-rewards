@@ -15,7 +15,8 @@ import {
   Type,
   Film,
   Subtitles,
-  Play
+  Play,
+  Crosshair
 } from 'lucide-vue-next';
 import { apiRequest } from '~/composables/useApi';
 import { useThemeStore } from '~/stores/theme';
@@ -54,7 +55,9 @@ const draft = ref<EdlDocument>(cloneEdl(props.edl));
 const selectedSegIdx = ref(0);
 const editNote = ref('');
 const rendering = ref(false);
+const autoTracking = ref(false);
 const errorMsg = ref('');
+const trackNotice = ref('');
 
 watch(
   () => props.edl,
@@ -62,6 +65,7 @@ watch(
     draft.value = cloneEdl(next);
     selectedSegIdx.value = 0;
     errorMsg.value = '';
+    trackNotice.value = '';
   },
   { deep: false }
 );
@@ -239,11 +243,82 @@ function handleDeleteSelected() {
   selectedSegIdx.value = Math.max(0, selectedSegIdx.value - 1);
 }
 
+function getSegmentFocusX(seg: EdlDocument['segments'][number]): number {
+  if (typeof seg.focusX === 'number' && Number.isFinite(seg.focusX)) {
+    return Math.min(0.92, Math.max(0.08, seg.focusX));
+  }
+  if (seg.cropX === 'left') return 0.18;
+  if (seg.cropX === 'right') return 0.82;
+  return 0.5;
+}
+
+function onCropXChanged() {
+  const seg = selectedSeg.value;
+  if (!seg) return;
+  seg.focusX = seg.cropX === 'left' ? 0.18 : seg.cropX === 'right' ? 0.82 : 0.5;
+}
+
+function updateSelectedFocusX(val: number) {
+  const seg = selectedSeg.value;
+  if (!seg) return;
+  const clamped = Math.round(Math.min(0.92, Math.max(0.08, val)) * 100) / 100;
+  seg.focusX = clamped;
+  seg.cropX = clamped < 0.38 ? 'left' : clamped > 0.62 ? 'right' : 'center';
+}
+
+async function handleAutoTrackFocus() {
+  errorMsg.value = '';
+  trackNotice.value = '';
+  autoTracking.value = true;
+  try {
+    const res = await apiRequest<{
+      recommendedFramingMode: 'auto_face_track';
+      segments: Array<{
+        index: number;
+        focusX: number;
+        cropX: 'left' | 'center' | 'right';
+        confidence: number;
+        signalType: 'face_skin' | 'motion_edge' | 'balanced_center';
+      }>;
+    }>(`/api/clips/${props.clipId}/auto-track-crop`, {
+      method: 'POST',
+      body: JSON.stringify({
+        segments: draft.value.segments.map((s) => ({
+          mediaAssetId: s.mediaAssetId,
+          startSec: s.startSec,
+          endSec: s.endSec
+        }))
+      })
+    });
+
+    if (res.data?.segments?.length) {
+      res.data.segments.forEach((tr) => {
+        const seg = draft.value.segments[tr.index];
+        if (seg) {
+          seg.focusX = tr.focusX;
+          seg.cropX = tr.cropX;
+        }
+      });
+      draft.value.framingMode = 'auto_face_track';
+      const faceCount = res.data.segments.filter((s) => s.signalType === 'face_skin').length;
+      trackNotice.value =
+        faceCount > 0
+          ? `Fokus wajah/subjek terdeteksi otomatis pada ${res.data.segments.length} segmen (${faceCount} sinyal wajah). Framing diset ke Smart Auto-Track 9:16.`
+          : `Fokus subjek aktif dipetakan pada ${res.data.segments.length} segmen. Framing diset ke Smart Auto-Track 9:16.`;
+    }
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Gagal memindai fokus subjek otomatis.';
+  } finally {
+    autoTracking.value = false;
+  }
+}
+
 function handleResetDraft() {
   draft.value = cloneEdl(props.edl);
   selectedSegIdx.value = 0;
   editNote.value = '';
   errorMsg.value = '';
+  trackNotice.value = '';
 }
 
 async function handleRenderTimeline() {
@@ -278,6 +353,7 @@ async function handleRenderTimeline() {
 <template>
   <div class="space-y-4 min-w-0">
     <div v-if="errorMsg" class="p-3 rounded text-xs font-semibold studio-badge-err">{{ errorMsg }}</div>
+    <div v-if="trackNotice" class="p-3 rounded text-xs font-semibold studio-badge-ok">{{ trackNotice }}</div>
 
     <!-- ==================== PANEL KANVAS MULTI-TRACK TIMELINE ==================== -->
     <section class="studio-card p-4 space-y-3">
@@ -293,6 +369,15 @@ async function handleRenderTimeline() {
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            class="studio-btn-primary text-xs !min-h-[38px] !px-2.5"
+            :disabled="autoTracking || rendering"
+            @click="handleAutoTrackFocus"
+          >
+            <Crosshair class="w-3.5 h-3.5" />
+            <span>{{ autoTracking ? 'Memindai Fokus...' : 'Auto-Deteksi Fokus Subjek' }}</span>
+          </button>
           <button
             type="button"
             class="studio-btn-secondary text-xs !min-h-[38px] !px-2.5"
@@ -398,7 +483,7 @@ async function handleRenderTimeline() {
                 #{{ item.index + 1 }} ({{ item.dur.toFixed(1) }}s)
               </span>
               <span class="text-[9px] font-mono opacity-90 truncate w-full mt-0.5">
-                {{ item.seg.zoom.toFixed(2) }}x | {{ item.seg.cropX }}
+                {{ item.seg.zoom.toFixed(2) }}x | {{ item.seg.cropX }} ({{ Math.round(getSegmentFocusX(item.seg) * 100) }}%)
               </span>
             </button>
           </div>
@@ -545,7 +630,12 @@ async function handleRenderTimeline() {
         <div class="grid grid-cols-2 gap-2">
           <div class="space-y-1">
             <label for="tl-seg-crop" class="block font-semibold">Fokus Crop</label>
-            <select id="tl-seg-crop" v-model="selectedSeg.cropX" class="studio-input !min-h-[38px] text-xs py-1">
+            <select
+              id="tl-seg-crop"
+              v-model="selectedSeg.cropX"
+              class="studio-input !min-h-[38px] text-xs py-1"
+              @change="onCropXChanged"
+            >
               <option value="left">Kiri</option>
               <option value="center">Tengah</option>
               <option value="right">Kanan</option>
@@ -554,11 +644,29 @@ async function handleRenderTimeline() {
           <div class="space-y-1">
             <label for="tl-framing" class="block font-semibold">Framing 9:16</label>
             <select id="tl-framing" v-model="draft.framingMode" class="studio-input !min-h-[38px] text-xs py-1">
+              <option value="auto_face_track">Smart Auto-Track 9:16</option>
               <option value="fit_blur_bg">Fit-Blur BG</option>
               <option value="center_crop">Center Crop</option>
               <option value="split_screen">Split-Screen</option>
             </select>
           </div>
+        </div>
+
+        <div class="space-y-1 sm:col-span-2">
+          <div class="flex justify-between font-semibold">
+            <label for="tl-seg-focus-x">Posisi Horizontal Fokus X (Smart Auto-Track)</label>
+            <span class="font-mono">{{ Math.round(getSegmentFocusX(selectedSeg) * 100) }}% ({{ selectedSeg.cropX }})</span>
+          </div>
+          <input
+            id="tl-seg-focus-x"
+            type="range"
+            min="0.08"
+            max="0.92"
+            step="0.02"
+            :value="getSegmentFocusX(selectedSeg)"
+            class="w-full accent-emerald-500"
+            @input="updateSelectedFocusX(Number(($event.target as HTMLInputElement).value))"
+          />
         </div>
       </div>
     </section>

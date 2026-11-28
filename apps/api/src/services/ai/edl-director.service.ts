@@ -219,24 +219,46 @@ export function buildHeuristicMultiVariantEdls(params: {
       endSec = Math.min(totalDur, startSec + sliceLen);
     }
 
-    const segments = pacingBlueprint
-      ? buildPacedSegmentsFromBlueprint({
+    const sliceDur = Math.max(0.6, endSec - startSec);
+    let segments: EdlDocument['segments'];
+    if (pacingBlueprint) {
+      segments = buildPacedSegmentsFromBlueprint({
+        mediaAssetId,
+        windowStartSec: startSec,
+        windowEndSec: endSec,
+        mediaDurationSec: totalDur,
+        blueprint: pacingBlueprint,
+        variantIdx: i
+      });
+    } else if (targetConfig.framingMode === 'auto_face_track' && sliceDur >= 3.5) {
+      // Bagi klip panjang menjadi 2-4 jendela tracking agar auto-crop dapat mengikuti perpindahan subjek
+      const winCount = Math.min(4, Math.max(2, Math.round(sliceDur / 2.8)));
+      const winLen = sliceDur / winCount;
+      segments = Array.from({ length: winCount }, (_, wIdx) => {
+        const s = Math.round((startSec + wIdx * winLen) * 100) / 100;
+        const e = wIdx === winCount - 1
+          ? Math.round(endSec * 100) / 100
+          : Math.round((startSec + (wIdx + 1) * winLen) * 100) / 100;
+        return {
           mediaAssetId,
-          windowStartSec: startSec,
-          windowEndSec: endSec,
-          mediaDurationSec: totalDur,
-          blueprint: pacingBlueprint,
-          variantIdx: i
-        })
-      : [
-          {
-            mediaAssetId,
-            startSec: Math.round(startSec * 100) / 100,
-            endSec: Math.round(Math.max(startSec + 0.6, endSec) * 100) / 100,
-            zoom: i % 2 === 1 ? 1.08 : 1.0,
-            cropX: 'center' as const
-          }
-        ];
+          startSec: s,
+          endSec: Math.max(s + 0.5, e),
+          zoom: i % 2 === 1 && wIdx % 2 === 1 ? 1.08 : 1.0,
+          cropX: 'center' as const,
+          focusX: 0.5
+        };
+      });
+    } else {
+      segments = [
+        {
+          mediaAssetId,
+          startSec: Math.round(startSec * 100) / 100,
+          endSec: Math.round(Math.max(startSec + 0.6, endSec) * 100) / 100,
+          zoom: i % 2 === 1 ? 1.08 : 1.0,
+          cropX: 'center' as const
+        }
+      ];
+    }
 
     const edl = EdlSchema.parse({
       schemaVersion: '1.1',

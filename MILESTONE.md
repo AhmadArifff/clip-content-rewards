@@ -2,7 +2,7 @@
 
 > **Dokumen Induk Eksekusi Bertahap (Master Timeline & Milestone Tracker)**
 > Proyek: **Clip Content Rewards (AI Auto-Editor, Viral Scorer & Upload Playbook Studio untuk TikTok & YouTube)**
-> Status Saat Ini: **M0-M10 (`v1.0.0`) + M11 (Pacing Cloner) + M12 (Visual Multi-Track Timeline Editor) Verified PASS**
+> Status Saat Ini: **M0-M10 (`v1.0.0`) + M11 (Pacing Cloner) + M12 (Visual Timeline) + M13 (Smart Auto-Track & Cover Selector) Verified PASS**
 > Terakhir Diperbarui: **2026-11-28**
 
 ---
@@ -113,6 +113,7 @@ Berdasarkan pemindaian aktual terhadap repositori skill global di mesin ini:
 | **M10** | **E2E QA, Delivery Gate, Docs Sync & Release v1.0** | Unit/Integration tests, Playwright E2E full flow, Mandatory Delivery Gate 4-Blok, finalisasi `menu-docs/` + mirror ke `documentasi-projects`, Release `v1.0.0` | `DONE` | 9/9 Vitest + 5/5 Suite E2E M4-M9 + Delivery Gate 4-Blok PASS |
 | **M11** | **V2: Reference Video Pacing Cloner** | Upload video viral referensi -> FFmpeg scene-cut & BPM extractor (style-only auto-delete) -> Profil Ritme `/pacing` -> Multi-Cut EDL Cloning & Playbook BPM sync | `DONE` | 10/10 Vitest PASS + 4/4 Playwright E2E M11 PASS |
 | **M12** | **V2: Visual Multi-Track Timeline Editor** | Editor visual 4-track (Overlay Hook/CTA, Video Split/Trim/Zoom/Crop, Subtitle Safe-Zone, Audio Slider) + Live Playhead sync + `POST /render-edl` v(N+1) | `DONE` | 11/11 Vitest PASS + 4/4 Playwright E2E M12 PASS |
+| **M13** | **V2: Smart Face-Tracking Auto-Crop & Cover Selector** | Vision engine lokal RGB24 pipe (YCbCr skin + motion/edge) untuk `auto_face_track` 9:16 per segmen + pemindai 6 kandidat cover berperingkat & pilih frame playhead | `DONE` | 12/12 Vitest PASS + 4/4 Playwright E2E M13 PASS |
 
 ---
 
@@ -309,7 +310,7 @@ Fitur lanjutan setelah `v1.0.0` stabil (memanfaatkan 19 Skill Tier 2):
 
 1. **[SELESAI - M11] Reference Video Style & Pacing Cloner (`reelmimic`)**: Upload video viral referensi -> FFmpeg scene-cut & tempo BPM extractor (`pacing-analyzer.service.ts`) dengan guardrail *Style-Only* (video referensi langsung dihapus pasca-analisis) -> halaman `/pacing` 3 tema + visualisasi bar shot -> penerapan potongan *multi-cut* otomatis di `TargetGeneratorPanel` & sinkronisasi BPM di Upload Playbook.
 2. **[SELESAI - M12] Visual Timeline Editor Interaktif (`openmotion`)**: Editor visual 4-track langsung di Tab 4 Clip Inspector (`VisualTimelineEditor.vue`) lengkap dengan live playhead `<video>`, belah (*split*)/pangkas/duplikat/geser segmen, zoom & crop per segmen, editor Hook/CTA, slider Safe-Zone subtitle & volume audio, serta render non-destruktif `POST /api/clips/:clipId/render-edl` ke `v(N+1)`.
-3. **Smart Face-Tracking Auto-Crop & Cover Selector (`ml-vision`)**: Pelacakan wajah/pembicara aktif otomatis untuk crop 9:16 dinamis pada video podcast multi-kamera.
+3. **[SELESAI - M13] Smart Face-Tracking Auto-Crop & Cover Selector (`ml-vision`)**: Pelacakan posisi wajah/subjek aktif lokal via FFmpeg RGB24 pipe (`vision-tracker.service.ts`) untuk crop dinamis 9:16 (`auto_face_track` + slider Fokus X di Visual Timeline) serta pemindai 6 kandidat cover berperingkat + tombol *Pakai Frame Playhead* (`PATCH /api/clips/:clipId/cover`).
 4. **Frame-by-Frame Visual Annotation (`motlab` + `motlab-assets`)**: Klik langsung di frame tertentu untuk menandai revisi prompt + pustaka aset brand (watermark, bumper, font preset) per campaign.
 5. **Campaign Content Calendar & Excel Report (`excel-export`)**: Ekspor jadwal upload mingguan/bulanan dan metrik perbandingan batch ke `.xlsx`.
 6. **Multi-Account / Team Collaboration & Direct Publish Assist (`webbrain`)**: Manajemen peran tim clipper (Manager -> Editor -> Uploader) serta sinkronisasi campaign otomatis.

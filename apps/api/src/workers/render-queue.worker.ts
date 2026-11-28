@@ -8,11 +8,13 @@ import {
   type TranscriptPayload
 } from '@clip/shared';
 import { env } from '../config/env.js';
+import { resolveSafeStoragePath } from '../config/storage.js';
 import { batchRepository } from '../repositories/batch.repository.js';
 import { pacingRepository } from '../repositories/pacing.repository.js';
 import { planMultiVariantEdls } from '../services/ai/edl-director.service.js';
 import { evaluateClipVersion } from '../services/ai/viral-evaluator.service.js';
 import { renderEdlToMp4, type RenderMediaSource } from '../services/media/edl-renderer.service.js';
+import { analyzeSubjectFocusTrack } from '../services/media/vision-tracker.service.js';
 
 export interface BatchProgressEvent {
   batchId: string;
@@ -182,6 +184,37 @@ class LocalRenderQueueWorker {
       });
 
       await batchRepository.updateBatch(batchId, { actualTokens: planned.tokensUsed });
+
+      // Jika mode Smart Auto-Track 9:16 aktif, analisis koordinat fokus subjek/wajah pada video sumber
+      if (targetConfig.framingMode === 'auto_face_track') {
+        try {
+          this.emitProgress({
+            batchId,
+            status: 'processing',
+            progressPct: 13,
+            stageLabel: 'Memindai posisi subjek/wajah untuk Smart Auto-Track 9:16...',
+            timestamp: new Date().toISOString()
+          });
+          const absPrimaryPath = resolveSafeStoragePath(mediaBundle.primaryRaw.filePath);
+          const allSegments = planned.drafts.flatMap((d) =>
+            d.edl.segments.map((s) => ({ startSec: s.startSec, endSec: s.endSec }))
+          );
+          if (allSegments.length > 0) {
+            const tracked = await analyzeSubjectFocusTrack(absPrimaryPath, allSegments);
+            let cursor = 0;
+            for (const draft of planned.drafts) {
+              draft.edl.segments = draft.edl.segments.map((seg) => {
+                const res = tracked[cursor];
+                cursor += 1;
+                if (!res) return seg;
+                return { ...seg, focusX: res.focusX, cropX: res.cropX };
+              });
+            }
+          }
+        } catch {
+          // Fallback aman ke crop tengah jika analisis vision gagal pada video tertentu
+        }
+      }
 
       const createdClips: Array<{ clipId: string; versionId: string; sequenceIndex: number }> = [];
       for (const draft of planned.drafts) {

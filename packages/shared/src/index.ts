@@ -54,6 +54,14 @@ export const BriefRulebookSchema = z.object({
 });
 export type BriefRulebook = z.infer<typeof BriefRulebookSchema>;
 
+export const FramingModeSchema = z.enum([
+  'center_crop',
+  'fit_blur_bg',
+  'split_screen',
+  'auto_face_track'
+]);
+export type FramingMode = z.infer<typeof FramingModeSchema>;
+
 export const TargetConfigSchema = z.object({
   platform: PlatformTargetSchema,
   countryCode: z.string().min(2).max(10),
@@ -71,7 +79,7 @@ export const TargetConfigSchema = z.object({
   emotionalTrigger: z.string().min(2).max(60),
   primaryKpi: z.enum(['watch_time', 'comments', 'shares', 'clicks']),
   editingStyle: z.string().min(2).max(60),
-  framingMode: z.enum(['center_crop', 'fit_blur_bg', 'split_screen']).default('fit_blur_bg'),
+  framingMode: FramingModeSchema.default('fit_blur_bg'),
   captionStyle: z.enum(['hormozi_bold', 'clean_minimal', 'bilingual', 'off']),
   initialAudioMode: z.enum([
     'original_normalized',
@@ -125,7 +133,8 @@ export const EdlSegmentSchema = z.object({
   startSec: z.number().min(0),
   endSec: z.number().positive(),
   zoom: z.number().min(1).max(2.5).default(1),
-  cropX: z.enum(['left', 'center', 'right']).default('center')
+  cropX: z.enum(['left', 'center', 'right']).default('center'),
+  focusX: z.number().min(0).max(1).optional()
 }).refine((seg) => seg.endSec > seg.startSec, {
   message: 'endSec harus lebih besar dari startSec'
 });
@@ -146,7 +155,7 @@ export const ComplianceOverlaysSchema = z.object({
 export const EdlSchema = z.object({
   schemaVersion: z.literal('1.1').default('1.1'),
   aspectRatio: z.enum(['9:16', '16:9']),
-  framingMode: z.enum(['center_crop', 'fit_blur_bg', 'split_screen']).default('fit_blur_bg'),
+  framingMode: FramingModeSchema.default('fit_blur_bg'),
   resolution: z.object({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
@@ -188,7 +197,7 @@ export type EdlDocument = z.infer<typeof EdlSchema>;
 
 export const EdlPatchSchema = z.object({
   humanSummary: z.string().min(3),
-  framingMode: z.enum(['center_crop', 'fit_blur_bg', 'split_screen']).optional(),
+  framingMode: FramingModeSchema.optional(),
   audioPatch: EdlSchema.shape.audio.partial().optional(),
   segmentsPatch: z.array(EdlSegmentSchema).min(1).optional(),
   hookBannerPatch: EdlSchema.shape.hookBanner.partial().optional(),

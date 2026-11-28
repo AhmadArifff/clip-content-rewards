@@ -181,6 +181,7 @@ export const batchController = {
 
       res.setHeader('Content-Type', resolved.data.contentType);
       res.setHeader('Content-Length', String(resolved.data.sizeBytes));
+      res.setHeader('Cache-Control', 'no-store');
       fs.createReadStream(resolved.data.absPath).pipe(res);
     } catch (err) {
       next(err);

@@ -3,9 +3,9 @@
   "project": "clip-content-rewards",
   "tagline": "AI Auto-Editor, Viral Scorer & Upload Playbook Studio (Monorepo Nuxt 3 + Express TS + SQLite WAL + Local FFmpeg)",
   "active_branch": "main",
-  "status": "COMPLETED_V2_M12",
-  "current_sprint": "M12 Completed (Visual Multi-Track Timeline Editor V2 | 4-Track Interactive NLE + Direct EDL Render)",
-  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11 Pacing Cloner + V2 M12 Visual Timeline Editor) dalam arsitektur Monorepo dengan 3 tema switchable.",
+  "status": "COMPLETED_V2_M13",
+  "current_sprint": "M13 Completed (Smart Face-Tracking Auto-Crop 9:16 & Cover Frame Selector V2)",
+  "active_goal": "Membangun aplikasi lokal clip-content-rewards secara bertahap (M0-M10 v1.0.0 + V2 M11 Pacing Cloner + V2 M12 Visual Timeline + V2 M13 Smart Auto-Track & Cover Selector) dalam arsitektur Monorepo dengan 3 tema switchable.",
   "last_updated": "2026-11-28",
   "completed_milestones": [
     {
@@ -98,15 +98,22 @@
       "status": "VERIFIED_PASS",
       "verified_at": "2026-11-28",
       "details": "Membangun endpoint POST /api/clips/:clipId/render-edl + sourceMediaList pada clip.service.ts, komponen VisualTimelineEditor.vue 4-track dengan live playhead sync <video> (split, trim in/out, zoom, crop, framing, hook/CTA, subtitle safe-zone, audio mixer), Tab 4 di /clips/:clipId pada 3 tema + mobile 390px, 11/11 Vitest PASS, 4/4 Playwright E2E M12 PASS, dan menu-docs V2 visual-timeline-editor.md."
+    },
+    {
+      "id": "M13_SMART_FACE_TRACKING_AUTOCROP_AND_COVER_SELECTOR_V2",
+      "title": "V2: Smart Face-Tracking Auto-Crop 9:16 & Cover Frame Selector (Local FFmpeg RGB24 Vision Engine)",
+      "status": "VERIFIED_PASS",
+      "verified_at": "2026-11-28",
+      "details": "Menambahkan FramingModeSchema auto_face_track + EdlSegmentSchema.focusX (@clip/shared), preset ke-38 master_presets, vision-tracker.service.ts (YCbCr skin cluster + motion/edge tracking & 6-candidate cover ranker tanpa Python/temp file), dynamic centered crop pada edl-renderer.service.ts, integrasi worker & edl-director, endpoint /auto-track-crop, /cover-candidates, /cover-candidate/:idx, PATCH /cover, UI Auto-Deteksi Fokus Subjek + slider Fokus X di VisualTimelineEditor.vue, panel Pemilih Sampul / Cover Terbaik di /clips/:clipId, 12/12 Vitest PASS, 4/4 Playwright E2E M13 PASS (3 tema + mobile 390px), dan menu-docs V2 smart-autocrop-dan-cover.md."
     }
   ],
   "in_progress_milestones": [],
   "recent_changes_summary": [
-    "Push M11 (142a3ce) + Logo Futuristik Quantum Aperture Cut, favicon.svg & Fix Cold-Load Kasus #06 (14a5a1e) ke main & dev",
-    "Membangun endpoint direct EDL render POST /api/clips/:clipId/render-edl & sourceMediaList di clip.service.ts",
-    "Membangun VisualTimelineEditor.vue (4 track interaktif: Overlay Hook/CTA, Video Split/Trim/Zoom/Crop, Subtitle Safe-Zone, Audio Mixer + Live Playhead Sync)",
-    "Mengintegrasikan Tab 4 Timeline Visual di /clips/:clipId (responsif 3 tema + mobile 390px)",
-    "Memverifikasi 11/11 Vitest PASS, 4/4 Playwright E2E M12 PASS, serta menambah menu-docs V2 visual-timeline-editor.md (total 10 menu docs)"
+    "Push M12 (689c685) Visual Multi-Track Timeline Editor ke main & dev",
+    "Membangun mesin vision lokal vision-tracker.service.ts (FFmpeg RGB24 pipe 160x90 @ 2fps: YCbCr skin + motion/edge auto-tracking & 6-candidate cover ranker)",
+    "Mengintegrasikan dynamic crop auto_face_track ke edl-renderer.service.ts, edl-director.service.ts, edl-patcher.service.ts, dan render-queue.worker.ts + preset ke-38",
+    "Menambahkan 4 endpoint baru M13 (/auto-track-crop, /cover-candidates, /cover-candidate/:idx, PATCH /cover) + kontrol Fokus X & Cover Frame Selector di frontend",
+    "Memverifikasi 12/12 Vitest PASS, 4/4 Playwright E2E M13 PASS (3 tema + mobile 390px), Kasus #07 di bug-cases.md, dan menu-docs V2 smart-autocrop-dan-cover.md (11 menu docs)"
   ],
   "established_constraints": [
     "Monorepo: npm Workspaces (packages/shared + apps/api + apps/web) dengan 1 perintah `npm run dev`",
@@ -121,7 +128,7 @@
     "Repository GitHub: https://github.com/AhmadArifff/clip-content-rewards.git (branch main & dev)"
   ],
   "next_actionable_steps": [
-    "Minta izin user untuk commit & push checkpoint M12 (Visual Multi-Track Timeline Editor) ke GitHub (main & dev)",
-    "Tawarkan langkah berikutnya: langsung coba di studio lokal (http://localhost:3000) atau lanjut ke M13 (Smart Face-Tracking Auto-Crop) / M14 (Export Excel Kalender Konten)"
+    "Minta izin user untuk commit & push checkpoint M13 (Smart Face-Tracking Auto-Crop 9:16 & Cover Frame Selector) ke GitHub (main & dev)",
+    "Tawarkan langkah berikutnya: langsung uji di studio lokal (http://localhost:3000) atau lanjut ke M14 (Campaign Content Calendar & Export Excel .xlsx)"
   ]
 }

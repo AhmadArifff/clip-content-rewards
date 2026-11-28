@@ -99,7 +99,10 @@ export function buildDeterministicEdlPatch(params: {
   }
 
   // 3. Kontrol Framing 16:9 -> 9:16
-  if (/fit.?blur|blur background|latar blur/i.test(text)) {
+  if (/auto.?track|face.?track|ikuti wajah|deteksi wajah/i.test(text)) {
+    patch.framingMode = 'auto_face_track';
+    summaries.push('Ubah framing menjadi Smart Auto-Track 9:16 (ikuti fokus wajah/subjek)');
+  } else if (/fit.?blur|blur background|latar blur/i.test(text)) {
     patch.framingMode = 'fit_blur_bg';
     summaries.push('Ubah framing menjadi Fit-Width + Latar Blur');
   } else if (/center.?crop|crop tengah/i.test(text)) {

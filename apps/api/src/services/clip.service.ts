@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   EdlSchema,
   type BriefRulebook,
@@ -7,11 +9,18 @@ import {
   type TranscriptPayload,
   type WordTimestamp
 } from '@clip/shared';
+import { resolveSafeStoragePath } from '../config/storage.js';
 import { batchRepository } from '../repositories/batch.repository.js';
 import { planEdlPatchWithPrompt, type SubtitleOverrideInput } from './ai/edl-patcher.service.js';
 import { evaluateClipVersion } from './ai/viral-evaluator.service.js';
 import { buildTimedCuesFromEdl } from './media/ass-subtitle.builder.js';
 import { renderEdlToMp4, type RenderMediaSource } from './media/edl-renderer.service.js';
+import {
+  analyzeSubjectFocusTrack,
+  extractAndRankCoverCandidates,
+  extractCoverAtTimestamp,
+  type SegmentFocusResult
+} from './media/vision-tracker.service.js';
 
 function safeJson<T>(raw: string | null | undefined, fallback: T): T {
   if (!raw) return fallback;
@@ -389,5 +398,286 @@ export const clipService = {
 
     await batchRepository.updateClip(clip.id, { isApproved });
     return this.getClipDetail(userId, clip.id);
+  },
+
+  async autoTrackCrop(
+    userId: string,
+    clipId: string,
+    inputSegments?: Array<{ mediaAssetId: string; startSec: number; endSec: number }>
+  ): Promise<ServiceResult<unknown>> {
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const activeVer = clip.versions.find((v) => v.id === clip.activeVersionId) ?? clip.versions[0];
+    const baseEdl = activeVer ? safeJson<EdlDocument | null>(activeVer.edlJson, null) : null;
+    const targetSegments =
+      inputSegments && inputSegments.length > 0
+        ? inputSegments
+        : (baseEdl?.segments ?? []).map((s) => ({
+            mediaAssetId: s.mediaAssetId,
+            startSec: s.startSec,
+            endSec: s.endSec
+          }));
+
+    if (targetSegments.length === 0) {
+      return {
+        ok: false,
+        code: 'NO_SEGMENTS_TO_TRACK',
+        message: 'Belum ada segmen video yang bisa dipindai fokus subjeknya.',
+        statusCode: 400
+      };
+    }
+
+    const rawById = new Map(
+      clip.batch.campaign.mediaAssets
+        .filter((m) => m.assetType === 'raw_video')
+        .map((m) => [m.id, m])
+    );
+
+    const grouped = new Map<string, Array<{ origIdx: number; startSec: number; endSec: number }>>();
+    targetSegments.forEach((seg, origIdx) => {
+      const list = grouped.get(seg.mediaAssetId) ?? [];
+      list.push({ origIdx, startSec: seg.startSec, endSec: seg.endSec });
+      grouped.set(seg.mediaAssetId, list);
+    });
+
+    const results: Array<SegmentFocusResult & { mediaAssetId: string }> = new Array(targetSegments.length);
+
+    for (const [mediaAssetId, group] of grouped.entries()) {
+      const asset = rawById.get(mediaAssetId) ?? Array.from(rawById.values())[0];
+      if (!asset) {
+        return {
+          ok: false,
+          code: 'RAW_VIDEO_MISSING',
+          message: 'Berkas video sumber untuk analisis auto-crop tidak ditemukan.',
+          statusCode: 404
+        };
+      }
+      const absPath = resolveSafeStoragePath(asset.filePath);
+      if (!fs.existsSync(absPath)) {
+        return {
+          ok: false,
+          code: 'RAW_VIDEO_FILE_MISSING',
+          message: 'File video sumber tidak ditemukan di penyimpanan lokal.',
+          statusCode: 404
+        };
+      }
+
+      const tracked = await analyzeSubjectFocusTrack(
+        absPath,
+        group.map((g) => ({ startSec: g.startSec, endSec: g.endSec }))
+      );
+
+      tracked.forEach((tr, i) => {
+        const origIdx = group[i].origIdx;
+        results[origIdx] = {
+          ...tr,
+          index: origIdx,
+          mediaAssetId
+        };
+      });
+    }
+
+    return {
+      ok: true,
+      data: {
+        clipId: clip.id,
+        recommendedFramingMode: 'auto_face_track',
+        segments: results
+      }
+    };
+  },
+
+  async getCoverCandidates(
+    userId: string,
+    clipId: string,
+    versionId?: string
+  ): Promise<ServiceResult<unknown>> {
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const ver =
+      (versionId ? clip.versions.find((v) => v.id === versionId) : null) ??
+      clip.versions.find((v) => v.id === clip.activeVersionId) ??
+      clip.versions[0];
+
+    if (!ver || !ver.outputVideoPath) {
+      return {
+        ok: false,
+        code: 'RENDERED_VIDEO_NOT_FOUND',
+        message: 'Video hasil render untuk versi ini belum tersedia.',
+        statusCode: 404
+      };
+    }
+
+    const absVideoPath = resolveSafeStoragePath(ver.outputVideoPath);
+    if (!fs.existsSync(absVideoPath)) {
+      return {
+        ok: false,
+        code: 'RENDERED_VIDEO_FILE_MISSING',
+        message: 'Berkas video hasil render tidak ditemukan di penyimpanan lokal.',
+        statusCode: 404
+      };
+    }
+
+    const absDir = path.dirname(absVideoPath);
+    const candidates = await extractAndRankCoverCandidates(
+      absVideoPath,
+      absDir,
+      ver.actualDurationSec ?? 5
+    );
+    const cacheBust = Date.now();
+
+    return {
+      ok: true,
+      data: {
+        clipId: clip.id,
+        versionId: ver.id,
+        versionNumber: ver.versionNumber,
+        candidates: candidates.map((c) => ({
+          ...c,
+          imageUrl: `/api/clips/${clip.id}/cover-candidate/${c.index}?versionId=${ver.id}&cb=${cacheBust}`
+        }))
+      }
+    };
+  },
+
+  async resolveCoverCandidateFile(
+    userId: string,
+    clipId: string,
+    candidateIdx: number,
+    versionId?: string
+  ): Promise<ServiceResult<{ absPath: string; sizeBytes: number; contentType: string }>> {
+    if (!Number.isInteger(candidateIdx) || candidateIdx < 0 || candidateIdx > 5) {
+      return {
+        ok: false,
+        code: 'INVALID_CANDIDATE_INDEX',
+        message: 'Indeks kandidat cover tidak valid (harus 0 sampai 5).',
+        statusCode: 400
+      };
+    }
+
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const ver =
+      (versionId ? clip.versions.find((v) => v.id === versionId) : null) ??
+      clip.versions.find((v) => v.id === clip.activeVersionId) ??
+      clip.versions[0];
+
+    if (!ver || !ver.outputVideoPath) {
+      return {
+        ok: false,
+        code: 'RENDERED_VIDEO_NOT_FOUND',
+        message: 'Versi video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const relDir = path.posix.dirname(ver.outputVideoPath.replace(/\\/g, '/'));
+    const relThumb = `${relDir}/cover-cand-${candidateIdx}.jpg`;
+    const absPath = resolveSafeStoragePath(relThumb);
+    if (!fs.existsSync(absPath)) {
+      return {
+        ok: false,
+        code: 'COVER_CANDIDATE_NOT_FOUND',
+        message: 'Thumbnail kandidat cover belum dipindai.',
+        statusCode: 404
+      };
+    }
+
+    const stat = fs.statSync(absPath);
+    return {
+      ok: true,
+      data: {
+        absPath,
+        sizeBytes: stat.size,
+        contentType: 'image/jpeg'
+      }
+    };
+  },
+
+  async setCoverFrame(
+    userId: string,
+    clipId: string,
+    input: { versionId?: string; timestampSec: number }
+  ): Promise<ServiceResult<unknown>> {
+    const clip = await batchRepository.findClipForUser(clipId, userId);
+    if (!clip) {
+      return {
+        ok: false,
+        code: 'CLIP_NOT_FOUND',
+        message: 'Klip video tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const ver =
+      (input.versionId ? clip.versions.find((v) => v.id === input.versionId) : null) ??
+      clip.versions.find((v) => v.id === clip.activeVersionId) ??
+      clip.versions[0];
+
+    if (!ver || !ver.outputVideoPath) {
+      return {
+        ok: false,
+        code: 'RENDERED_VIDEO_NOT_FOUND',
+        message: 'Video hasil render belum tersedia untuk diambil frame cover-nya.',
+        statusCode: 404
+      };
+    }
+
+    const absVideoPath = resolveSafeStoragePath(ver.outputVideoPath);
+    if (!fs.existsSync(absVideoPath)) {
+      return {
+        ok: false,
+        code: 'RENDERED_VIDEO_FILE_MISSING',
+        message: 'Berkas video hasil render tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const maxTs = Math.max(0.1, (ver.actualDurationSec ?? 5) - 0.05);
+    const clampedTs = Math.round(Math.min(maxTs, Math.max(0.05, input.timestampSec)) * 100) / 100;
+    const relDir = path.posix.dirname(ver.outputVideoPath.replace(/\\/g, '/'));
+    const relCoverPath = `${relDir}/cover.jpg`;
+    const absCoverPath = resolveSafeStoragePath(relCoverPath);
+
+    await extractCoverAtTimestamp(absVideoPath, absCoverPath, clampedTs);
+
+    if (ver.coverImagePath !== relCoverPath) {
+      await batchRepository.updateClipVersion(ver.id, { coverImagePath: relCoverPath });
+    }
+
+    return {
+      ok: true,
+      data: {
+        updated: true,
+        clipId: clip.id,
+        versionId: ver.id,
+        timestampSec: clampedTs,
+        coverUrl: `/api/clips/${clip.id}/cover?versionId=${ver.id}&cb=${Date.now()}`
+      }
+    };
   }
 };

@@ -2,9 +2,16 @@
 
 Log historis kendala teknis, akar masalah, dan solusi terverifikasi untuk `clip-content-rewards`.
 
-> **Status Saat Ini:** 6 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M11`.
+> **Status Saat Ini:** 7 kasus teknis lokal terverifikasi & diselesaikan sejak `M4`-`M13`.
 
 ---
+
+### Kasus #07: Konflik Manifest `.nuxt` Saat Menjalankan `nuxt build` Bersamaan dengan `nuxt dev` Aktif
+- **Tanggal & Milestone:** `2026-11-28` (`M13`)
+- **Konteks & Gejala (Symptom):** Pengujian E2E produksi (`apps/web/.output/server/index.mjs`) gagal memuat halaman `/login` dengan dua error 404 resource dan `#auth-email` tidak pernah muncul.
+- **Akar Masalah (Root Cause):** Saat `npm run dev` (`nuxt dev`) masih berjalan di latar belakang, proses `nuxt build` berbagi direktori `.nuxt/` sehingga `nuxt dev` menimpa `.nuxt/dist/client/manifest.json` dengan entry mode dev (`@vite/client` & `entry.js`) sebelum Nitro membundel `client.precomputed.mjs`.
+- **Solusi yang Diterapkan (Fix Applied):** Hentikan proses `npm run dev` terlebih dahulu sebelum menjalankan `npm run build -w @clip/web` (lalu nyalakan kembali `npm run dev` setelah build/E2E selesai).
+- **Pelajaran Pencegahan (Key Takeaway):** Jangan pernah menjalankan `nuxt build` dan `nuxt dev` secara bersamaan pada direktori `apps/web` yang sama.
 
 ### Kasus #06: Layar Hitam Kosong Saat Pertama Membuka `http://localhost:3000` di Mode `nuxt dev`
 - **Tanggal & Milestone:** `2026-11-28` (`M11`)

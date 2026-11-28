@@ -75,23 +75,35 @@ export function clampEdlToMediaDurations(
   };
 }
 
+function resolveSegmentFocusX(seg: EdlDocument['segments'][number]): number {
+  if (typeof seg.focusX === 'number' && Number.isFinite(seg.focusX)) {
+    return Math.min(0.92, Math.max(0.08, seg.focusX));
+  }
+  if (seg.cropX === 'left') return 0.18;
+  if (seg.cropX === 'right') return 0.82;
+  return 0.5;
+}
+
 function buildFramingFilter(
   inLabel: string,
   outLabel: string,
   edl: EdlDocument,
-  zoom: number,
+  seg: EdlDocument['segments'][number],
   idx: number
 ): string[] {
   const w = edl.resolution.width;
   const h = edl.resolution.height;
+  const zoom = seg.zoom;
+  const focusX = resolveSegmentFocusX(seg);
+  const cropExpr = `crop=${w}:${h}:x='trunc(clip(iw*${focusX.toFixed(3)}-${w}/2\\,0\\,iw-${w}))':y='trunc((ih-${h})/2)'`;
   const zoomExpr = zoom > 1.01
-    ? `scale=trunc(iw*${zoom.toFixed(2)}/2)*2:trunc(ih*${zoom.toFixed(2)}/2)*2,crop=${w}:${h}`
+    ? `scale=trunc(iw*${zoom.toFixed(2)}/2)*2:trunc(ih*${zoom.toFixed(2)}/2)*2,${cropExpr}`
     : '';
 
-  if (edl.aspectRatio === '16:9' || edl.framingMode === 'center_crop') {
+  if (edl.aspectRatio === '16:9' || edl.framingMode === 'center_crop' || edl.framingMode === 'auto_face_track') {
     const chain = [
       `scale=${w}:${h}:force_original_aspect_ratio=increase`,
-      `crop=${w}:${h}`,
+      cropExpr,
       ...(zoomExpr ? [zoomExpr] : []),
       'setsar=1'
     ].join(',');
@@ -182,7 +194,7 @@ export async function renderEdlToMp4(params: {
     filterParts.push(
       `[${inIdx}:v]trim=start=${seg.startSec.toFixed(2)}:end=${seg.endSec.toFixed(2)},setpts=PTS-STARTPTS${rawV}`
     );
-    filterParts.push(...buildFramingFilter(rawV, framedV, clampedEdl, seg.zoom, idx));
+    filterParts.push(...buildFramingFilter(rawV, framedV, clampedEdl, seg, idx));
     videoConcatLabels.push(framedV);
 
     if (!shouldMute) {
