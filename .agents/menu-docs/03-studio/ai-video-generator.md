@@ -112,6 +112,7 @@ graph TD
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-26 | `HEAD` | AhmadArifff | **M6** | Implementasi Target Audience Matrix, Reusable Target Profiles, AI Director EDL Planner, Local Queue + SSE, FFmpeg 9:16 Safe-Zone Renderer & Range Streaming. |
 | 2026-11-28 | `HEAD` | AhmadArifff | **M17** | Upgrade Multi-Video Director (distribusi seluruh `rawVideos[]`), Anti-Cut Speech Boundary Snapper + `clipEndingMode` (`complete_story`/`full_source`/`part_series`), skema ringkas Gemini AI Director, dan Kunci Bahasa Target Negara (US/Global -> 100% English on-screen). |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M19** | Upgrade AI Multimodal Cinema Remix Engine 100% Gratis: Auto-Transcribe sebelum generate, FFmpeg Contact-Sheet Storyboard Indexer -> Gemini Vision (`thinkingBudget: 0` fix), True Cross-Video Montage (5 struktur film berbeda menggabungkan banyak video mentah), FFmpeg Cinema VFX (`xfade`, `acrossfade`, 5 Color Grading, Speed Ramp, `zoompan` Motion), serta transparansi badge Director & Remix di Batch UI. |
 
 ---
 

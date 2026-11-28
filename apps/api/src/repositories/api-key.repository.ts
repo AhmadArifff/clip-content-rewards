@@ -91,6 +91,32 @@ export const apiKeyRepository = {
     });
   },
 
+  updateMetadata(
+    id: string,
+    data: { label?: string; defaultModel?: string; isActive?: boolean; resetTestStatus?: boolean }
+  ) {
+    return prisma.apiKey.update({
+      where: { id },
+      data: {
+        ...(data.label !== undefined ? { label: data.label } : {}),
+        ...(data.defaultModel !== undefined ? { defaultModel: data.defaultModel } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        ...(data.resetTestStatus ? { lastTestOk: null, lastTestedAt: null } : {})
+      },
+      select: {
+        id: true,
+        provider: true,
+        role: true,
+        label: true,
+        maskedPreview: true,
+        defaultModel: true,
+        isActive: true,
+        lastTestedAt: true,
+        lastTestOk: true
+      }
+    });
+  },
+
   deleteById(id: string) {
     return prisma.apiKey.delete({ where: { id } });
   }

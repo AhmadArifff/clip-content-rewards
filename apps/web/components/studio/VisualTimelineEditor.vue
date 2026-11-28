@@ -216,7 +216,11 @@ function handleAddSegment() {
     startSec: Math.round(startSec * 100) / 100,
     endSec: Math.max(startSec + 0.5, endSec),
     zoom: 1.0,
-    cropX: 'center'
+    cropX: 'center',
+    transition: 'fade',
+    transitionDurationSec: 0.3,
+    speed: 1.0,
+    motion: 'none'
   });
   selectedSegIdx.value = draft.value.segments.length - 1;
 }

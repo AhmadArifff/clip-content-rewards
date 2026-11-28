@@ -4,8 +4,8 @@
 **Author:** Product Management & Architecture Team
 **Owner:** AhmadArifff
 **Date:** 2026-11-28
-**Version:** v1.3
-**Status:** Production V2 Active (M0-M18 Verified)
+**Version:** v1.4
+**Status:** Production V2 Active (M0-M19 Verified | M20 Roadmap Logged)
 **Repository:** `https://github.com/AhmadArifff/clip-content-rewards.git`
 **Technical Blueprint:** [technical-blueprint-m3.md](./.agents/knowledge/technical-blueprint-m3.md)
 
@@ -355,6 +355,29 @@ Download Satuan (.mp4 + playbook + .srt + cover)  ATAU  Download Keseluruhan (St
 
 ---
 
+### Epic 8: AI Multimodal Cinema Director, Multi-Video Remix Engine & Generative B-Roll Roadmap (`M19` & `M20`)
+
+#### Story 8.1: Multi-Video Cinema Remix 100% Gratis (Gemini Vision + FFmpeg 8.1.2 Cinema VFX + Edit Model BYOK) (`M19`)
+**As a** kreator konten,
+**I want to** menggabungkan momen-momen terbaik dari banyak video mentah (Video 1 + Video 2 + Video 3) menjadi 1 film pendek baru bergaya sinematik dengan transisi halus, color grading, gerak kamera, dan AI yang benar-benar melihat isi visual video secara 100% gratis, serta dapat mengedit nama model API Key tersimpan (seperti `gemini-3.5-flash`) tanpa menempel ulang kunci rahasia,
+**So that** hasil editan terasa seperti karya editor film / CapCut AI profesional dan bukan sekadar video mentah ditempel teks.
+
+**Priority:** `P0 (V2 Core Cinema)` | **Milestone:** `M19`
+
+**Acceptance Criteria:**
+- [ ] **Given** user memiliki kunci BYOK tersimpan di `/settings/api-keys`, **When** user menekan tombol **Ubah Model**, **Then** user dapat mengganti `defaultModel` (termasuk memilih atau mengetik `gemini-3.5-flash`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`) dan nama penanda tanpa mengubah secret terenkripsi, lalu menguji ketersediaan model lewat tombol **Uji Koneksi**.
+- [ ] **Given** user mengunggah `>= 2` video mentah dan memilih mode **`Cinema AI Remix`**, **When** batch dimulai, **Then** sistem otomatis mentranskrip video ber-audio yang belum ditranskrip (`Groq Whisper` / `Gemini STT`), mengekstrak contact-sheet storyboard `3x2` lokal (100% gratis) untuk dikirim ke **Gemini Multimodal Vision AI** (dengan `thinkingBudget: 0` untuk model `2.5-flash` & waterfall otomatis), lalu merakit variasi film pendek yang menggabungkan segmen lintas video (`>= 2` sumber berbeda dalam 1 klip) menggunakan FFmpeg 8.1.2 (`xfade` transitions, `acrossfade` audio, 5 preset Cinema Color Grading, per-segment Speed Ramp `0.6x-1.6x`, dan smooth `zoompan` camera motion).
+- [ ] **Given** batch selesai dirender, **When** user melihat halaman Detail Batch, **Then** tampil indikator transparan sumber penyutradaraan (`Disutradarai Gemini Vision AI` vs `Mode Cinema Lokal` beserta alasannya) serta lencana `Remix N Video | M Shot | K Transisi` pada setiap kartu klip.
+
+#### Story 8.2: Opsional BYOK Generative Video B-Roll Bridge (Seedance / Veo / fal.ai) (`M20` - Backlog Opsional)
+**As a** kreator yang ingin menyisipkan adegan B-Roll generatif baru dari nol (di luar rekaman kamera mentah),
+**I want to** menyambungkan kunci BYOK penyedia video generatif opsional (seperti Seedance via fal.ai / Atlas Cloud atau Google Veo) di `/settings/api-keys`,
+**So that** AI Director dapat menghasilkan klip B-Roll 5 detik berbayar per penggunaan hanya saat diaktifkan eksplisit oleh saya dan menggabungkannya ke timeline `M19`.
+
+**Priority:** `P2 (Optional Paid BYOK Expansion)` | **Milestone:** `M20 (Planned)`
+
+---
+
 ## 7. Core Data Contracts (Overview)
 
 ### 7.1 Entity Overview (SQLite WAL + Prisma - Detail Skema di `technical-blueprint-m3.md`)
@@ -508,3 +531,4 @@ Setiap video dihasilkan dan diedit ulang melalui satu kontrak JSON yang divalida
 | `v1.1` | 2026-11-26 | AhmadArifff & AI Architect/Critic | M3 Gap Audit upgrade: Menambahkan Whisper audio chunking (<=20MB/chunk) untuk video >1 jam, supporting assets (watermark/logo/outro/B-roll), 3 mode framing 16:9->9:16, reusable `target_profiles`, anti-duplicate batch diversity mode, bundled local Windows fonts, audio diagnostic pre-generate, serta tautan ke `technical-blueprint-m3.md`. |
 | `v1.2` | 2026-11-28 | AhmadArifff & AI Architect | M16-M17 Field Feedback upgrade: Menambahkan Free-Tier AI Quota Guard + Gemini Native Audio STT, Multi-Raw-Video Distribution, Anti-Cut Speech Boundary Snapper & `clipEndingMode` (`complete_story`/`full_source`/`part_series`), Target-Country Content Language Lock (anti-leak algoritma luar negeri), dan kalibrasi Safe-Zone Overlay TikTok & YouTube Shorts sesuai antarmuka HP aktual 2026. |
 | `v1.3` | 2026-11-28 | AhmadArifff & AI Architect | M18 Storage Maintenance & Content Lifecycle Retention (Epic 7): Menambahkan 9 skenario lapangan pemeliharaan disk lokal, tracking interaksi (`lastInspectedAt`/`downloadCount`), alert retensi 14/30 hari + badge sidebar, Arsip Ringan (hapus MP4 pertahankan Playbook/Kalender/Excel), pembersih versi non-aktif/orphan/raw lama, kebijakan Zero Silent Auto-Delete, dan `StorageCleanupLog`. |
+| `v1.4` | 2026-11-28 | AhmadArifff & AI Architect | M19 AI Multimodal Cinema Director & Multi-Video Remix Engine 100% Gratis (Epic 8): Menambahkan Edit Nama Model BYOK (`gemini-3.5-flash` dll.), Auto-Transcribe sebelum generate, FFmpeg Contact-Sheet Storyboard Indexer untuk Gemini Vision, True Cross-Video Cinema Remix (5 struktur film berbeda), FFmpeg Cinema VFX (`xfade`, `acrossfade`, 5 Color Grading, Speed Ramp, Motion), serta pencatatan roadmap opsional M20 (BYOK Generative Video B-Roll Seedance/Veo/fal.ai). |

@@ -106,10 +106,17 @@ export function extractJsonObject(rawText: string): unknown {
   return JSON.parse(candidate.slice(start, end + 1));
 }
 
+export interface MultimodalImagePart {
+  label?: string;
+  mimeType: string;
+  dataBase64: string;
+}
+
 async function callGeminiWithWaterfall(params: {
   key: ActiveAiKeyRecord;
   systemPrompt: string;
   userPrompt: string;
+  images?: MultimodalImagePart[];
   temperature: number;
   maxOutputTokens: number;
   signal: AbortSignal;
@@ -125,22 +132,45 @@ async function callGeminiWithWaterfall(params: {
         : 3500;
   let lastError: Error = new Error('Gemini gagal merespons');
 
+  const userParts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
+  for (const img of params.images ?? []) {
+    if (img.label) {
+      userParts.push({ text: img.label });
+    }
+    userParts.push({
+      inlineData: {
+        mimeType: img.mimeType,
+        data: img.dataBase64
+      }
+    });
+  }
+  userParts.push({ text: params.userPrompt });
+
   for (const model of models) {
+    let disableThinking = /gemini-2\.5-(flash|flash-lite)/i.test(model);
+
     for (let attempt = 0; attempt < 2; attempt += 1) {
       await paceGeminiRequest(params.minGapMs);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(params.key.rawApiKey)}`;
+
+      const generationConfig: Record<string, unknown> = {
+        temperature: params.temperature,
+        maxOutputTokens: params.maxOutputTokens,
+        responseMimeType: 'application/json'
+      };
+      // Hindari thinking tokens memotong JSON output pada model gemini-2.5-flash Free Tier
+      if (disableThinking) {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: params.signal,
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: params.systemPrompt }] },
-          contents: [{ role: 'user', parts: [{ text: params.userPrompt }] }],
-          generationConfig: {
-            temperature: params.temperature,
-            maxOutputTokens: params.maxOutputTokens,
-            responseMimeType: 'application/json'
-          }
+          contents: [{ role: 'user', parts: userParts }],
+          generationConfig
         })
       });
 
@@ -156,9 +186,14 @@ async function callGeminiWithWaterfall(params: {
         };
       }
 
+      // Jika model baru menolak thinkingConfig dengan HTTP 400, ulangi 1x tanpa thinkingConfig
+      if (res.status === 400 && disableThinking && attempt === 0) {
+        disableThinking = false;
+        continue;
+      }
+
       lastError = new Error(`Gemini HTTP ${res.status} (${model})`);
       if (res.status === 429 || res.status === 503) {
-        // Pada percobaan pertama tunggu sejenak, lalu pada percobaan kedua pindah ke model lebih ringan (waterfall)
         if (attempt === 0) {
           const retryAfterSec = Number(res.headers.get('retry-after') ?? '0');
           const waitMs =
@@ -171,7 +206,6 @@ async function callGeminiWithWaterfall(params: {
         break;
       }
 
-      // Status 404 (model tidak tersedia) -> coba model berikutnya dalam waterfall; error lain (400/401/403) hentikan
       if (res.status === 404) {
         break;
       }
@@ -186,6 +220,7 @@ export async function generateStructuredJsonWithByok(params: {
   key: ActiveAiKeyRecord;
   systemPrompt: string;
   userPrompt: string;
+  images?: MultimodalImagePart[];
   temperature?: number;
   maxOutputTokens?: number;
   timeoutMs?: number;
@@ -196,9 +231,10 @@ export async function generateStructuredJsonWithByok(params: {
     key,
     systemPrompt,
     userPrompt,
+    images,
     temperature = 0.2,
     maxOutputTokens = 2048,
-    timeoutMs = 55000,
+    timeoutMs = images && images.length > 0 ? 75000 : 55000,
     minGapMs,
     retryDelayMs
   } = params;
@@ -215,6 +251,7 @@ export async function generateStructuredJsonWithByok(params: {
         key,
         systemPrompt,
         userPrompt,
+        images,
         temperature,
         maxOutputTokens,
         signal: controller.signal,

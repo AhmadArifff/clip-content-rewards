@@ -8,5 +8,6 @@ apiKeyRouter.use(requireAuth);
 apiKeyRouter.get('/', apiKeyController.list);
 apiKeyRouter.post('/', apiKeyController.create);
 apiKeyRouter.post('/:id/test', apiKeyController.testConnection);
+apiKeyRouter.patch('/:id', apiKeyController.update);
 apiKeyRouter.patch('/:id/toggle', apiKeyController.toggle);
 apiKeyRouter.delete('/:id', apiKeyController.remove);

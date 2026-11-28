@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import type { AiKeyRole, AiProvider } from '@clip/shared';
-import { KeyRound, PlugZap, Trash2, CheckCircle2, XCircle, Plus } from 'lucide-vue-next';
+import { KeyRound, PlugZap, Trash2, CheckCircle2, XCircle, Plus, Pencil, Check, X } from 'lucide-vue-next';
 import StudioShell from '~/components/layout/StudioShell.vue';
 import DoctorPanel, { type DoctorReport } from '~/components/studio/DoctorPanel.vue';
 import { apiRequest } from '~/composables/useApi';
@@ -30,7 +30,7 @@ const doctorLoading = ref(false);
 
 const keys = ref<MaskedApiKeyItem[]>([]);
 const catalog = ref<ProviderCatalog>({
-  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] },
+  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] },
   openai: { role: 'brain', models: ['gpt-4o-mini', 'gpt-4o', 'whisper-1'] },
   anthropic: { role: 'brain', models: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'] },
   openrouter: { role: 'brain', models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini'] },
@@ -38,6 +38,11 @@ const catalog = ref<ProviderCatalog>({
   deepgram: { role: 'stt', models: ['nova-3', 'nova-2'] }
 });
 const loadingKeys = ref(false);
+
+const editingKeyId = ref<string | null>(null);
+const editLabel = ref('');
+const editModel = ref('');
+const updatingKey = ref(false);
 
 const provider = ref<AiProvider>('gemini');
 const role = ref<AiKeyRole>('brain');
@@ -142,6 +147,39 @@ async function handleToggle(item: MaskedApiKeyItem) {
     await Promise.all([fetchKeys(), fetchDoctor()]);
   } catch (err) {
     showToast('err', err instanceof Error ? err.message : 'Gagal memperbarui status kunci.');
+  }
+}
+
+function startEditKey(item: MaskedApiKeyItem) {
+  editingKeyId.value = item.id;
+  editLabel.value = item.label;
+  editModel.value = item.defaultModel;
+}
+
+function cancelEditKey() {
+  editingKeyId.value = null;
+  editLabel.value = '';
+  editModel.value = '';
+}
+
+async function handleSaveEditKey(id: string) {
+  if (!editModel.value.trim()) return;
+  updatingKey.value = true;
+  try {
+    await apiRequest(`/api/api-keys/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        label: editLabel.value.trim() || undefined,
+        defaultModel: editModel.value.trim()
+      })
+    });
+    showToast('ok', `Model berhasil diperbarui ke "${editModel.value.trim()}". Klik Uji Koneksi untuk verifikasi.`);
+    cancelEditKey();
+    await fetchKeys();
+  } catch (err) {
+    showToast('err', err instanceof Error ? err.message : 'Gagal mengubah model kunci API.');
+  } finally {
+    updatingKey.value = false;
   }
 }
 
@@ -296,52 +334,113 @@ onMounted(() => {
             <article
               v-for="item in keys"
               :key="item.id"
-              class="p-4 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              class="p-4 rounded space-y-3"
               style="background: var(--bg-elevated); border: var(--border-width) solid var(--border-color);"
             >
-              <div class="space-y-1 min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-sm truncate">{{ item.label }}</span>
-                  <span class="font-mono text-[11px] px-1.5 py-0.5 rounded uppercase" style="background: var(--accent-soft-bg); color: var(--accent-soft-fg);">
-                    {{ item.provider }} / {{ item.role }}
-                  </span>
-                  <span
-                    v-if="item.lastTestOk !== null"
-                    class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded font-semibold"
-                    :class="item.lastTestOk ? 'studio-badge-ok' : 'studio-badge-err'"
-                  >
-                    <CheckCircle2 v-if="item.lastTestOk" class="w-3 h-3" />
-                    <XCircle v-else class="w-3 h-3" />
-                    <span>{{ item.lastTestOk ? 'Terhubung' : 'Gagal Uji' }}</span>
-                  </span>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm truncate">{{ item.label }}</span>
+                    <span class="font-mono text-[11px] px-1.5 py-0.5 rounded uppercase" style="background: var(--accent-soft-bg); color: var(--accent-soft-fg);">
+                      {{ item.provider }} / {{ item.role }}
+                    </span>
+                    <span
+                      v-if="item.lastTestOk !== null"
+                      class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded font-semibold"
+                      :class="item.lastTestOk ? 'studio-badge-ok' : 'studio-badge-err'"
+                    >
+                      <CheckCircle2 v-if="item.lastTestOk" class="w-3 h-3" />
+                      <XCircle v-else class="w-3 h-3" />
+                      <span>{{ item.lastTestOk ? 'Terhubung' : 'Gagal Uji' }}</span>
+                    </span>
+                  </div>
+                  <p class="font-mono text-xs studio-muted">
+                    {{ item.maskedPreview }} | Model: <strong class="text-[var(--text-primary)]">{{ item.defaultModel }}</strong>
+                  </p>
                 </div>
-                <p class="font-mono text-xs studio-muted">
-                  {{ item.maskedPreview }} | Model: {{ item.defaultModel }}
-                </p>
+
+                <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    class="studio-btn-secondary text-xs"
+                    @click="editingKeyId === item.id ? cancelEditKey() : startEditKey(item)"
+                  >
+                    <Pencil class="w-3.5 h-3.5" />
+                    <span>Ubah Model</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="studio-btn-secondary"
+                    :disabled="testingId === item.id"
+                    @click="handleTestKey(item.id)"
+                  >
+                    <PlugZap class="w-4 h-4" />
+                    <span>{{ testingId === item.id ? 'Menguji...' : 'Uji Koneksi' }}</span>
+                  </button>
+                  <button type="button" class="studio-btn-secondary" @click="handleToggle(item)">
+                    <span>{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="studio-btn-secondary"
+                    aria-label="Hapus kunci API"
+                    @click="handleDelete(item.id)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <div class="flex items-center gap-2 shrink-0 flex-wrap">
-                <button
-                  type="button"
-                  class="studio-btn-secondary"
-                  :disabled="testingId === item.id"
-                  @click="handleTestKey(item.id)"
-                >
-                  <PlugZap class="w-4 h-4" />
-                  <span>{{ testingId === item.id ? 'Menguji...' : 'Uji Koneksi' }}</span>
-                </button>
-                <button type="button" class="studio-btn-secondary" @click="handleToggle(item)">
-                  <span>{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="studio-btn-secondary"
-                  aria-label="Hapus kunci API"
-                  @click="handleDelete(item.id)"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
+              <!-- Form Inline Edit Nama Model & Label tanpa perlu menempel ulang kunci rahasia (M19) -->
+              <form
+                v-if="editingKeyId === item.id"
+                class="p-3 rounded space-y-2.5"
+                style="background: var(--bg-surface); border: 1px solid var(--border-color);"
+                @submit.prevent="handleSaveEditKey(item.id)"
+              >
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div class="space-y-1">
+                    <label :for="`edit-label-${item.id}`" class="block text-[11px] font-semibold">Nama Penanda</label>
+                    <input :id="`edit-label-${item.id}`" v-model="editLabel" type="text" required class="studio-input text-xs" />
+                  </div>
+                  <div class="space-y-1">
+                    <label :for="`edit-model-${item.id}`" class="block text-[11px] font-semibold">Nama Model AI (Bebas Ketik / Pilih Cepat)</label>
+                    <input
+                      :id="`edit-model-${item.id}`"
+                      v-model="editModel"
+                      type="text"
+                      required
+                      placeholder="Contoh: gemini-3.5-flash"
+                      class="studio-input font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] studio-muted">Pilih cepat:</span>
+                  <button
+                    v-for="m in (catalog[item.provider]?.models ?? [])"
+                    :key="m"
+                    type="button"
+                    class="px-2 py-0.5 rounded font-mono text-[11px] border"
+                    :style="editModel === m ? { background: 'var(--accent-bg)', color: 'var(--accent-fg)', borderColor: 'var(--accent-bg)' } : { background: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }"
+                    @click="editModel = m"
+                  >
+                    {{ m }}
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                  <button type="button" class="studio-btn-secondary text-xs" @click="cancelEditKey">
+                    <X class="w-3.5 h-3.5" />
+                    <span>Batal</span>
+                  </button>
+                  <button type="submit" class="studio-btn-primary text-xs" :disabled="updatingKey || !editModel.trim()">
+                    <Check class="w-3.5 h-3.5" />
+                    <span>{{ updatingKey ? 'Menyimpan...' : 'Simpan Model' }}</span>
+                  </button>
+                </div>
+              </form>
             </article>
           </div>
         </section>

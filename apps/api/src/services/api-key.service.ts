@@ -4,7 +4,7 @@ import { decryptSecret, encryptSecret, maskApiKey } from '../utils/crypto.js';
 import { pingAiProvider } from './ai/provider-ping.adapter.js';
 
 export const PROVIDER_DEFAULT_MODELS: Record<AiProvider, { role: AiKeyRole; models: string[] }> = {
-  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] },
+  gemini: { role: 'brain', models: ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] },
   openai: { role: 'brain', models: ['gpt-4o-mini', 'gpt-4o', 'whisper-1'] },
   anthropic: { role: 'brain', models: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'] },
   openrouter: { role: 'brain', models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet'] },
@@ -72,7 +72,7 @@ export const apiKeyService = {
       authTag: raw.authTag
     });
 
-    const ping = await pingAiProvider(raw.provider as AiProvider, plaintext);
+    const ping = await pingAiProvider(raw.provider as AiProvider, plaintext, raw.defaultModel);
     const updated = await apiKeyRepository.updateTestStatus(raw.id, ping.ok);
 
     return {
@@ -96,6 +96,31 @@ export const apiKeyService = {
     }
 
     const updated = await apiKeyRepository.toggleActive(raw.id, isActive);
+    return { ok: true, data: updated };
+  },
+
+  async updateKey(
+    userId: string,
+    keyId: string,
+    input: { label?: string; defaultModel?: string; isActive?: boolean }
+  ): Promise<ServiceResult<unknown>> {
+    const raw = await apiKeyRepository.findRawForUser(keyId, userId);
+    if (!raw) {
+      return {
+        ok: false,
+        code: 'API_KEY_NOT_FOUND',
+        message: 'Kunci API tidak ditemukan.',
+        statusCode: 404
+      };
+    }
+
+    const modelChanged = input.defaultModel !== undefined && input.defaultModel !== raw.defaultModel;
+    const updated = await apiKeyRepository.updateMetadata(raw.id, {
+      label: input.label,
+      defaultModel: input.defaultModel,
+      isActive: input.isActive,
+      resetTestStatus: modelChanged
+    });
     return { ok: true, data: updated };
   },
 

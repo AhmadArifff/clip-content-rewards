@@ -1,19 +1,26 @@
 import { z } from 'zod';
 import {
   EdlSchema,
+  SegmentMotionSchema,
+  SegmentTransitionSchema,
   type BriefRulebook,
+  type CinemaColorGrade,
   type ClipEndingMode,
+  type EditAssemblyMode,
   type EdlDocument,
   type PacingBlueprint,
+  type SegmentMotion,
+  type SegmentTransition,
   type SilenceInterval,
   type TargetConfig,
   type TranscriptPayload
 } from '@clip/shared';
-import { generateStructuredJsonWithByok, getActiveKeyForRole } from './llm-json.adapter.js';
+import { generateStructuredJsonWithByok, getActiveKeyForRole, type MultimodalImagePart } from './llm-json.adapter.js';
 import {
   resolveContentLanguage,
   snapSegmentToSpeechBoundary
 } from './content-language.helper.js';
+import type { VideoStoryboard } from '../media/vision-storyboard.service.js';
 
 export interface DirectorRawSource {
   id: string;
@@ -44,7 +51,11 @@ const AiCompactSegmentSchema = z.object({
   startSec: z.number().min(0),
   endSec: z.number().positive(),
   zoom: z.number().min(1).max(2.5).optional(),
-  cropX: z.enum(['left', 'center', 'right']).optional()
+  cropX: z.enum(['left', 'center', 'right']).optional(),
+  transition: SegmentTransitionSchema.optional(),
+  transitionDurationSec: z.number().min(0.1).max(0.8).optional(),
+  speed: z.number().min(0.6).max(1.6).optional(),
+  motion: SegmentMotionSchema.optional()
 });
 
 const AiCompactClipSchema = z.object({
@@ -76,9 +87,9 @@ export async function estimateBatchCost(params: {
   const brainKey = await getActiveKeyForRole(params.userId, 'brain');
   const briefTokens = Math.ceil(params.briefTextLength / 4);
   const transcriptTokens = Math.ceil(params.transcriptWordCount * 1.4);
-  const estimatedInputTokens = 800 + briefTokens + Math.min(transcriptTokens, 8000);
-  const estimatedOutputTokens = params.batchCount * 550;
-  const estimatedRenderSeconds = Math.max(8, params.batchCount * Math.ceil(params.targetDurationSec * 0.45));
+  const estimatedInputTokens = 1100 + briefTokens + Math.min(transcriptTokens, 8000);
+  const estimatedOutputTokens = params.batchCount * 650;
+  const estimatedRenderSeconds = Math.max(10, params.batchCount * Math.ceil(params.targetDurationSec * 0.55));
 
   return {
     estimatedInputTokens,
@@ -168,7 +179,11 @@ function buildPacedSegmentsFromBlueprint(params: {
         startSec: Math.round(windowStartSec * 100) / 100,
         endSec: Math.round(Math.min(mediaDurationSec, Math.max(windowStartSec + 0.6, windowEndSec)) * 100) / 100,
         zoom: variantIdx % 2 === 1 ? 1.1 : 1.0,
-        cropX: 'center'
+        cropX: 'center',
+        transition: 'cut',
+        transitionDurationSec: 0.3,
+        speed: 1.0,
+        motion: 'none'
       }
     ];
   }
@@ -194,24 +209,18 @@ function buildPacedSegmentsFromBlueprint(params: {
       startSec: Math.round(segStart * 100) / 100,
       endSec: Math.round(segEnd * 100) / 100,
       zoom: Math.round(Math.min(1.5, Math.max(1.0, zoom)) * 100) / 100,
-      cropX: 'center'
+      cropX: 'center',
+      transition: 'cut',
+      transitionDurationSec: 0.3,
+      speed: 1.0,
+      motion: 'none'
     });
 
     cursor = segEnd;
     if (cursor >= Math.min(windowEndSec, mediaDurationSec) - 0.45) break;
   }
 
-  return segments.length > 0
-    ? segments
-    : [
-        {
-          mediaAssetId,
-          startSec: Math.round(windowStartSec * 100) / 100,
-          endSec: Math.round(Math.min(mediaDurationSec, windowEndSec) * 100) / 100,
-          zoom: 1.0,
-          cropX: 'center'
-        }
-      ];
+  return segments;
 }
 
 function getLocalizedTemplates(targetConfig: TargetConfig, rulebook: BriefRulebook | null) {
@@ -221,10 +230,17 @@ function getLocalizedTemplates(targetConfig: TargetConfig, rulebook: BriefRulebo
   if (lang.code === 'en') {
     const cleanNiche = /^[a-z0-9\s&/+-]+$/i.test(targetConfig.personaNiche) && !/kreator|pekerja muda/i.test(targetConfig.personaNiche)
       ? targetConfig.personaNiche
-      : 'this';
+      : 'this drop';
     return {
       lang,
-      angles: [
+      cinemaAngles: [
+        { title: 'Cinema Trailer Remix', hook: `Wait until you see how this unfolds (${cleanNiche})` },
+        { title: 'A-Roll + B-Roll Story Cut', hook: 'Behind the scenes nobody expected' },
+        { title: 'Flash-Forward Climax Edit', hook: `Watch the ending first, then see how it started` },
+        { title: 'High-Energy Commercial Cut', hook: `Blink and you will miss the best moment` },
+        { title: 'Cinematic Showcase Montage', hook: 'Every angle brought together in one reel' }
+      ],
+      singleAngles: [
         { title: 'Direct Hook Cut', hook: `Wait until you see this (${cleanNiche})` },
         { title: 'Contrast Angle', hook: 'Most people get this completely wrong' },
         { title: 'Key Takeaway', hook: `Watch this before you scroll (${targetConfig.countryCode})` },
@@ -233,18 +249,21 @@ function getLocalizedTemplates(targetConfig: TargetConfig, rulebook: BriefRulebo
       ],
       defaultCta: hashtagsSnippet ? `Check details now ${hashtagsSnippet}` : 'Follow & save for later!',
       partTeaserCta: (nextPart: number) =>
-        hashtagsSnippet
-          ? `Follow for Part ${nextPart}! ${hashtagsSnippet}`
-          : `Follow for Part ${nextPart}!`,
-      partFinalCta: hashtagsSnippet
-        ? `Watch Part 1 on profile! ${hashtagsSnippet}`
-        : 'Watch Part 1 on profile & follow for more!'
+        hashtagsSnippet ? `Follow for Part ${nextPart}! ${hashtagsSnippet}` : `Follow for Part ${nextPart}!`,
+      partFinalCta: hashtagsSnippet ? `Watch Part 1 on profile! ${hashtagsSnippet}` : 'Watch Part 1 on profile & follow for more!'
     };
   }
 
   return {
     lang,
-    angles: [
+    cinemaAngles: [
+      { title: 'Remix Trailer Sinematik', hook: `Tunggu sampai akhir, begini gabungannya!` },
+      { title: 'Cerita A-Roll + B-Roll', hook: 'Momen di balik layar yang bikin nagih' },
+      { title: 'Hook Flash-Forward Klimaks', hook: 'Lihat puncaknya dulu, baru awal ceritanya' },
+      { title: 'Komersial Cepat Multi-Angle', hook: 'Jangan kedip, semua momen terbaik disatukan' },
+      { title: 'Montage Sinematik Penuh', hook: 'Gabungan sudut terbaik dalam satu tayangan' }
+    ],
+    singleAngles: [
       { title: 'Angle Hook Langsung', hook: `Stop scroll! Ini rahasia ${targetConfig.personaNiche}` },
       { title: 'Angle Sudut Kontras', hook: 'Kebanyakan orang masih salah langkah di sini' },
       { title: 'Angle Poin Cepat', hook: `Wajib tahu sebelum terlambat (${targetConfig.countryCode})` },
@@ -253,12 +272,18 @@ function getLocalizedTemplates(targetConfig: TargetConfig, rulebook: BriefRulebo
     ],
     defaultCta: hashtagsSnippet ? `Cek detail sekarang ${hashtagsSnippet}` : 'Ikuti dan simpan untuk referensi!',
     partTeaserCta: (nextPart: number) =>
-      hashtagsSnippet
-        ? `Lanjut ke Part ${nextPart}! ${hashtagsSnippet}`
-        : `Ikuti untuk lanjut ke Part ${nextPart}!`,
-    partFinalCta: hashtagsSnippet
-      ? `Tonton Part 1 di profil! ${hashtagsSnippet}`
-      : 'Tonton Part 1 di profil & simpan video ini!'
+      hashtagsSnippet ? `Lanjut ke Part ${nextPart}! ${hashtagsSnippet}` : `Ikuti untuk lanjut ke Part ${nextPart}!`,
+    partFinalCta: hashtagsSnippet ? `Tonton Part 1 di profil! ${hashtagsSnippet}` : 'Tonton Part 1 di profil & simpan video ini!'
+  };
+}
+
+function clampSlice(src: DirectorRawSource, start: number, len: number): { startSec: number; endSec: number } {
+  const dur = Math.max(1.2, src.durationSec);
+  const safeStart = Math.max(0, Math.min(start, Math.max(0, dur - 0.8)));
+  const safeEnd = Math.min(dur, Math.max(safeStart + 0.7, safeStart + len));
+  return {
+    startSec: Math.round(safeStart * 100) / 100,
+    endSec: Math.round(safeEnd * 100) / 100
   };
 }
 
@@ -267,8 +292,11 @@ function buildCompleteEdl(params: {
   segments: EdlDocument['segments'];
   hookText: string;
   ctaText: string;
+  colorGrade?: CinemaColorGrade;
+  directorMode?: 'ai_vision' | 'ai_text' | 'local_cinema_heuristic';
+  directorNote?: string;
 }): EdlDocument {
-  const { targetConfig, segments, hookText, ctaText } = params;
+  const { targetConfig, segments, hookText, ctaText, colorGrade, directorMode, directorNote } = params;
   const isVertical = targetConfig.platform !== 'youtube_long';
   const resolution = isVertical
     ? { width: 1080, height: 1920, fps: 30 }
@@ -281,7 +309,7 @@ function buildCompleteEdl(params: {
         ? 'youtube_shorts_9_16'
         : 'youtube_16_9';
 
-  const totalClipDur = segments.reduce((sum, s) => sum + Math.max(0.5, s.endSec - s.startSec), 0);
+  const totalClipDur = segments.reduce((sum, s) => sum + Math.max(0.5, (s.endSec - s.startSec) / (s.speed ?? 1.0)), 0);
 
   return EdlSchema.parse({
     schemaVersion: '1.1',
@@ -294,7 +322,7 @@ function buildCompleteEdl(params: {
       enabled: Boolean(hookText.trim()),
       text: hookText.trim().slice(0, 115),
       startSec: 0,
-      endSec: Math.min(3.0, Math.max(1.0, totalClipDur * 0.45)),
+      endSec: Math.min(3.0, Math.max(1.0, totalClipDur * 0.4)),
       position: 'top_safe_zone'
     },
     captions: {
@@ -315,8 +343,144 @@ function buildCompleteEdl(params: {
       ctaText: ctaText.trim().slice(0, 110),
       ctaStartSec: Math.max(0, Math.round((totalClipDur - 3.5) * 100) / 100),
       disclosureText: ''
-    }
+    },
+    colorGrade: colorGrade ?? targetConfig.colorGrade ?? 'natural',
+    cinemaSfx: false,
+    directorMode,
+    directorNote
   });
+}
+
+// Merakit 5 struktur film Cinema Multi-Video Remix yang benar-benar menggabungkan momen Video 1 + 2 + 3
+// ke dalam SATU hasil video baru (bukan 1 video utuh ditempel teks saja!)
+function buildCinemaMultiVideoRemixSegments(params: {
+  rawSources: DirectorRawSource[];
+  variantIdx: number;
+  maxRuleDur: number;
+  enableTransitions: boolean;
+  endingMode: ClipEndingMode;
+}): EdlDocument['segments'] {
+  const { rawSources, variantIdx, maxRuleDur, enableTransitions, endingMode } = params;
+  const sortedByDur = [...rawSources].sort((a, b) => b.durationSec - a.durationSec);
+  const mainVid = sortedByDur[0];
+  const secondaryVids = sortedByDur.slice(1);
+  const tr = (name: SegmentTransition): SegmentTransition => (enableTransitions ? name : 'cut');
+
+  const mkSeg = (
+    src: DirectorRawSource,
+    rawStart: number,
+    len: number,
+    opts: {
+      zoom?: number;
+      transition?: SegmentTransition;
+      speed?: number;
+      motion?: SegmentMotion;
+      snapSpeech?: boolean;
+    } = {}
+  ): EdlDocument['segments'][number] => {
+    const sliced = clampSlice(src, rawStart, len);
+    const finalRange = opts.snapSpeech
+      ? snapSegmentToSpeechBoundary({
+          startSec: sliced.startSec,
+          endSec: sliced.endSec,
+          mediaDurationSec: src.durationSec,
+          words: src.transcript?.words ?? [],
+          silences: src.silences,
+          mode: endingMode === 'full_source' ? 'complete_story' : endingMode,
+          maxAllowedEndSec: Math.min(src.durationSec, sliced.startSec + len + 2.5)
+        })
+      : sliced;
+
+    return {
+      mediaAssetId: src.id,
+      startSec: finalRange.startSec,
+      endSec: finalRange.endSec,
+      zoom: opts.zoom ?? 1.0,
+      cropX: 'center',
+      transition: opts.transition ?? 'cut',
+      transitionDurationSec: 0.3,
+      speed: opts.speed ?? 1.0,
+      motion: opts.motion ?? 'none'
+    };
+  };
+
+  // Jika hanya ada 1 video mentah, buat potongan non-linear cinema (Flash-Forward Hook -> Core -> Payoff)
+  if (secondaryVids.length === 0) {
+    const dur = mainVid.durationSec;
+    if (dur < 6) {
+      return [mkSeg(mainVid, 0, dur, { zoom: variantIdx % 2 === 1 ? 1.06 : 1.0, motion: 'push_in' })];
+    }
+    const targetDur = Math.min(dur, Math.max(12, Math.min(maxRuleDur - 2, 34)));
+    const climaxStart = Math.max(2, dur * (0.55 + (variantIdx % 3) * 0.1));
+    const hookLen = Math.min(2.8, dur * 0.18);
+    const bodyLen = Math.max(3, (targetDur - hookLen) * 0.65);
+    const outroLen = Math.max(2.5, targetDur - hookLen - bodyLen);
+
+    return [
+      mkSeg(mainVid, climaxStart, hookLen, { zoom: 1.06, motion: 'push_in', speed: 1.05 }),
+      mkSeg(mainVid, 0, bodyLen, { transition: tr('smoothleft'), snapSpeech: true }),
+      mkSeg(mainVid, Math.max(bodyLen, dur - outroLen), outroLen, { transition: tr('dissolve'), motion: 'push_in', snapSpeech: true })
+    ];
+  }
+
+  const v2 = secondaryVids[0];
+  const v3 = secondaryVids[1] ?? secondaryVids[0];
+  const budget = Math.max(12, Math.min(maxRuleDur - 2, 42));
+  const style = variantIdx % 5;
+
+  if (style === 0) {
+    // 1. Movie Trailer Remix: Flash-Forward V2 -> Intro V1 -> Action Cutaway V3 -> Core V1 -> Climax V2 -> Payoff V1
+    const segs = [
+      mkSeg(v2, Math.min(1.0, v2.durationSec * 0.15), Math.min(2.6, v2.durationSec * 0.45), { zoom: 1.05, motion: 'push_in', speed: 1.05 }),
+      mkSeg(mainVid, 0, Math.min(7.5, mainVid.durationSec * 0.25, budget * 0.22), { transition: tr('smoothleft'), snapSpeech: true }),
+      mkSeg(v3, Math.min(2.0, v3.durationSec * 0.25), Math.min(3.2, v3.durationSec * 0.45), { transition: tr('wipeleft'), speed: 1.12, motion: 'push_in' }),
+      mkSeg(mainVid, mainVid.durationSec * 0.35, Math.min(9.5, mainVid.durationSec * 0.25, budget * 0.26), { transition: tr('dissolve'), snapSpeech: true }),
+      mkSeg(v2, Math.max(0, v2.durationSec - 3.2), Math.min(3.0, v2.durationSec * 0.45), { transition: tr('fade'), speed: 0.9, motion: 'push_in' }),
+      mkSeg(mainVid, Math.max(0, mainVid.durationSec - Math.min(7.0, mainVid.durationSec * 0.22)), Math.min(6.8, mainVid.durationSec * 0.22), { transition: tr('dissolve'), snapSpeech: true })
+    ];
+    return segs;
+  }
+
+  if (style === 1) {
+    // 2. Story A-Roll + B-Roll Intercut: Alur utama V1 disisipi B-Roll dinamis V2 & V3
+    return [
+      mkSeg(mainVid, 0, Math.min(6.5, mainVid.durationSec * 0.28), { motion: 'push_in', snapSpeech: true }),
+      mkSeg(v2, 0.5, Math.min(3.5, v2.durationSec * 0.55), { transition: tr('fade'), zoom: 1.05 }),
+      mkSeg(mainVid, mainVid.durationSec * 0.32, Math.min(8.5, mainVid.durationSec * 0.26), { transition: tr('dissolve'), snapSpeech: true }),
+      mkSeg(v3, Math.min(1.5, v3.durationSec * 0.2), Math.min(3.5, v3.durationSec * 0.5), { transition: tr('smoothright'), motion: 'push_in', speed: 1.08 }),
+      mkSeg(mainVid, Math.max(0, mainVid.durationSec - Math.min(8.0, mainVid.durationSec * 0.25)), Math.min(7.8, mainVid.durationSec * 0.25), { transition: tr('fade'), snapSpeech: true })
+    ];
+  }
+
+  if (style === 2) {
+    // 3. Flash-Forward Climax Edit: Buka momen klimaks V3 -> dip-to-black -> bangun cerita V1 + V2
+    return [
+      mkSeg(v3, Math.max(0, v3.durationSec * 0.4), Math.min(2.8, v3.durationSec * 0.45), { zoom: 1.08, motion: 'push_in' }),
+      mkSeg(mainVid, mainVid.durationSec * 0.12, Math.min(8.0, mainVid.durationSec * 0.25), { transition: tr('fadeblack'), snapSpeech: true }),
+      mkSeg(v2, Math.min(2.5, v2.durationSec * 0.3), Math.min(3.5, v2.durationSec * 0.5), { transition: tr('smoothleft'), speed: 1.1 }),
+      mkSeg(mainVid, mainVid.durationSec * 0.62, Math.min(8.5, mainVid.durationSec * 0.28), { transition: tr('dissolve'), motion: 'push_in', snapSpeech: true })
+    ];
+  }
+
+  if (style === 3) {
+    // 4. High-Energy Commercial Cut (Padat 16-24s, pergantian cepat lintas semua video!)
+    return [
+      mkSeg(v2, 0, Math.min(2.5, v2.durationSec * 0.4), { zoom: 1.06, speed: 1.12 }),
+      mkSeg(mainVid, mainVid.durationSec * 0.08, Math.min(4.2, mainVid.durationSec * 0.2), { transition: tr('smoothleft'), speed: 1.05 }),
+      mkSeg(v3, Math.min(1.2, v3.durationSec * 0.2), Math.min(2.8, v3.durationSec * 0.45), { transition: tr('circleopen'), speed: 1.15, motion: 'push_in' }),
+      mkSeg(mainVid, mainVid.durationSec * 0.45, Math.min(4.5, mainVid.durationSec * 0.2), { transition: tr('wipeleft'), speed: 1.05 }),
+      mkSeg(v2, Math.max(0, v2.durationSec - 3.0), Math.min(2.8, v2.durationSec * 0.45), { transition: tr('smoothright'), speed: 0.92, motion: 'push_in' }),
+      mkSeg(v3, Math.max(0, v3.durationSec - 2.6), Math.min(2.5, v3.durationSec * 0.45), { transition: tr('fade'), zoom: 1.05 })
+    ];
+  }
+
+  // 5. Cinematic Showcase Montage: Tempo elegan dissolve lintas semua video
+  return [
+    mkSeg(v2, 0.4, Math.min(3.6, v2.durationSec * 0.55), { motion: 'push_in', speed: 0.92 }),
+    mkSeg(mainVid, mainVid.durationSec * 0.18, Math.min(8.0, mainVid.durationSec * 0.26), { transition: tr('dissolve'), snapSpeech: true }),
+    mkSeg(v3, 0.5, Math.min(4.0, v3.durationSec * 0.55), { transition: tr('fade'), motion: 'pull_out', speed: 0.95 }),
+    mkSeg(mainVid, Math.max(0, mainVid.durationSec - Math.min(7.5, mainVid.durationSec * 0.24)), Math.min(7.2, mainVid.durationSec * 0.24), { transition: tr('dissolve'), motion: 'push_in', snapSpeech: true })
+  ];
 }
 
 export function buildHeuristicMultiVariantEdls(params: {
@@ -328,14 +492,55 @@ export function buildHeuristicMultiVariantEdls(params: {
   transcript?: TranscriptPayload | null;
   silences: SilenceInterval[];
   pacingBlueprint?: PacingBlueprint | null;
+  directorNote?: string;
 }): PlannedClipDraft[] {
   const { rulebook, targetConfig, pacingBlueprint } = params;
   const rawSources = resolveRawSources(params);
   const count = targetConfig.batchCount;
   const endingMode: ClipEndingMode = targetConfig.clipEndingMode ?? 'complete_story';
+  const assemblyMode: EditAssemblyMode = targetConfig.editAssemblyMode ?? 'cinema_remix';
+  const enableTransitions = targetConfig.enableCinemaTransitions ?? true;
   const localized = getLocalizedTemplates(targetConfig, rulebook);
+  const maxRuleDur = rulebook?.durationRules.maxSec ?? 60;
 
-  // Hitung distribusi slot per video mentah agar SEMUA video mentah yang diunggah benar-benar terpakai
+  // MODE 1: CINEMA MULTI-VIDEO REMIX (Gabungkan banyak mentahan menjadi film baru!)
+  // Aktif otomatis ketika editAssemblyMode === 'cinema_remix' dan tidak sedang mode part_series / full_source / pacingBlueprint
+  if (
+    assemblyMode === 'cinema_remix' &&
+    endingMode === 'complete_story' &&
+    !pacingBlueprint &&
+    rawSources.length >= 2
+  ) {
+    const drafts: PlannedClipDraft[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const tpl = localized.cinemaAngles[i % localized.cinemaAngles.length];
+      const segments = buildCinemaMultiVideoRemixSegments({
+        rawSources,
+        variantIdx: i,
+        maxRuleDur,
+        enableTransitions,
+        endingMode
+      });
+      const edl = buildCompleteEdl({
+        targetConfig,
+        segments,
+        hookText: tpl.hook,
+        ctaText: localized.defaultCta,
+        colorGrade: targetConfig.colorGrade ?? 'viral_high_contrast',
+        directorMode: 'local_cinema_heuristic',
+        directorNote: params.directorNote ?? `Cinema Multi-Video Remix lokal menggabungkan ${rawSources.length} sumber video dengan transisi sinematik.`
+      });
+      drafts.push({
+        sequenceIndex: i + 1,
+        angleTitle: `${tpl.title} #${i + 1}`,
+        hookSummary: tpl.hook,
+        edl
+      });
+    }
+    return drafts;
+  }
+
+  // MODE 2: SINGLE-SOURCE CLIPS / PART SERIES / FULL SOURCE / PACING CLONER
   const assignedSourceByIdx = Array.from({ length: count }, (_, i) => rawSources[i % rawSources.length]);
   const totalUsesPerSource = new Map<string, number>();
   for (const src of assignedSourceByIdx) {
@@ -343,8 +548,6 @@ export function buildHeuristicMultiVariantEdls(params: {
   }
   const seenCountPerSource = new Map<string, number>();
   const lastEndBySource = new Map<string, number>();
-
-  const maxRuleDur = rulebook?.durationRules.maxSec ?? 60;
   const drafts: PlannedClipDraft[] = [];
 
   for (let i = 0; i < count; i += 1) {
@@ -354,17 +557,15 @@ export function buildHeuristicMultiVariantEdls(params: {
     seenCountPerSource.set(src.id, sourceUseIdx + 1);
 
     const totalDur = Math.max(1.2, src.durationSec);
-    const tpl = localized.angles[i % localized.angles.length];
+    const tpl = localized.singleAngles[i % localized.singleAngles.length];
 
     let rawStart = 0;
     let rawEnd = totalDur;
 
     if (endingMode === 'full_source') {
-      // Video utuh 100% dari awal hingga akhir tanpa memotong kalimat penutup
       rawStart = 0;
       rawEnd = totalDur;
     } else if (endingMode === 'part_series' && sourceTotalUses > 1 && totalDur >= 4) {
-      // Bagi secara berurutan menjadi Part 1 -> Part 2 -> ... tanpa tumpang tindih
       const prevEnd = lastEndBySource.get(src.id) ?? 0;
       const remaining = Math.max(1.2, totalDur - prevEnd);
       const partsLeft = sourceTotalUses - sourceUseIdx;
@@ -372,7 +573,6 @@ export function buildHeuristicMultiVariantEdls(params: {
       rawStart = prevEnd;
       rawEnd = sourceUseIdx === sourceTotalUses - 1 ? totalDur : Math.min(totalDur, prevEnd + targetPartLen);
     } else if (sourceTotalUses === 1 && totalDur <= maxRuleDur + 5) {
-      // Video sudah muat di batas durasi brief: JANGAN dipotong paksa di tengah jalan!
       rawStart = 0;
       rawEnd = totalDur;
     } else if (targetConfig.batchDiversityMode === 'distinct_moments' && totalDur > 6) {
@@ -386,7 +586,6 @@ export function buildHeuristicMultiVariantEdls(params: {
       rawStart = step * sourceUseIdx;
       rawEnd = Math.min(totalDur, rawStart + targetLen);
     } else {
-      // Mode A/B Hook Test atau video sangat pendek
       const sliceLen = Math.min(totalDur, maxRuleDur);
       rawStart = totalDur > sliceLen + 1 ? Math.min(totalDur - sliceLen, sourceUseIdx * 0.35) : 0;
       rawEnd = Math.min(totalDur, rawStart + sliceLen);
@@ -432,7 +631,11 @@ export function buildHeuristicMultiVariantEdls(params: {
           endSec: Math.max(s + 0.5, e),
           zoom: i % 2 === 1 && wIdx % 2 === 1 ? 1.08 : 1.0,
           cropX: 'center' as const,
-          focusX: 0.5
+          focusX: 0.5,
+          transition: 'cut' as const,
+          transitionDurationSec: 0.3,
+          speed: 1.0,
+          motion: 'none' as const
         };
       });
     } else {
@@ -442,7 +645,11 @@ export function buildHeuristicMultiVariantEdls(params: {
           startSec,
           endSec: Math.max(startSec + 0.6, endSec),
           zoom: i % 2 === 1 ? 1.06 : 1.0,
-          cropX: 'center' as const
+          cropX: 'center' as const,
+          transition: 'cut' as const,
+          transitionDurationSec: 0.3,
+          speed: 1.0,
+          motion: 'none' as const
         }
       ];
     }
@@ -455,15 +662,16 @@ export function buildHeuristicMultiVariantEdls(params: {
 
     const partLabel = isPartSeries ? `Part ${i + 1}` : `#${i + 1}`;
     const angleTitle = `${tpl.title} ${partLabel}`;
-    const hookText = isPartSeries && i > 0
-      ? (localized.lang.code === 'en' ? `Part ${i + 1}: ${tpl.hook}` : `Part ${i + 1}: ${tpl.hook}`)
-      : tpl.hook;
+    const hookText = isPartSeries && i > 0 ? `Part ${i + 1}: ${tpl.hook}` : tpl.hook;
 
     const edl = buildCompleteEdl({
       targetConfig,
       segments,
       hookText,
-      ctaText
+      ctaText,
+      colorGrade: targetConfig.colorGrade ?? 'natural',
+      directorMode: 'local_cinema_heuristic',
+      directorNote: params.directorNote
     });
 
     drafts.push({
@@ -482,12 +690,19 @@ export async function planMultiVariantEdls(params: {
   mediaAssetId: string;
   mediaDurationSec: number;
   rawVideos?: DirectorRawSource[];
+  storyboards?: VideoStoryboard[];
   rulebook: BriefRulebook | null;
   targetConfig: TargetConfig;
   transcript: TranscriptPayload | null;
   silences: SilenceInterval[];
   pacingBlueprint?: PacingBlueprint | null;
-}): Promise<{ drafts: PlannedClipDraft[]; tokensUsed: number; mode: 'ai' | 'local_heuristic' }> {
+}): Promise<{
+  drafts: PlannedClipDraft[];
+  tokensUsed: number;
+  mode: 'ai_vision' | 'ai_text' | 'local_cinema_heuristic';
+  usedModel?: string;
+  directorNote?: string;
+}> {
   const rawSources = resolveRawSources(params);
   const heuristicDrafts = buildHeuristicMultiVariantEdls({
     ...params,
@@ -495,32 +710,50 @@ export async function planMultiVariantEdls(params: {
   });
   const brainKey = await getActiveKeyForRole(params.userId, 'brain');
   if (!brainKey) {
-    return { drafts: heuristicDrafts, tokensUsed: 0, mode: 'local_heuristic' };
+    return {
+      drafts: heuristicDrafts,
+      tokensUsed: 0,
+      mode: 'local_cinema_heuristic',
+      directorNote: 'Tidak ada kunci Brain aktif; menggunakan Cinema Remix Engine lokal.'
+    };
   }
 
   const localized = getLocalizedTemplates(params.targetConfig, params.rulebook);
   const endingMode: ClipEndingMode = params.targetConfig.clipEndingMode ?? 'complete_story';
+  const assemblyMode: EditAssemblyMode = params.targetConfig.editAssemblyMode ?? 'cinema_remix';
+  const enableTransitions = params.targetConfig.enableCinemaTransitions ?? true;
   const maxRuleDur = params.rulebook?.durationRules.maxSec ?? 60;
+  const minRuleDur = params.rulebook?.durationRules.minSec ?? 15;
+  const hasVisionImages = Boolean(params.storyboards && params.storyboards.length > 0);
+
+  const remixDirective =
+    assemblyMode === 'cinema_remix' && rawSources.length >= 2
+      ? 'CINEMA MULTI-VIDEO REMIX MODE (CRITICAL): You are a Hollywood / Viral Commercial Film Editor! ' +
+        'DO NOT make 1 clip = 1 raw video uncut! Each generated clip MUST creatively COMBINE the best shots across MULTIPLE rawVideos[] (using at least 2-3 different mediaAssetIds per clip!) into a cohesive new short film: ' +
+        'e.g. Flash-Forward explosive Hook (2-3s from Video 2/3) -> A-Roll intro -> B-Roll cutaway -> Climax slow-mo (speed 0.85-0.95) -> Payoff! ' +
+        'Make all N variations genuinely different film edits (Trailer Montage, A-Roll+B-Roll Intercut, Flash-Forward Climax, Fast Commercial Cut, Cinematic Showcase). ' +
+        `Assign cinematic transitions ("fade","dissolve","smoothleft","smoothright","wipeleft","fadeblack","circleopen") and subtle camera motion ("push_in","pull_out","none"). ` +
+        `Keep total clip duration strictly between ${minRuleDur}s and ${maxRuleDur}s so Brief Compliance PASSES!`
+      : `MULTI-VIDEO RULE: You are provided ${rawSources.length} raw source video(s). Distribute clips across ALL uploaded rawVideos and keep total duration between ${minRuleDur}s and ${maxRuleDur}s.`;
 
   const endingInstruction =
     endingMode === 'full_source'
-      ? 'MODE FULL_SOURCE: Keep each source video COMPLETE from 0 to full durationSec without cutting off the ending.'
+      ? 'MODE FULL_SOURCE: Keep source videos complete without cutting off the ending.'
       : endingMode === 'part_series'
-        ? 'MODE PART_SERIES: Split into clean sequential parts (Part 1, Part 2, ...). Part 1 MUST end at a natural cliffhanger/sentence boundary and include a "Part 2" teaser in ctaText!'
-        : 'MODE COMPLETE_STORY: NEVER cut a speaker mid-sentence! Always end at a complete sentence boundary or full video end. If a source video already fits within brief maxSec, keep the complete story intact instead of truncating early.';
+        ? 'MODE PART_SERIES: Structure sequential Part 1, Part 2, ... with Part 2 teaser in ctaText.'
+        : 'MODE COMPLETE_STORY: NEVER cut a speaker mid-sentence! Align startSec & endSec to complete thoughts/pauses.';
 
   const languageRule =
     localized.lang.code === 'en'
-      ? `STRICT LANGUAGE LOCK (${localized.lang.label} for country ${params.targetConfig.countryCode}): ALL angleTitle, hookSummary, hookBannerText, and ctaText MUST be 100% written in natural ${localized.lang.label}. ZERO Indonesian words allowed (to prevent YouTube/TikTok algorithm geo-misclassification)!`
+      ? `STRICT LANGUAGE LOCK (${localized.lang.label} for country ${params.targetConfig.countryCode}): ALL angleTitle, hookSummary, hookBannerText, and ctaText MUST be 100% written in natural ${localized.lang.label}. ZERO Indonesian words allowed!`
       : 'BAHASA KONTEN: Tulis angleTitle, hookSummary, hookBannerText, dan ctaText dalam Bahasa Indonesia santai dan tajam tanpa em-dash.';
 
   const systemPrompt =
-    'You are an expert Viral Short-Form Video Director for TikTok & YouTube Shorts. ' +
-    'Return compact JSON ONLY: {"clips":[{"angleTitle":string,"hookSummary":string,"hookBannerText":string,"ctaText":string,"segments":[{"mediaAssetId":string,"startSec":number,"endSec":number,"zoom":number,"cropX":"center"|"left"|"right"}]}]}. ' +
+    'You are an award-winning Viral Cinema Video Director for TikTok & YouTube Shorts. ' +
+    'Return compact valid JSON ONLY: {"clips":[{"angleTitle":string,"hookSummary":string,"hookBannerText":string,"ctaText":string,"segments":[{"mediaAssetId":string,"startSec":number,"endSec":number,"zoom":number,"cropX":"center"|"left"|"right","transition":"cut"|"fade"|"dissolve"|"smoothleft"|"smoothright"|"wipeleft"|"fadeblack"|"circleopen","speed":number,"motion":"none"|"push_in"|"pull_out"}]}]}. ' +
     `Create EXACTLY ${params.targetConfig.batchCount} clips. ` +
-    `MULTI-VIDEO RULE: You are provided ${rawSources.length} raw source video(s) in rawVideos[]. Distribute clips across ALL uploaded rawVideos so every video is utilized (never ignore other rawVideos!). ` +
-    'Use ONLY exact mediaAssetId values from rawVideos[] and keep 0 <= startSec < endSec <= durationSec. ' +
-    `${endingInstruction} ${languageRule}`;
+    'Use ONLY exact mediaAssetId values from rawVideos[] with 0 <= startSec < endSec <= durationSec and speed between 0.8 and 1.25. ' +
+    `${remixDirective} ${endingInstruction} ${languageRule}`;
 
   const wordsPerVideoBudget = Math.max(55, Math.floor(220 / Math.max(1, rawSources.length)));
   const rawVideosPayload = rawSources.map((src, idx) => {
@@ -529,20 +762,30 @@ export async function planMultiVariantEdls(params: {
       .slice(0, wordsPerVideoBudget)
       .map((w) => `[${w.startSec.toFixed(1)}]${w.word}`)
       .join(' ');
+    const sb = params.storyboards?.find((s) => s.mediaAssetId === src.id);
     return {
       index: idx + 1,
       mediaAssetId: src.id,
       filename: src.originalFilename ?? `raw-${idx + 1}.mp4`,
       durationSec: Math.round(src.durationSec * 100) / 100,
-      silenceCount: src.silences.length,
-      transcriptSample: sample || '(visual only / no transcript yet)'
+      storyboardGridTimestampsSec: sb?.frameTimestampsSec ?? null,
+      transcriptSample: sample || '(visual only / rely on storyboard frames)'
     };
   });
 
+  const images: MultimodalImagePart[] = (params.storyboards ?? []).map((sb, idx) => ({
+    label: `Storyboard Contact Sheet #${idx + 1} for mediaAssetId="${sb.mediaAssetId}" (${sb.filename}, duration ${sb.durationSec}s). Grid 3x2 left-to-right, top-to-bottom timestamps (sec): [${sb.frameTimestampsSec.join(', ')}]`,
+    mimeType: sb.mimeType,
+    dataBase64: sb.dataBase64
+  }));
+
   const userPrompt = JSON.stringify({
     requestedCount: params.targetConfig.batchCount,
+    editAssemblyMode: assemblyMode,
     clipEndingMode: endingMode,
+    enableCinemaTransitions: enableTransitions,
     targetLanguage: localized.lang.label,
+    briefDurationRangeSec: { minSec: minRuleDur, maxSec: maxRuleDur },
     targetConfig: {
       platform: params.targetConfig.platform,
       countryCode: params.targetConfig.countryCode,
@@ -553,19 +796,10 @@ export async function planMultiVariantEdls(params: {
       hookType: params.targetConfig.hookType,
       emotionalTrigger: params.targetConfig.emotionalTrigger,
       primaryKpi: params.targetConfig.primaryKpi,
-      editingStyle: params.targetConfig.editingStyle,
-      batchDiversityMode: params.targetConfig.batchDiversityMode
+      editingStyle: params.targetConfig.editingStyle
     },
     briefRulebook: params.rulebook,
-    rawVideos: rawVideosPayload,
-    referencePacingBlueprint: params.pacingBlueprint
-      ? {
-          shotCount: params.pacingBlueprint.shotCount,
-          avgShotDurationSec: params.pacingBlueprint.avgShotDurationSec,
-          estimatedBpm: params.pacingBlueprint.estimatedBpm,
-          shots: params.pacingBlueprint.shots.slice(0, 6)
-        }
-      : null
+    rawVideos: rawVideosPayload
   });
 
   try {
@@ -573,11 +807,16 @@ export async function planMultiVariantEdls(params: {
       key: brainKey,
       systemPrompt,
       userPrompt,
-      temperature: 0.4,
-      maxOutputTokens: Math.min(4096, Math.max(1400, params.targetConfig.batchCount * 520))
+      images: images.length > 0 ? images : undefined,
+      temperature: 0.45,
+      maxOutputTokens: Math.min(6144, Math.max(2048, params.targetConfig.batchCount * 720))
     });
     const parsed = AiDirectorResponseSchema.parse(res.json);
     const sourceMap = new Map(rawSources.map((s) => [s.id, s]));
+    const modeTag = hasVisionImages ? 'ai_vision' as const : 'ai_text' as const;
+    const note = hasVisionImages
+      ? `Disutradarai ${res.usedModel} Vision AI (melihat ${images.length} storyboard video | ${res.tokensUsed} token)`
+      : `Disutradarai ${res.usedModel} AI (${res.tokensUsed} token)`;
 
     const normalized: PlannedClipDraft[] = [];
     const targetCount = params.targetConfig.batchCount;
@@ -593,27 +832,44 @@ export async function planMultiVariantEdls(params: {
       const rawSegs = aiClip.segments ?? aiClip.edl?.segments ?? [];
       const sanitizedSegments: EdlDocument['segments'] = [];
 
-      for (const seg of rawSegs) {
-        const src = sourceMap.get(seg.mediaAssetId) ?? rawSources[idx % rawSources.length];
-        const snapped = snapSegmentToSpeechBoundary({
-          startSec: seg.startSec,
-          endSec: seg.endSec,
-          mediaDurationSec: src.durationSec,
-          words: src.transcript?.words ?? [],
-          silences: src.silences,
-          mode: endingMode,
-          maxAllowedEndSec: endingMode === 'full_source' ? src.durationSec : Math.min(src.durationSec, seg.startSec + maxRuleDur + 4)
-        });
+      for (let sIdx = 0; sIdx < rawSegs.length; sIdx += 1) {
+        const seg = rawSegs[sIdx];
+        const src = sourceMap.get(seg.mediaAssetId) ?? rawSources[(idx + sIdx) % rawSources.length];
+        const shouldSnap = (src.transcript?.words?.length ?? 0) > 0 && (seg.endSec - seg.startSec) >= 4.0;
+        const boundedStart = Math.max(0, Math.min(seg.startSec, Math.max(0, src.durationSec - 0.8)));
+        const boundedEnd = Math.min(src.durationSec, Math.max(boundedStart + 0.7, seg.endSec));
+        const snapped = shouldSnap
+          ? snapSegmentToSpeechBoundary({
+              startSec: boundedStart,
+              endSec: boundedEnd,
+              mediaDurationSec: src.durationSec,
+              words: src.transcript?.words ?? [],
+              silences: src.silences,
+              mode: endingMode === 'full_source' ? 'complete_story' : endingMode,
+              maxAllowedEndSec: Math.min(src.durationSec, boundedStart + maxRuleDur)
+            })
+          : { startSec: Math.round(boundedStart * 100) / 100, endSec: Math.round(boundedEnd * 100) / 100 };
+
         sanitizedSegments.push({
           mediaAssetId: src.id,
           startSec: snapped.startSec,
           endSec: snapped.endSec,
           zoom: Math.round(Math.min(2.5, Math.max(1.0, seg.zoom ?? 1.0)) * 100) / 100,
-          cropX: seg.cropX ?? 'center'
+          cropX: seg.cropX ?? 'center',
+          transition: sIdx === 0 ? 'cut' : (enableTransitions ? (seg.transition ?? 'fade') : 'cut'),
+          transitionDurationSec: Math.min(0.45, Math.max(0.18, seg.transitionDurationSec ?? 0.3)),
+          speed: Math.round(Math.min(1.5, Math.max(0.75, seg.speed ?? 1.0)) * 100) / 100,
+          motion: seg.motion ?? 'none'
         });
       }
 
-      const finalSegments = sanitizedSegments.length > 0 ? sanitizedSegments : fallback.edl.segments;
+      // Guard Cinema Remix: jika mode cinema_remix dengan >= 2 video tapi AI masih hanya pakai 1 video pada klip ini,
+      // gunakan struktur multi-video remix dengan judul & hook buatan Gemini AI!
+      const uniqueInClip = new Set(sanitizedSegments.map((s) => s.mediaAssetId));
+      const finalSegments =
+        sanitizedSegments.length > 0 && !(assemblyMode === 'cinema_remix' && rawSources.length >= 2 && uniqueInClip.size < 2)
+          ? sanitizedSegments
+          : fallback.edl.segments;
 
       const sanitizeCopy = (text: string | undefined, backup: string): string => {
         const cleaned = (text ?? '').trim();
@@ -643,35 +899,38 @@ export async function planMultiVariantEdls(params: {
           targetConfig: params.targetConfig,
           segments: finalSegments,
           hookText: hookBannerText,
-          ctaText
+          ctaText,
+          colorGrade: params.targetConfig.colorGrade ?? 'viral_high_contrast',
+          directorMode: modeTag,
+          directorNote: note
         })
       });
-    }
-
-    // Jaminan Multi-Video: jika user mengunggah >= 2 video mentah & minta >= 2 variasi namun AI hanya memakai 1 video,
-    // gantikan variasi duplikat dengan rencana sumber video mentah lain yang belum terpakai.
-    if (rawSources.length >= 2 && normalized.length >= 2) {
-      const usedMediaIds = new Set(normalized.flatMap((d) => d.edl.segments.map((s) => s.mediaAssetId)));
-      if (usedMediaIds.size === 1) {
-        for (let idx = 1; idx < normalized.length; idx += 1) {
-          const expectedSrc = rawSources[idx % rawSources.length];
-          if (!usedMediaIds.has(expectedSrc.id) && heuristicDrafts[idx]) {
-            normalized[idx] = {
-              ...heuristicDrafts[idx],
-              sequenceIndex: idx + 1
-            };
-            usedMediaIds.add(expectedSrc.id);
-          }
-        }
-      }
     }
 
     return {
       drafts: normalized.length > 0 ? normalized : heuristicDrafts,
       tokensUsed: res.tokensUsed,
-      mode: 'ai'
+      mode: modeTag,
+      usedModel: res.usedModel,
+      directorNote: note
     };
-  } catch {
-    return { drafts: heuristicDrafts, tokensUsed: 0, mode: 'local_heuristic' };
+  } catch (err) {
+    const errReason = err instanceof Error ? err.message.slice(0, 140) : 'Respons AI tidak valid';
+    console.warn(`[EdlDirector] Fallback ke Cinema Lokal (${brainKey.provider}/${brainKey.defaultModel}): ${errReason}`);
+    const note = `Mode Cinema Lokal aktif (AI fallback: ${errReason})`;
+    const annotatedDrafts = heuristicDrafts.map((d) => ({
+      ...d,
+      edl: {
+        ...d.edl,
+        directorMode: 'local_cinema_heuristic' as const,
+        directorNote: note
+      }
+    }));
+    return {
+      drafts: annotatedDrafts,
+      tokensUsed: 0,
+      mode: 'local_cinema_heuristic',
+      directorNote: note
+    };
   }
 }

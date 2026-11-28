@@ -9,7 +9,8 @@ export interface ProviderPingResult {
 
 export async function pingAiProvider(
   provider: AiProvider,
-  rawApiKey: string
+  rawApiKey: string,
+  defaultModel?: string
 ): Promise<ProviderPingResult> {
   const started = Date.now();
   const controller = new AbortController();
@@ -55,6 +56,27 @@ export async function pingAiProvider(
     const latencyMs = Date.now() - started;
 
     if (res.ok) {
+      if (provider === 'gemini' && defaultModel) {
+        try {
+          const payload = (await res.json()) as { models?: Array<{ name?: string }> };
+          const availableNames = (payload.models ?? []).map((m) => (m.name ?? '').replace(/^models\//, ''));
+          const exactMatch = availableNames.includes(defaultModel.trim());
+          if (exactMatch) {
+            return {
+              ok: true,
+              statusMessage: `Koneksi ke GEMINI terverifikasi & model "${defaultModel}" tersedia (${latencyMs} ms).`,
+              latencyMs
+            };
+          }
+          return {
+            ok: true,
+            statusMessage: `Kunci GEMINI aktif (${latencyMs} ms). Model "${defaultModel}" belum terdaftar di daftar publik API Anda, sistem tetap mencobanya lebih dulu dan otomatis waterfall ke gemini-2.5-flash jika 404.`,
+            latencyMs
+          };
+        } catch {
+          // Lanjutkan pesan sukses standar
+        }
+      }
       return {
         ok: true,
         statusMessage: `Koneksi ke ${provider.toUpperCase()} terverifikasi (${latencyMs} ms).`,

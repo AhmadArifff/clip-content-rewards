@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
-import { CreateApiKeyInputSchema } from '@clip/shared';
+import { CreateApiKeyInputSchema, UpdateApiKeyInputSchema } from '@clip/shared';
 import { apiKeyService } from '../services/api-key.service.js';
 import { sendServiceResult } from '../utils/http.js';
 
@@ -41,6 +41,16 @@ export const apiKeyController = {
     try {
       const parsed = ToggleActiveSchema.parse(req.body);
       const result = await apiKeyService.toggleActive(req.user!.sub, String(req.params.id), parsed.isActive);
+      sendServiceResult(res, result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = UpdateApiKeyInputSchema.parse(req.body ?? {});
+      const result = await apiKeyService.updateKey(req.user!.sub, String(req.params.id), parsed);
       sendServiceResult(res, result);
     } catch (err) {
       next(err);

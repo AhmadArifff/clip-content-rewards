@@ -70,6 +70,36 @@ export const ClipEndingModeSchema = z.enum([
 ]);
 export type ClipEndingMode = z.infer<typeof ClipEndingModeSchema>;
 
+export const EditAssemblyModeSchema = z.enum([
+  'cinema_remix',
+  'single_source_clips'
+]);
+export type EditAssemblyMode = z.infer<typeof EditAssemblyModeSchema>;
+
+export const CinemaColorGradeSchema = z.enum([
+  'natural',
+  'viral_high_contrast',
+  'warm_holiday_film',
+  'cinematic_teal_orange',
+  'moody_cinema'
+]);
+export type CinemaColorGrade = z.infer<typeof CinemaColorGradeSchema>;
+
+export const SegmentTransitionSchema = z.enum([
+  'cut',
+  'fade',
+  'dissolve',
+  'smoothleft',
+  'smoothright',
+  'wipeleft',
+  'fadeblack',
+  'circleopen'
+]);
+export type SegmentTransition = z.infer<typeof SegmentTransitionSchema>;
+
+export const SegmentMotionSchema = z.enum(['none', 'push_in', 'pull_out']);
+export type SegmentMotion = z.infer<typeof SegmentMotionSchema>;
+
 export const TargetConfigSchema = z.object({
   platform: PlatformTargetSchema,
   countryCode: z.string().min(2).max(10),
@@ -96,6 +126,9 @@ export const TargetConfigSchema = z.object({
   ]),
   batchDiversityMode: z.enum(['distinct_moments', 'ab_hook_test']).default('distinct_moments'),
   clipEndingMode: ClipEndingModeSchema.default('complete_story'),
+  editAssemblyMode: EditAssemblyModeSchema.default('cinema_remix'),
+  colorGrade: CinemaColorGradeSchema.default('viral_high_contrast'),
+  enableCinemaTransitions: z.boolean().default(true),
   batchCount: z.number().int().min(1).max(10),
   referencePacingId: z.string().nullable().optional(),
   brandKitId: z.string().nullable().optional(),
@@ -144,7 +177,11 @@ export const EdlSegmentSchema = z.object({
   endSec: z.number().positive(),
   zoom: z.number().min(1).max(2.5).default(1),
   cropX: z.enum(['left', 'center', 'right']).default('center'),
-  focusX: z.number().min(0).max(1).optional()
+  focusX: z.number().min(0).max(1).optional(),
+  transition: SegmentTransitionSchema.optional().default('cut'),
+  transitionDurationSec: z.number().min(0.1).max(0.8).optional().default(0.3),
+  speed: z.number().min(0.6).max(1.6).optional().default(1.0),
+  motion: SegmentMotionSchema.optional().default('none')
 }).refine((seg) => seg.endSec > seg.startSec, {
   message: 'endSec harus lebih besar dari startSec'
 });
@@ -206,7 +243,11 @@ export const EdlSchema = z.object({
     })).default([])
   }),
   supportingOverlays: SupportingOverlaysSchema.default({}),
-  complianceOverlays: ComplianceOverlaysSchema.default({})
+  complianceOverlays: ComplianceOverlaysSchema.default({}),
+  colorGrade: CinemaColorGradeSchema.optional().default('natural'),
+  cinemaSfx: z.boolean().optional().default(false),
+  directorMode: z.enum(['ai_vision', 'ai_text', 'local_cinema_heuristic']).optional(),
+  directorNote: z.string().max(260).optional()
 });
 export type EdlDocument = z.infer<typeof EdlSchema>;
 
@@ -289,6 +330,15 @@ export const CreateApiKeyInputSchema = z.object({
   apiKey: z.string().trim().min(8).max(300),
   defaultModel: z.string().trim().min(2).max(100)
 });
+
+export const UpdateApiKeyInputSchema = z.object({
+  label: z.string().trim().min(2).max(80).optional(),
+  defaultModel: z.string().trim().min(2).max(100).optional(),
+  isActive: z.boolean().optional()
+}).refine((v) => v.label !== undefined || v.defaultModel !== undefined || v.isActive !== undefined, {
+  message: 'Minimal satu bidang (nama penanda, nama model, atau status aktif) harus diubah.'
+});
+export type UpdateApiKeyInput = z.infer<typeof UpdateApiKeyInputSchema>;
 
 export const CreateMasterPresetInputSchema = z.object({
   category: MasterPresetCategorySchema,

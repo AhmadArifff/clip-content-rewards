@@ -14,8 +14,11 @@ import { pacingRepository } from '../repositories/pacing.repository.js';
 import { planMultiVariantEdls } from '../services/ai/edl-director.service.js';
 import { evaluateClipVersion } from '../services/ai/viral-evaluator.service.js';
 import { brandKitService } from '../services/brand-kit.service.js';
+import { mediaService } from '../services/media.service.js';
 import { renderEdlToMp4, type RenderMediaSource } from '../services/media/edl-renderer.service.js';
+import { extractVideoStoryboards, type VideoStoryboard } from '../services/media/vision-storyboard.service.js';
 import { analyzeSubjectFocusTrack } from '../services/media/vision-tracker.service.js';
+import { getActiveKeyForRole } from '../services/ai/llm-json.adapter.js';
 
 export interface BatchProgressEvent {
   batchId: string;
@@ -175,7 +178,59 @@ class LocalRenderQueueWorker {
         ? (JSON.parse(batch.campaign.brief.parsedRulebookJson) as BriefRulebook)
         : null;
 
-      const mediaBundle = this.buildMediaSources(batch);
+      let mediaBundle = this.buildMediaSources(batch);
+
+      // M19: Auto-Transcribe otomatis (Groq Whisper / Gemini STT gratis) jika video ber-audio belum punya transkrip kata
+      const isTestEnv = Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
+      const [activeBrainKey, activeSttKey] = await Promise.all([
+        getActiveKeyForRole(userId, 'brain'),
+        getActiveKeyForRole(userId, 'stt')
+      ]);
+
+      if (!isTestEnv && (activeSttKey || activeBrainKey?.provider === 'gemini')) {
+        const untranscribed = mediaBundle.rawVideos.filter((v) => v.hasAudio && v.words.length === 0);
+        if (untranscribed.length > 0) {
+          for (let tIdx = 0; tIdx < untranscribed.length; tIdx += 1) {
+            const rawVid = untranscribed[tIdx];
+            this.emitProgress({
+              batchId,
+              status: 'processing',
+              progressPct: 6 + Math.round((tIdx / untranscribed.length) * 3),
+              stageLabel: `Auto-transkrip video #${tIdx + 1}/${untranscribed.length} (${rawVid.originalFilename})...`,
+              timestamp: new Date().toISOString()
+            });
+            await mediaService.transcribeAsset(userId, rawVid.id).catch(() => {});
+          }
+          const refreshedBatch = await batchRepository.findBatchById(batchId);
+          if (refreshedBatch) {
+            mediaBundle = this.buildMediaSources(refreshedBatch);
+          }
+        }
+      }
+
+      // M19: Ekstrak storyboard visual contact-sheet agar Gemini Vision benar-benar "menonton" seluruh video mentah
+      let storyboards: VideoStoryboard[] = [];
+      if (
+        !isTestEnv &&
+        activeBrainKey?.provider === 'gemini' &&
+        (targetConfig.editAssemblyMode ?? 'cinema_remix') === 'cinema_remix'
+      ) {
+        this.emitProgress({
+          batchId,
+          status: 'processing',
+          progressPct: 9,
+          stageLabel: `Mengekstrak storyboard visual dari ${mediaBundle.rawVideos.length} video untuk Gemini Vision AI...`,
+          timestamp: new Date().toISOString()
+        });
+        storyboards = await extractVideoStoryboards(
+          mediaBundle.rawVideos.map((v) => ({
+            id: v.id,
+            originalFilename: v.originalFilename,
+            filePath: v.filePath,
+            durationSec: v.durationSec
+          }))
+        );
+      }
 
       let pacingBlueprint: PacingBlueprint | null = null;
       if (targetConfig.referencePacingId) {
@@ -200,6 +255,7 @@ class LocalRenderQueueWorker {
           transcript: v.transcript,
           silences: v.silences
         })),
+        storyboards,
         rulebook,
         targetConfig,
         transcript: mediaBundle.primaryTranscript,

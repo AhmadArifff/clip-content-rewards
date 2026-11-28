@@ -245,6 +245,27 @@ function audioSummary(edl: EdlDocument | null | undefined): string {
   return 'Original 100% (-14 LUFS)';
 }
 
+function clipRemixBadge(edl: EdlDocument | null | undefined): string {
+  if (!edl || !edl.segments?.length) return '';
+  const uniqueSources = new Set(edl.segments.map((s) => s.mediaAssetId)).size;
+  const xfadeCount = edl.segments.filter((s, idx) => idx > 0 && s.transition && s.transition !== 'cut').length;
+  const parts: string[] = [];
+  if (uniqueSources >= 2) parts.push(`Remix ${uniqueSources} Video`);
+  if (edl.segments.length >= 2) parts.push(`${edl.segments.length} Shot`);
+  if (xfadeCount > 0) parts.push(`${xfadeCount} Transisi`);
+  return parts.join(' | ');
+}
+
+const batchDirectorNote = computed(() => {
+  const firstClip = batch.value?.clips?.[0];
+  return firstClip?.activeVersion?.edl?.directorNote ?? '';
+});
+
+const batchDirectorMode = computed(() => {
+  const firstClip = batch.value?.clips?.[0];
+  return firstClip?.activeVersion?.edl?.directorMode ?? null;
+});
+
 async function fetchBatch() {
   loading.value = true;
   try {
@@ -384,6 +405,15 @@ onBeforeUnmount(() => {
             class="h-full transition-all duration-300"
             :style="{ width: `${Math.max(4, liveProgressPct)}%`, backgroundColor: 'var(--accent-bg)' }"
           />
+        </div>
+
+        <div
+          v-if="batchDirectorNote"
+          class="text-xs px-3 py-2 rounded font-medium flex flex-wrap items-center justify-between gap-2"
+          :class="batchDirectorMode === 'ai_vision' || batchDirectorMode === 'ai_text' ? 'studio-badge-ok' : 'studio-badge-warn'"
+        >
+          <span>{{ batchDirectorNote }}</span>
+          <span v-if="batch.actualTokens" class="font-mono font-bold">{{ batch.actualTokens.toLocaleString('id-ID') }} token</span>
         </div>
       </section>
 
@@ -574,6 +604,13 @@ onBeforeUnmount(() => {
 
               <!-- Badge Viral Score, Brief Compliance & Final -->
               <div v-if="clip.activeVersion" class="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                <span
+                  v-if="clipRemixBadge(clip.activeVersion.edl)"
+                  class="px-2 py-0.5 rounded font-mono"
+                  style="background: var(--accent-soft-bg); color: var(--accent-soft-fg);"
+                >
+                  {{ clipRemixBadge(clip.activeVersion.edl) }}
+                </span>
                 <span
                   v-if="typeof clip.activeVersion.viralScoreTotal === 'number'"
                   class="px-2 py-0.5 rounded font-mono inline-flex items-center gap-1"

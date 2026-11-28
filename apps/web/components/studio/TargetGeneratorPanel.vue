@@ -87,6 +87,9 @@ const config = ref<TargetConfig>({
   initialAudioMode: 'ducking_20',
   batchDiversityMode: 'distinct_moments',
   clipEndingMode: 'complete_story',
+  editAssemblyMode: 'cinema_remix',
+  colorGrade: 'viral_high_contrast',
+  enableCinemaTransitions: true,
   batchCount: 3,
   referencePacingId: null,
   brandKitId: null,
@@ -181,6 +184,9 @@ function applySelectedProfile() {
     config.value = {
       ...found.targetConfig,
       clipEndingMode: found.targetConfig.clipEndingMode ?? 'complete_story',
+      editAssemblyMode: found.targetConfig.editAssemblyMode ?? 'cinema_remix',
+      colorGrade: found.targetConfig.colorGrade ?? 'viral_high_contrast',
+      enableCinemaTransitions: found.targetConfig.enableCinemaTransitions ?? true,
       supportingAssets: config.value.supportingAssets
     };
     infoMsg.value = `Profil "${found.profileName}" dimuat ke formulir.`;
@@ -316,8 +322,11 @@ onMounted(loadPresetsAndProfiles);
         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium studio-badge-ok"
       >
         <Film class="w-3.5 h-3.5 shrink-0" />
-        <span>
-          Mode Multi-Video Aktif: Seluruh {{ rawVideoCount }} video mentah akan didistribusikan ke variasi batch ini.
+        <span v-if="config.editAssemblyMode === 'cinema_remix'">
+          Cinema AI Remix Aktif: AI Vision &amp; FFmpeg akan menggabungkan momen terbaik dari {{ rawVideoCount }} video mentah menjadi film pendek baru lengkap dengan transisi xfade &amp; color grading!
+        </span>
+        <span v-else>
+          Mode Multi-Video Klasik: Seluruh {{ rawVideoCount }} video mentah akan didistribusikan ke variasi batch ini.
         </span>
       </div>
     </div>
@@ -428,6 +437,25 @@ onMounted(loadPresetsAndProfiles);
           <option value="complete_story">Tuntas di Akhir Kalimat (Anti-Terpotong)</option>
           <option value="full_source">Video Utuh Full (Tanpa Potong Akhir)</option>
           <option value="part_series">Seri Bersambung (Part 1 -&gt; Part 2)</option>
+        </select>
+      </div>
+
+      <div class="space-y-1">
+        <label for="tg-assembly-mode" class="block text-xs font-semibold">Mode Perakitan Edit (Cinema AI)</label>
+        <select id="tg-assembly-mode" v-model="config.editAssemblyMode" class="studio-input text-xs">
+          <option value="cinema_remix">Cinema AI Remix (Gabungkan Banyak Video + Transisi Film)</option>
+          <option value="single_source_clips">Klip Tunggal per Video (Klasik)</option>
+        </select>
+      </div>
+
+      <div class="space-y-1">
+        <label for="tg-color-grade" class="block text-xs font-semibold">Cinema Color Grading</label>
+        <select id="tg-color-grade" v-model="config.colorGrade" class="studio-input text-xs">
+          <option value="viral_high_contrast">Viral High-Contrast (Tajam ala CapCut)</option>
+          <option value="warm_holiday_film">Warm Cinema Film (Hangat &amp; Kaya Warna)</option>
+          <option value="cinematic_teal_orange">Hollywood Teal &amp; Orange</option>
+          <option value="moody_cinema">Moody Dramatic Cinema</option>
+          <option value="natural">Natural (Warna Asli)</option>
         </select>
       </div>
 

@@ -110,6 +110,7 @@ graph TD
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-26 | `59d5d90` | AhmadArifff | **M4** | Implementasi awal Auth lokal, Brankas BYOK AES-256-GCM, Test Connection 6 provider, dan 3 Tema Switchable UI. |
 | 2026-11-28 | `HEAD` | AhmadArifff | **M16** | Optimasi Free-Tier Quota Manager (pacer anti-429, retry, Gemini model waterfall `pro -> flash -> flash-lite`), kompresi prompt hemat 65% token, Gemini Native Audio STT (chunk 3 menit `32kbps mono`, 1 kunci Gemini otomatis merangkap STT), serta katalog `gemini-2.5-flash-lite` & panduan Mode 100% Gratis di UI. |
+| 2026-11-28 | `HEAD` | AhmadArifff | **M19** | Penambahan fitur edit inline nama model & label pada kunci API tersimpan (`PATCH /api/api-keys/:id`, mendukung `gemini-3.5-flash` maupun model kustom) serta verifikasi ketersediaan nama model langsung saat Uji Koneksi. |
 
 ---
 
